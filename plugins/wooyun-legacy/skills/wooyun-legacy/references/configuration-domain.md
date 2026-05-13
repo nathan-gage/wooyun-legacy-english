@@ -1,174 +1,174 @@
-# 配置域
+# Configuration Domain
 
-## 概述
+## Overview
 
-配置不当是最容易得手的漏洞。1,796 个 WooYun 案例中 72.6% 为高危，证明：最具破坏力的入侵来自默认配置。
+Misconfiguration is the easiest vulnerability class to exploit. In 1,796 WooYun cases, 72.6% were high severity, proving that the most destructive intrusions often come from default configuration.
 
-**核心原则：** 每个服务的默认配置都是为了便利而非安全设计的。如果你没有明确加固，就存在漏洞。
+**Core principle:** Every service's default configuration is designed for convenience, not security. If you have not explicitly hardened it, assume it is vulnerable.
 
-## 攻击模式矩阵
+## Attack-Pattern Matrix
 
-### 默认凭证（参考弱口令交叉引用）
+### Default Credentials (cross-reference weak passwords)
 
-**服务特定的默认凭证数据库：**
+**Service-specific default credential database:**
 
-| 服务 | 默认凭证 | WooYun 出现频率 |
-|------|---------|--------------|
-| Tomcat Manager | tomcat/tomcat, admin/admin | 极高 |
-| JBoss 控制台 | admin/admin, jboss/jboss | 极高 |
-| WebLogic | weblogic/weblogic1 | 高 |
-| Jenkins | （默认无认证） | 极高 |
-| Zabbix | Admin/zabbix | 高 |
-| phpMyAdmin | root/（空） | 极高 |
-| MongoDB | （默认无认证） | 高 |
-| Redis | （默认无认证） | 极高 |
-| Elasticsearch | （默认无认证） | 高 |
-| Docker Remote API | （默认无认证） | 高 |
-| Kubernetes Dashboard | （令牌绕过） | 中等 |
-| Grafana | admin/admin | 高 |
-| RabbitMQ | guest/guest | 高 |
-| ActiveMQ | admin/admin | 高 |
-| Nacos | nacos/nacos | 高 |
-| Spring Boot Actuator | （默认无认证） | 极高 |
-| Hadoop YARN | （默认无认证） | 高 |
+| Service | Default credentials | WooYun frequency |
+|---------|---------------------|------------------|
+| Tomcat Manager | tomcat/tomcat, admin/admin | Very high |
+| JBoss console | admin/admin, jboss/jboss | Very high |
+| WebLogic | weblogic/weblogic1 | High |
+| Jenkins | no authentication by default | Very high |
+| Zabbix | Admin/zabbix | High |
+| phpMyAdmin | root/(empty) | Very high |
+| MongoDB | no authentication by default | High |
+| Redis | no authentication by default | Very high |
+| Elasticsearch | no authentication by default | High |
+| Docker Remote API | no authentication by default | High |
+| Kubernetes Dashboard | token bypass | Medium |
+| Grafana | admin/admin | High |
+| RabbitMQ | guest/guest | High |
+| ActiveMQ | admin/admin | High |
+| Nacos | nacos/nacos | High |
+| Spring Boot Actuator | no authentication by default | Very high |
+| Hadoop YARN | no authentication by default | High |
 
-### 暴露的管理界面
+### Exposed Management Interfaces
 
-**系统性发现：**
+**Systematic discovery:**
 
 ```
-1. Web 管理控制台
+1. Web management consoles
    - [ ] /manager/html (Tomcat)
    - [ ] /jmx-console (JBoss)
    - [ ] /console (WebLogic, H2, Rails)
-   - [ ] /admin（通用）
+   - [ ] /admin (generic)
    - [ ] /jenkins
    - [ ] /zabbix
    - [ ] /grafana
    - [ ] /solr/admin
    - [ ] /nacos
    - [ ] /actuator (Spring Boot)
-   - [ ] /druid (阿里巴巴 Druid)
+   - [ ] /druid (Alibaba Druid)
 
-2. 数据库管理
-   - [ ] :3306 (MySQL，无密码)
-   - [ ] :6379 (Redis，无认证)
-   - [ ] :27017 (MongoDB，无认证)
-   - [ ] :9200 (Elasticsearch，无认证)
-   - [ ] :5432 (PostgreSQL，信任认证)
+2. Database management
+   - [ ] :3306 (MySQL, no password)
+   - [ ] :6379 (Redis, no authentication)
+   - [ ] :27017 (MongoDB, no authentication)
+   - [ ] :9200 (Elasticsearch, no authentication)
+   - [ ] :5432 (PostgreSQL, trust authentication)
    - [ ] /phpmyadmin, /pma, /myadmin
 
-3. 部署/CI 工具
-   - [ ] :2375 (Docker Remote API，无 TLS)
-   - [ ] :8080 (Jenkins，无认证)
+3. Deployment/CI tools
+   - [ ] :2375 (Docker Remote API, no TLS)
+   - [ ] :8080 (Jenkins, no authentication)
    - [ ] :8443 (Kubernetes Dashboard)
    - [ ] :9000 (Portainer, SonarQube)
    - [ ] :8161 (ActiveMQ)
    - [ ] :15672 (RabbitMQ)
 
-4. 监控/调试
+4. Monitoring/debugging
    - [ ] /server-status (Apache)
    - [ ] /nginx_status (Nginx)
    - [ ] /debug/pprof (Go)
-   - [ ] /actuator/env (Spring，泄露环境变量)
-   - [ ] /actuator/heapdump (Spring，泄露内存)
-   - [ ] /trace（暴露请求历史）
+   - [ ] /actuator/env (Spring, environment-variable leakage)
+   - [ ] /actuator/heapdump (Spring, memory leakage)
+   - [ ] /trace (request history exposure)
 ```
 
-### 配置不当的服务
+### Misconfigured Services
 
-**高影响配置不当模式：**
+**High-impact misconfiguration patterns:**
 
-| 配置不当 | 影响 | 测试方法 |
-|---------|------|---------|
-| 目录列表已启用 | 源代码、配置文件泄露 | 访问无索引文件的目录 |
-| CORS 通配符（`*`） | 跨域数据盗取 | 检查 Access-Control-Allow-Origin 头 |
-| 允许 PUT/DELETE 方法 | 文件上传、内容修改 | OPTIONS 请求，尝试 PUT 上传文件 |
-| 生产环境开启调试模式 | 堆栈跟踪、内部路径 | 触发错误，检查响应详情 |
-| 冗长的错误消息 | 数据库结构、代码路径 | 恶意输入，观察错误响应 |
-| 开放式重定向 | 钓鱼、令牌盗取 | 修改 redirect_url 参数 |
-| 通过 Webhook 进行 SSRF | 内网访问 | 将内网 IP 作为 Webhook URL |
-| 无限制文件上传 | Web Shell、远程代码执行 | 上传 .jsp/.php/.aspx 文件 |
+| Misconfiguration | Impact | Test method |
+|------------------|--------|-------------|
+| Directory listing enabled | Source code and configuration file leakage | Visit directories without index files |
+| CORS wildcard (`*`) | Cross-origin data theft | Check `Access-Control-Allow-Origin` header |
+| PUT/DELETE methods allowed | File upload, content modification | OPTIONS request, attempt PUT upload |
+| Debug mode enabled in production | Stack traces, internal paths | Trigger an error and inspect response detail |
+| Verbose error messages | Database structure, code paths | Send malicious input and observe error response |
+| Open redirect | Phishing, token theft | Modify `redirect_url` parameter |
+| SSRF through Webhook | Intranet access | Use an internal IP as the Webhook URL |
+| Unrestricted file upload | Web shell, remote code execution | Upload .jsp/.php/.aspx files |
 
-### 云配置不当（新兴模式，WooYun 时代后）
+### Cloud Misconfiguration (emerging patterns after the WooYun era)
 
-**基于现代部署模式的补充：**
+**Supplement based on modern deployment patterns:**
 
 ```
-1. 存储
-   - [ ] S3 存储桶公开读/写
-   - [ ] Azure Blob 容器匿名访问
-   - [ ] GCS 存储桶 allUsers 权限
-   - [ ] OSS（阿里云）存储桶 ACL 配置不当
+1. Storage
+   - [ ] Public read/write S3 bucket
+   - [ ] Anonymous access to Azure Blob container
+   - [ ] GCS bucket with allUsers permission
+   - [ ] OSS (Alibaba Cloud) bucket ACL misconfiguration
 
-2. 计算
-   - [ ] IMDS v1 可访问（无需令牌）
-   - [ ] 安全组允许 0.0.0.0/0 访问管理端口
-   - [ ] 禁用 SSH 密钥认证，启用密码认证
-   - [ ] 用户数据脚本包含凭据
+2. Compute
+   - [ ] IMDS v1 accessible without a token
+   - [ ] Security group allows 0.0.0.0/0 access to management ports
+   - [ ] SSH key authentication disabled and password authentication enabled
+   - [ ] User-data scripts contain credentials
 
 3. IAM
-   - [ ] 通配符权限（Action: "*", Resource: "*"）
-   - [ ] 跨账户角色信任过于宽松
-   - [ ] 服务账户密钥暴露在代码/配置中
-   - [ ] 根/管理员账户未启用 MFA
+   - [ ] Wildcard permissions (Action: "*", Resource: "*")
+   - [ ] Overly broad cross-account role trust
+   - [ ] Service-account keys exposed in code/configuration
+   - [ ] Root/admin account lacks MFA
 ```
 
-## 测试协议
+## Testing Protocol
 
 ```dot
 digraph config_test {
-    "识别所有服务" [shape=box];
-    "检查默认凭证" [shape=box];
-    "默认凭证有效？" [shape=diamond];
-    "检查暴露的端点" [shape=box];
-    "有暴露？" [shape=diamond];
-    "检查服务配置" [shape=box];
-    "发现配置不当？" [shape=diamond];
-    "记录发现" [shape=box];
-    "进入其他领域" [shape=box];
+    "Identify all services" [shape=box];
+    "Check default credentials" [shape=box];
+    "Default credentials valid?" [shape=diamond];
+    "Check exposed endpoints" [shape=box];
+    "Exposure found?" [shape=diamond];
+    "Check service configuration" [shape=box];
+    "Misconfiguration found?" [shape=diamond];
+    "Record finding" [shape=box];
+    "Move to other domains" [shape=box];
 
-    "识别所有服务" -> "检查默认凭证";
-    "检查默认凭证" -> "默认凭证有效？";
-    "默认凭证有效？" -> "记录发现" [label="是 → 严重"];
-    "默认凭证有效？" -> "检查暴露的端点" [label="否"];
-    "检查暴露的端点" -> "有暴露？";
-    "有暴露？" -> "记录发现" [label="是 → 高危"];
-    "有暴露？" -> "检查服务配置" [label="否"];
-    "检查服务配置" -> "发现配置不当？";
-    "发现配置不当？" -> "记录发现" [label="是"];
-    "发现配置不当？" -> "进入其他领域" [label="否"];
-    "记录发现" -> "进入其他领域";
+    "Identify all services" -> "Check default credentials";
+    "Check default credentials" -> "Default credentials valid?";
+    "Default credentials valid?" -> "Record finding" [label="Yes -> critical"];
+    "Default credentials valid?" -> "Check exposed endpoints" [label="No"];
+    "Check exposed endpoints" -> "Exposure found?";
+    "Exposure found?" -> "Record finding" [label="Yes -> high severity"];
+    "Exposure found?" -> "Check service configuration" [label="No"];
+    "Check service configuration" -> "Misconfiguration found?";
+    "Misconfiguration found?" -> "Record finding" [label="Yes"];
+    "Misconfiguration found?" -> "Move to other domains" [label="No"];
+    "Record finding" -> "Move to other domains";
 }
 ```
 
-## 真实案例
+## Real Cases
 
-| 案例 | 子域 | 影响 |
-|------|------|------|
-| 同程旅游某系统配置不当任意文件上传getshell/root权限 | 配置不当的服务 | 通过文件上传实现根级远程代码执行 |
-| ChinaCache某系统JBoss配置不当导致Getshell | 默认凭证/暴露管理界面 | JBoss 管理控制台 → 远程代码执行 |
-| 复星保德信某系统配置不当GetShell影响大量保单信息（姓名/身份证/地址） | 配置不当的服务 | 保险单据个人信息泄露 |
-| DaoCloud弱口令+docker remote API未授权访问 | 默认凭证 | Docker API → 容器逃逸 |
-| 云南农村信用社智慧农信微信管理平台 | 默认凭证 | 银行平台默认凭证 |
-| 华夏航空准备网 | 默认凭证 | 航空系统默认凭证 |
+| Case | Subdomain | Impact |
+|------|-----------|--------|
+| Tongcheng Travel system misconfiguration allowed arbitrary file upload, getshell, and root privileges | Misconfigured service | Root-level remote code execution through file upload |
+| ChinaCache system JBoss misconfiguration led to GetShell | Default credentials/exposed management interface | JBoss management console -> remote code execution |
+| Fosun Prudential system misconfiguration GetShell affected large volumes of policy information, including names, IDs, and addresses | Misconfigured service | Insurance policy personal information leakage |
+| DaoCloud weak password plus unauthenticated Docker Remote API access | Default credentials | Docker API -> container escape |
+| Yunnan Rural Credit Union smart rural-credit WeChat management platform | Default credentials | Banking platform default credentials |
+| China Express Airlines preparation site | Default credentials | Aviation system default credentials |
 
-## 防御模式
+## Defense Patterns
 
-### 代码层面
-- 部署前**更改所有默认凭证**
-- **禁用不必要的功能：** 调试模式、目录列表、TRACE 方法
-- **最小权限原则：** 服务账户仅具有最低必需权限
-- **配置即代码：** 版本控制、审查配置更改
+### Code Level
+- **Change all default credentials** before deployment
+- **Disable unnecessary features:** debug mode, directory listing, TRACE method
+- **Least privilege:** service accounts have only the minimum required permissions
+- **Configuration as code:** version control and review configuration changes
 
-### 架构层面
-- **网络隔离：** 管理界面仅在内网
-- **防火墙规则：** 对管理端口仅允许白名单访问
-- **反向代理：** 永远不要直接暴露后端服务
-- **密钥管理：** 使用 Vault/KMS 存储凭证，而非配置文件
+### Architecture Level
+- **Network isolation:** management interfaces only on the internal network
+- **Firewall rules:** allowlist access to management ports only
+- **Reverse proxy:** never expose backend services directly
+- **Secrets management:** store credentials in Vault/KMS, not configuration files
 
-### 监控
-- **默认凭证扫描：** 自动检查已知默认凭证
-- **暴露服务检测：** 定期外部扫描开放的管理端口
-- **配置漂移：** 对未授权的配置更改发出警报
-- **新服务检测：** 对新增监听端口/服务发出警报
+### Monitoring
+- **Default-credential scanning:** automatically check known default credentials
+- **Exposed-service detection:** regularly scan externally for open management ports
+- **Configuration drift:** alert on unauthorized configuration changes
+- **New-service detection:** alert on newly listening ports/services

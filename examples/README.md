@@ -1,31 +1,31 @@
-# WooYun 方法论应用示例
+# WooYun Methodology Application Examples
 
-本目录包含基于 WooYun 22,132 个真实漏洞案例提炼的行业渗透测试示例。
+This directory contains industry penetration testing examples distilled from 22,132 real WooYun vulnerability cases.
 
-## 原始提问
+## Original Questions
 
-以下示例文档是基于这些安全研究问题生成的：
+The example documents were generated from these security research questions:
 
-### 运营商渗透
-> **提问**：请你思考告诉我运营商有哪些常见的漏洞？有哪些不常见的攻击面，如何实现getshell?
+### Telecom Penetration
+> **Question:** Please think through and tell me what common vulnerabilities telecom operators have. What uncommon attack surfaces exist, and how can shell access be achieved?
 
-### 银行渗透
-> **提问**：银行有哪些渗透思路？
+### Banking Penetration
+> **Question:** What penetration testing approaches apply to banks?
 
-## 示例索引
+## Example Index
 
-| 文件 | 描述 | 涉及漏洞类型 |
-|------|------|-------------|
-| [telecom-penetration.md](telecom-penetration.md) | 运营商渗透测试思路 | 弱口令、越权、未授权访问 |
-| [bank-penetration.md](bank-penetration.md) | 银行渗透测试思路 | 支付、金额、密码重置、越权 |
+| File | Description | Vulnerability Types Covered |
+|------|-------------|-----------------------------|
+| [telecom-penetration.md](telecom-penetration.md) | Telecom penetration testing approach | weak passwords, authorization bypass, unauthenticated access |
+| [bank-penetration.md](bank-penetration.md) | Banking penetration testing approach | payment, amount tampering, password reset, authorization bypass |
 
-## 使用说明
+## Usage
 
-1. 选择目标行业对应的示例文档
-2. 参考攻击面分析确定测试范围
-3. 按照漏洞检测清单进行测试
-4. 结合 `/categories` 目录下的详细方法论深入利用
+1. Choose the example document for the target industry.
+2. Use the attack surface analysis to define the test scope.
+3. Follow the vulnerability detection checklist.
+4. Combine it with the detailed methodologies under `/categories` for deeper exploitation analysis.
 
-## 免责声明
+## Disclaimer
 
-本示例仅用于授权的安全测试和教育研究目的。未经授权对任何系统进行渗透测试属于违法行为。
+These examples are only for authorized security testing and educational research. Penetration testing against any system without authorization is illegal.

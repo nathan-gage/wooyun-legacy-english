@@ -1,775 +1,775 @@
-# 电商平台支付与订单流程安全测试方案
+# electronic commercePlatformPaymentandOrderflow processSecureTest Plan
 
-> 基于 WooYun 22,132 个真实漏洞案例方法论 | 金融领域 2,919 案例 + 逻辑流领域 1,679 案例
+> Based on the methodology from 22,132 real WooYun vulnerability cases | Financial Domain 2,919 Case + Logic Flow Domain 1,679 Case
 
 ---
 
-## 一、测试范围与业务流程映射
+## 1. Test Scopeandbusiness flow process map map
 
-### 1.1 目标系统
+### 1.1 TargetSystem
 
-| 模块 | 核心功能 | 涉及资金流 |
+| model block | audit core function can | involving resource funds flow |
 |------|---------|-----------|
-| 购物车 | 商品添加/删除/修改数量/价格计算 | 间接（价格来源） |
-| 在线支付 | 支付宝/微信支付接口对接、回调处理 | 直接 |
-| 订单管理 | 订单创建/状态流转/查询/取消 | 直接 |
-| 退款流程 | 退款申请/审核/退款执行 | 直接（逆向资金流） |
+| Shopping Cart | commerce productAdd/Delete/Modifynumber quantity/price formatCompute | between connect(price format come source) |
+| Online Payment | Alipay/WeChatPaymentInterfacefor connect/Callbackhandle manage | Direct |
+| Order Management | OrderCreate/Statusflow transfer/check query/Cancel | Direct |
+| Refund Flow | Refund please/audit audit/RefundExecute | Direct(toward resource funds flow) |
 
-### 1.2 订单状态机映射
+### 1.2 Order State Machinemap map
 
 ```
-预期流程：
-  购物车 → 提交订单（待支付） → 支付中 → 已支付 → 处理中 → 已发货 → 已签收 → 已完成
-                   ↓                                         ↓
-              已取消（未支付取消）                      退款申请 → 退款审核 → 退款中 → 已退款
+expected period flow process:
+ Shopping Cart -> SubmitOrder(Pending Payment) -> Paymentin -> Paid -> handle managein -> already shipping -> already collect -> Completed
+ down down
+ alreadyCancel(notPaymentCancel) Refund please -> Refundaudit audit -> Refundin -> Refunded
 ```
 
-**需要验证的非法状态转移（WooYun 订单篡改 1,227 案例，74.2% 高危）：**
+**requiresValidateofNon-methodStatustransfer move(WooYun Order Tampering 1,227 Case, 74.2% High Risk):**
 
-| 非法转移 | 攻击意图 | 风险等级 |
+| Non-method transfer move | attack attack meaning image | Risk Level |
 |---------|---------|---------|
-| 待支付 → 已支付 | 跳过支付环节 | 严重 |
-| 待支付 → 已完成 | 完全绕过支付和物流 | 严重 |
-| 已发货 → 已退款 | 收货后退款（白嫖） | 高 |
-| 已完成 → 退款中 | 已确认收货后仍触发退款 | 高 |
-| 已取消 → 已支付 | 复活已取消订单 | 高 |
-| 已退款 → 已退款 | 重复退款 | 严重 |
+| Pending Payment -> Paid | skip throughPaymentenvironment section | Severe |
+| Pending Payment -> Completed | complete allBypassPaymentanditem flow | Severe |
+| already shipping -> Refunded | collect goods afterRefund() | High |
+| Completed -> Refundin | alreadyConfirmcollect goods after still trigger initiateRefund | High |
+| alreadyCancel -> Paid | repeat alreadyCancelOrder | High |
+| Refunded -> Refunded | Duplicate Refund | Severe |
 
-### 1.3 参与者与信任边界
+### 1.3 participateandpersonandTrust Boundary
 
-| 角色 | 权限范围 | 信任边界风险 |
+| Role | PermissionScope | Trust Boundaryrisk |
 |------|---------|-------------|
-| 匿名用户 | 浏览商品、加购物车 | 能否在未登录状态下提交订单/触发支付？ |
-| 普通用户 | 下单、支付、查看自己的订单 | 能否查看/修改他人订单？（IDOR） |
-| 商户/卖家 | 管理商品、处理订单、确认发货 | 能否修改价格？能否自行审批退款？ |
-| 管理员 | 全局管理 | 管理后台是否有未授权访问？ |
-| 支付网关（支付宝/微信） | 回调通知、签名验证 | 回调是否可伪造？签名是否可绕过？ |
+| Anonymous User | commerce product/addShopping Cart | whether caninnotLoginStatusunderSubmitOrder/trigger initiatePayment? |
+| Regular User | under single/Payment/Viewself ownofOrder | whether canView/Modifyother personOrder?(IDOR) |
+| commerce account/ | manage manage commerce product/handle manageOrder/Confirmshipping | whether canModifyprice format?whether canselflinesaudit batchRefund? |
+| Administrator | all global manage manage | manage manage backend consolewhether hasUnauthorized Access? |
+| Payment Gateway(Alipay/WeChat) | Callbackwild notify/SignatureValidate | CallbackwhetherCanforgery?SignaturewhetherCanBypass? |
 
-### 1.4 测试账号准备
+### 1.4 Test Accountaccurate prepare
 
 ```
-必须准备：
-- 普通用户 A（主测试账号）
-- 普通用户 B（用于水平越权测试）
-- 商户账号（如适用）
-- 管理员账号（用于垂直越权测试）
-- 记录每个账号的：session token / cookie / user_id / order_id 样本
+mustaccurate prepare:
+- Regular User A(primaryTest Account)
+- Regular User B(useforHorizontal Authorization Bypasstest)
+- commerce accountAccount(such assuitableuse)
+- AdministratorAccount(useforVertical Authorization Bypasstest)
+- RecordEachAccountof:session token / cookie / user_id / order_id version
 ```
 
-### 1.5 测试工具
+### 1.5 testTool
 
-| 工具 | 用途 |
+| Tool | Purpose |
 |------|------|
-| Burp Suite Professional | HTTP 拦截/重放/Turbo Intruder 竞态测试 |
-| mitmproxy | 支付回调拦截分析 |
-| Python 脚本 | 并发请求、自动化枚举 |
-| 浏览器开发者工具 | 前端逻辑分析、localStorage 检查 |
+| Burp Suite Professional | HTTP Intercept/Replay/Turbo Intruder Racetest |
+| mitmproxy | PaymentCallbackInterceptAnalyze |
+| Python Script | ConcurrencyRequest/self dynamic izeEnumeration |
+| Browseropen initiate personTool | Frontendlogic logicAnalyze/localStorage Check |
 
 ---
 
-## 二、测试模块一：购物车安全
+## 2. test model block one:Shopping CartSecure
 
-> WooYun 参考：金融领域价格篡改 70 案例（74.3% 高危）+ 订单篡改 1,227 案例
+> WooYun participate reference:Financial Domainprice format tamper change 70 Case(74.3% High Risk)+ Order Tampering 1,227 Case
 
-### 测试点 2.1：购物车价格篡改
+### Test Point 2.1:Shopping Cartprice format tamper change
 
-**假设：** 购物车中的价格/单价由客户端传递，服务器未从数据库重新获取验证。
+**false set:** Shopping Cartinofprice format/single price byClientpass recursive, ServernotfromDatabaseserious newObtainValidate.
 
-**WooYun 模式：** "中国平安某处验证逻辑问题导致百万敏感信息泄漏+管理商品价格" — 客户端提交价格被服务器直接信任。
+**WooYun mode:** "innationalPing Ana locationValidatelogic logic ask problemCausingpercent ten-thousandSensitive Information Leak+manage manage commerce product price format" - ClientSubmitprice format beServerDirectinformation any.
 
-**测试步骤：**
-
-```
-1. 正常添加商品到购物车，用 Burp 拦截添加请求
-2. 观察请求参数中是否包含 price / unit_price / amount 字段
-3. 如包含，依次修改为：
-   - [ ] price=0.01（最小金额测试）
-   - [ ] price=0（零元购买）
-   - [ ] price=-1（负数，可能导致退款或余额增加）
-   - [ ] price=0.001（小数精度测试）
-4. 提交后检查购物车页面显示的价格是否为篡改后的值
-5. 继续走到结算页，确认结算总额是否基于篡改后的价格
-6. 如果结算总额正常（从服务端拉取），检查最终提交订单的请求中是否可再次修改金额
-```
-
-**判定标准：** 如果任何篡改后的价格被服务器接受并用于后续计算，则确认漏洞存在。
-
-### 测试点 2.2：数量篡改
-
-**假设：** 购物车数量字段未做服务端边界验证。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 拦截修改购物车数量的请求
-2. 依次提交以下值：
-   - [ ] quantity=0（零数量，观察总价是否为 0）
-   - [ ] quantity=-1（负数量，总价是否变为负数 → 相当于退款）
-   - [ ] quantity=99999999（超大数量，整数溢出测试）
-   - [ ] quantity=0.001（小数数量，观察服务端处理）
-   - [ ] quantity="abc"（类型混淆，观察错误处理）
-3. 检查每种情况下：
-   - 服务端是否拒绝？
-   - 购物车总价计算是否异常？
-   - 能否进入下单流程？
+1. correct commonAddcommerce producttoShopping Cart, use Burp InterceptAddRequest
+2. ObserveRequestParameterinwhetherinclude include price / unit_price / amount Field
+3. such asinclude include, dependtimesModifyas:
+ - [] price=0.01(most smallAmounttest)
+ - [] price=0(zeroyuanbuy buy)
+ - [] price=-1(Negative Number, CancanCausingRefundorBalanceincrease add)
+ - [] price=0.001(small number precision degree test)
+4. SubmitafterCheckShopping Cartpage displayofprice formatwhether istamper change afterofvalue
+5. continue toresult algorithm page, Confirmresult algorithm total amountwhetherbased on tamper change afterofprice format
+6. such asif result algorithm total amount correct common(fromServer take), Checkmost finalSubmitOrderofRequestinwhetherCanagaintimesModifyAmount
 ```
 
-### 测试点 2.3：商品 ID 替换
+**Pass/Fail Criteria:** such asif any tamper change afterofprice format beServerconnect affected andusefor after continueCompute, ruleConfirmvulnerability existin.
 
-**假设：** 在购物车提交订单时，可以将高价商品的 item_id 替换为低价商品的 item_id，但保留高价商品的其他信息。
+### Test Point 2.2:number quantity tamper change
 
-**WooYun 模式：** 金融领域 "将 item_id 修改为相同数量的更便宜产品"。
+**false set:** Shopping Cartnumber quantityFieldnot doServerboundary boundaryValidate.
 
-**测试步骤：**
-
-```
-1. 将一个高价商品（如 ¥999）加入购物车
-2. 拦截提交订单请求
-3. 将 item_id / product_id / sku_id 替换为一个低价商品（如 ¥9.9）的 ID
-4. 保留其他参数不变（数量、收货地址等）
-5. 观察：
-   - [ ] 订单是否创建成功？
-   - [ ] 订单金额是哪个商品的价格？
-   - [ ] 发货时发的是哪个商品？
-```
-
-### 测试点 2.4：购物车与结算价格一致性
-
-**假设：** 购物车页面的价格与实际提交到支付网关的金额之间存在不一致窗口。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 添加商品到购物车，记录购物车显示价格
-2. 进入结算页面，记录结算显示价格
-3. 拦截提交订单请求，记录请求中的金额参数
-4. 对比三个阶段的金额是否一致
-5. 在结算页面加载后、提交订单前，通过另一个请求修改购物车中的商品
-6. 提交订单，观察最终金额是否反映修改后的购物车
+1. InterceptModifyShopping Cartnumber quantityofRequest
+2. dependtimesSubmitthe followingvalue:
+ - [] quantity=0(zero number quantity, Observetotal pricewhether is 0)
+ - [] quantity=-1(Negative Numberquantity, total pricewhetherchangeasNegative Number -> related when forRefund)
+ - [] quantity=99999999(super large number quantity, integer number out test)
+ - [] quantity=0.001(small number number quantity, ObserveServerhandle manage)
+ - [] quantity="abc"(type mix, Observeerror handle manage)
+3. Checkeach type details under:
+ - Serverwhetherreject reject?
+ - Shopping Carttotal priceComputewhetherabnormal common?
+ - whether canadvance inject under single flow process?
 ```
 
----
+### Test Point 2.3:commerce product ID Replace
 
-## 三、测试模块二：支付流程安全
+**false set:** inShopping CartSubmitOrdertime, CanaswillHighprice commerce productof item_id ReplaceasLowprice commerce productof item_id, but protect retainHighprice commerce productofother information.
 
-> WooYun 参考：支付绕过 1,056 案例（68.7% 高危），金额篡改 176 案例（83.0% 高危）
+**WooYun mode:** Financial Domain "will item_id Modifyasrelated same number quantityofupdate product".
 
-### 测试点 3.1：支付金额篡改（客户端→服务端）
-
-**假设：** 客户端提交的支付金额被服务器直接用于生成支付网关请求，未与订单实际金额校验。
-
-**WooYun 模式：** "M1905电影网价值2588套餐只要5毛钱" — 客户端提交金额被直接传递给支付网关。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 正常下单（如总额 ¥299），进入支付页面
-2. 拦截"发起支付"的请求（通常为 POST /api/pay 或类似端点）
-3. 修改请求中的金额参数：
-   - [ ] amount=0.01（最小金额）
-   - [ ] amount=0（零元支付）
-   - [ ] amount=-1（负数金额）
-   - [ ] amount=1（固定 1 元）
-4. 观察：
-   - 支付宝/微信支付页面显示的金额是否为篡改后的值？
-   - 支付成功后，订单状态是否变为"已支付"？
-   - 如果支付 0.01 元成功但订单是 ¥299，系统是否仍确认订单？
+1. willoneHighprice commerce product(such as ¥999)add injectShopping Cart
+2. InterceptSubmitOrderRequest
+3. will item_id / product_id / sku_id ReplaceasoneLowprice commerce product(such as ¥9.9)of ID
+4. protect retain otherParameternot change(number quantity/collect goodsAddressetc.)
+5. Observe:
+ - [] OrderwhetherCreateSuccess?
+ - [] OrderAmountis which commerce productofprice format?
+ - [] shipping time initiateofis which commerce product?
 ```
 
-**严重级别：** 严重 — 直接经济损失。
+### Test Point 2.4:Shopping Cartandresult algorithm price format one cause ness
 
-### 测试点 3.2：支付回调伪造
+**false set:** Shopping Cartpageofprice formatandreal actualSubmittoPayment GatewayofAmountbetween existinnot one cause window interface.
 
-**假设：** 支付回调（notify_url）未严格验证签名，或签名验证逻辑存在缺陷。
-
-**WooYun 模式：** 金融领域 "在服务器接收前修改支付网关响应" + "对不同订单重放成功的支付回调"。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 完成一次正常支付，用 Burp 捕获支付网关回调请求（支付宝/微信的异步通知）
-2. 分析回调参数：
-   - 是否包含签名字段（sign）？
-   - 签名算法是什么？（MD5/RSA/HMAC-SHA256）
-   - 哪些字段参与签名？
-
-3. 签名绕过测试：
-   - [ ] 完全去掉 sign 参数，观察服务端是否仍接受
-   - [ ] 将 sign 设为空字符串
-   - [ ] 提交空 sign_type
-   - [ ] 修改金额但保留原签名，观察是否校验失败
-
-4. 回调重放测试：
-   - [ ] 将订单 A 的成功回调中的 order_id 改为未支付订单 B 的 order_id
-   - [ ] 保留原始签名不变
-   - [ ] 观察订单 B 是否被标记为已支付
-
-5. 回调通知源验证：
-   - [ ] 从非支付网关 IP 发送回调请求，观察是否被接受
-   - [ ] 检查回调 URL 是否可以被公网直接访问
-```
-
-**严重级别：** 严重 — 可无限伪造支付成功。
-
-### 测试点 3.3：支付状态机绕过
-
-**假设：** 支付流程中的步骤可以被跳过，直接从"待支付"跳到"已支付"。
-
-**WooYun 模式：** 逻辑流领域 "购买流程：购物车 → 地址 → 支付 → 确认，跳过支付直接确认"（1,391 案例，65.3% 高危）。
-
-**测试步骤：**
-
-```
-1. 创建订单，获取订单号（order_id）和待支付状态
-2. 不进行支付操作，直接尝试：
-   - [ ] 调用订单确认接口 POST /api/order/confirm?order_id=xxx
-   - [ ] 调用发货接口（如有）
-   - [ ] 修改订单状态参数：status=paid / status=2 / state=completed
-   - [ ] 手动构造支付成功回调请求发送到 notify_url
-
-3. 多步骤绕过测试：
-   - [ ] 跳过地址填写步骤，直接提交支付
-   - [ ] 跳过优惠券验证步骤
-   - [ ] 在支付中途修改订单商品
-
-4. 检查：
-   - 订单是否变为"已支付"状态？
-   - 商品库存是否减少？
-   - 物流是否可以发货？
-```
-
-### 测试点 3.4：支付网关切换攻击
-
-**假设：** 系统支持支付宝和微信两种支付方式，切换支付方式时可能绕过金额校验。
-
-**测试步骤：**
-
-```
-1. 选择支付宝支付，拦截生成支付请求的接口调用
-2. 修改 payment_method / pay_type / channel 参数为微信支付
-3. 观察：
-   - [ ] 金额是否在切换过程中可被修改？
-   - [ ] 是否可以使用测试环境/沙箱的支付通道参数？
-   - [ ] 切换到不存在的支付通道（如 pay_type=test）时的行为？
-
-4. 测试支付凭证跨网关使用：
-   - [ ] 将支付宝的成功凭证用于微信支付的确认流程
-```
-
-### 测试点 3.5：并发支付 / 双花攻击
-
-**假设：** 同一订单可被并发支付多次，或同一优惠券/余额可在竞态窗口内被多次使用。
-
-**WooYun 模式：** 逻辑流领域竞态条件 266 案例（74.8% 高危）— "从 100 的余额中提取了 200"。
-
-**测试步骤：**
-
-```
-1. 账户余额竞态：
-   - 充值 ¥100 到账户余额
-   - 使用 Burp Turbo Intruder 或 Python 脚本同时发送 10 个"使用余额支付 ¥100 订单"的请求
-   - [ ] 检查：是否有多个订单支付成功？余额是否变为负数？
-
-2. 优惠券竞态：
-   - 获取一张单次使用优惠券
-   - 并发提交 10 个使用同一优惠券的下单请求
-   - [ ] 检查：优惠券是否被多次核销？
-
-3. 库存竞态：
-   - 针对库存仅剩 1 件的商品
-   - 并发提交 10 个购买请求
-   - [ ] 检查：是否创建了多个订单？库存是否变为负数？
-
-4. 使用 Python 并发示例：
-   import threading
-   import requests
-
-   def pay(session, order_id):
-       resp = session.post('/api/pay', json={'order_id': order_id, 'method': 'balance'})
-       print(resp.status_code, resp.json())
-
-   threads = [threading.Thread(target=pay, args=(s, oid)) for _ in range(10)]
-   for t in threads: t.start()
-   for t in threads: t.join()
-```
-
-**严重级别：** 严重 — 直接经济损失（双花/多花）。
-
-### 测试点 3.6：优惠券/折扣滥用
-
-**假设：** 优惠券验证存在逻辑缺陷，可被重复使用、跨品类使用或绕过限制。
-
-**WooYun 模式：** 金融领域折扣/优惠券滥用检查清单（1,056 案例）。
-
-**测试步骤：**
-
-```
-1. 重复使用测试：
-   - [ ] 使用优惠券下单 → 取消订单 → 优惠券是否归还 → 再次使用
-   - [ ] 使用已过期优惠券的有效请求进行重放
-   - [ ] 并发使用同一优惠券（见 3.5 竞态测试）
-
-2. 折扣叠加测试：
-   - [ ] 对已打折商品使用满减优惠券
-   - [ ] 同时提交多个优惠券码
-   - [ ] 在请求中修改 discount 字段（如 discount=100 → 全免）
-   - [ ] 修改 coupon_value 字段
-
-3. 跨限制使用：
-   - [ ] 将限定品类 A 的优惠券用于品类 B 的商品
-   - [ ] 未达到"满减"门槛时使用满减券
-   - [ ] 新用户券用已注册账号使用
-
-4. 优惠券枚举：
-   - [ ] 分析优惠券码格式（如 8 位数字），尝试枚举有效券码
-   - [ ] 测试优惠券码是否为顺序生成（可预测）
+1. Addcommerce producttoShopping Cart, RecordShopping Cartdisplay price format
+2. advance inject result algorithm page, Recordresult algorithm display price format
+3. InterceptSubmitOrderRequest, RecordRequestinofAmountParameter
+4. for ratio threePhaseofAmountwhetherone cause
+5. inresult algorithm page add after/SubmitOrderfirst, Pass oneRequestModifyShopping Cartinofcommerce product
+6. SubmitOrder, Observemost finalAmountwhetherreverse mapModifyafterofShopping Cart
 ```
 
 ---
 
-## 四、测试模块三：订单管理安全
+## 3. test model block two:Paymentflow processSecure
 
-> WooYun 参考：订单篡改 1,227 案例（74.2% 高危）+ 越权 1,705 案例（62.3% 高危）
+> WooYun participate reference:Payment Bypass 1,056 Case(68.7% High Risk), Amount Tampering 176 Case(83.0% High Risk)
 
-### 测试点 4.1：订单越权访问（IDOR）
+### Test Point 3.1:Payment Amount Tampering(Client->Server)
 
-**假设：** 订单查询/操作仅依赖 order_id 参数，未校验当前用户是否为订单所有者。
+**false set:** ClientSubmitofPaymentAmountbeServerDirectusefor generate completePayment GatewayRequest, notandOrderreal actualAmountValidate.
 
-**WooYun 模式：** 授权域 "花礼网某处平行权限漏洞（影响所有使用用户）" — 所有用户数据可通过遍历 ID 访问。
+**WooYun mode:** "M1905Movie site value2588Packageonly costs5jiao" - ClientSubmitAmountbeDirectpass recursive toPayment Gateway.
 
-**测试步骤：**
-
-```
-1. 用户 A 登录，创建订单，获取 order_id（如 10001）
-2. 用户 B 登录，尝试以下操作：
-   - [ ] GET /api/order/detail?order_id=10001（查看 A 的订单详情）
-   - [ ] POST /api/order/cancel?order_id=10001（取消 A 的订单）
-   - [ ] POST /api/order/modify?order_id=10001（修改 A 的订单地址）
-   - [ ] GET /api/order/logistics?order_id=10001（查看 A 的物流信息）
-
-3. ID 遍历测试：
-   - [ ] 递增/递减 order_id（10001 → 10002 → 10003 ...）
-   - [ ] 记录：是否能访问其他用户的订单？
-   - [ ] 检查订单详情中是否泄露用户手机号、地址等个人信息
-
-4. ID 编码绕过：
-   - [ ] 如果 order_id 是加密/编码的，分析格式（Base64? MD5?）
-   - [ ] 尝试 order_id=0、order_id=-1、order_id=null
-   - [ ] 参数污染：order_id=10001&order_id=10002
-```
-
-**严重级别：** 高 — 用户隐私泄露，可能影响全量用户。
-
-### 测试点 4.2：订单状态篡改
-
-**假设：** 订单状态可通过修改请求参数被强制变更为任意状态。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 创建一个待支付订单
-2. 拦截所有与订单状态相关的请求
-3. 尝试直接修改状态参数：
-   - [ ] status=paid / status=2（跳过支付）
-   - [ ] status=shipped（跳过支付+处理）
-   - [ ] status=completed（直接完成）
-   - [ ] status=refunded（直接设为已退款 → 触发退款）
-
-4. 通过 API 直接调用状态变更：
-   - [ ] POST /api/order/updateStatus {"order_id": "xxx", "status": "paid"}
-   - [ ] PUT /api/order/xxx {"state": "completed"}
-
-5. 反向状态变更：
-   - [ ] 已完成 → 待支付（重新进入支付流程，可能改价）
-   - [ ] 已取消 → 待支付（复活订单）
+1. correct common under single(such astotal amount ¥299), advance injectPaymentpage
+2. Intercept"initiate initiatePayment"ofRequest(wild commonas POST /api/pay ortype Endpoint)
+3. ModifyRequestinofAmountParameter:
+ - [] amount=0.01(most smallAmount)
+ - [] amount=0(zeroyuanPayment)
+ - [] amount=-1(Negative NumberAmount)
+ - [] amount=1(Fixed 1 yuan)
+4. Observe:
+ - Alipay/WeChatPaymentpage displayofAmountwhether istamper change afterofvalue?
+ - PaymentSuccessafter, OrderStatuswhetherchangeas"Paid"?
+ - such asifPayment 0.01 yuanSuccessbutOrderis ¥299, SystemwhetherstillConfirmOrder?
 ```
 
-### 测试点 4.3：订单金额修改
+**Severity:** Severe - Directfinancial loss.
 
-**假设：** 订单创建后，在支付前的窗口期内可修改订单金额。
+### Test Point 3.2:Payment Callback Forgery
 
-**WooYun 模式：** 金融领域 "在支付后但履行前修改订单"。
+**false set:** PaymentCallback(notify_url)not severe formatValidateSignature, orSignatureValidatelogic logic existinmissing flaw.
 
-**测试步骤：**
+**WooYun mode:** Financial Domain "inServerconnect collect firstModifyPayment GatewayResponse" + "forDifferentOrderReplaySuccessofPaymentCallback".
 
-```
-1. 下单后，拦截后续所有请求
-2. 查找是否有修改订单的接口（如 PUT /api/order/xxx）
-3. 尝试修改：
-   - [ ] total_amount / pay_amount 字段
-   - [ ] 商品数量（减少数量但保持原价不变 → 反向多收）
-   - [ ] 在支付前修改收货地址（测试是否同时可修改金额）
-   - [ ] 修改运费字段：freight=0 或 shipping_fee=-10
-
-4. 时间窗口测试：
-   - [ ] 发起支付但不完成 → 修改订单 → 完成支付
-   - [ ] 支付成功后、商家确认前修改订单
-```
-
-### 测试点 4.4：订单信息泄露
-
-**假设：** 订单 API 响应中包含过多敏感信息，超出当前用户/页面所需。
-
-**WooYun 模式：** 信息泄露领域 "API 过度获取" — API 响应字段数 > UI 可见字段数（4,858 案例，64.7% 高危）。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 正常请求自己的订单详情
-2. 对比 API 响应与页面显示：
-   - [ ] 是否返回了完整手机号（非脱敏）？
-   - [ ] 是否返回了完整收货地址？
-   - [ ] 是否返回了支付交易号/第三方单号？
-   - [ ] 是否返回了用户 ID / 商户内部 ID？
-   - [ ] 是否返回了其他用户的关联信息？
+1. complete onetimescorrect commonPayment, use Burp Payment GatewayCallbackRequest(Alipay/WeChatofabnormal step wild notify)
+2. AnalyzeCallbackParameter:
+ - whetherinclude includeSignatureField(sign)?
+ - Signaturealgorithm method is?(MD5/RSA/HMAC-SHA256)
+ - which someFieldparticipateandSignature?
 
-3. 批量导出测试：
-   - [ ] 是否存在 /api/order/export 或 /api/order/list?page_size=999999
-   - [ ] 导出功能是否有权限控制？
+3. SignatureBypasstest:
+ - [] complete all sign Parameter, ObserveServerwhetherstill connect affected
+ - [] will sign setasEmptycharacter symbol string
+ - [] SubmitEmpty sign_type
+ - [] ModifyAmountbut protect retain principleSignature, ObservewhetherValidateFailure
+
+4. CallbackReplaytest:
+ - [] willOrder A ofSuccessCallbackinof order_id changeasnotPaymentOrder B of order_id
+ - [] protect retain principle initialSignaturenot change
+ - [] ObserveOrder B whetherbe identifier recordasPaid
+
+5. Callbackwild notify sourceValidate:
+ - [] fromNon-Payment Gateway IP SendCallbackRequest, Observewhetherbe connect affected
+ - [] CheckCallback URL whetherCanas bePublic InternetDirectaccess ask
 ```
 
----
+**Severity:** Severe - Canno limit forgeryPaymentSuccess.
 
-## 五、测试模块四：退款流程安全
+### Test Point 3.3:PaymentState-Machine Bypass
 
-> WooYun 参考：提现 59 案例（83.1% 高危）+ 余额篡改 113 案例（77.9% 高危）
+**false set:** Paymentflow processinofStepCanas be skip through, Directfrom"Pending Payment"skipto"Paid".
 
-### 测试点 5.1：退款金额篡改
+**WooYun mode:** Logic Flow Domain "buy buy flow process:Shopping Cart -> Address -> Payment -> Confirm, skip throughPaymentDirectConfirm"(1,391 Case, 65.3% High Risk).
 
-**假设：** 退款请求中的金额可被修改为超过订单实际支付金额。
-
-**WooYun 模式：** 金融领域 "在客户端请求中修改余额参数" — 无限资金。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 正常发起退款申请（如订单支付 ¥299）
-2. 拦截退款请求
-3. 修改退款金额：
-   - [ ] refund_amount=299.01（超出支付金额）
-   - [ ] refund_amount=2990（10 倍金额）
-   - [ ] refund_amount=999999（极端大额）
-   - [ ] refund_amount=-1（负数退款 = 扣款？）
-   - [ ] refund_amount=0（零元退款，但保留退货状态）
+1. Create Order, ObtainOrdernumber(order_id)andPending PaymentStatus
+2. not advancelinesPaymentoperation, DirectAttempt:
+ - [] CallOrderConfirmInterface POST /api/order/confirm?order_id=xxx
+ - [] CallshippingInterface(such ashas)
+ - [] ModifyOrderStatusParameter:status=paid / status=2 / state=completed
+ - [] mobile dynamic structure forgePaymentSuccessCallbackRequestSendto notify_url
 
-4. 部分退款滥用：
-   - [ ] 申请部分退款 ¥100 → 再次申请 ¥100 → 重复直至总退款 > 订单金额
-   - [ ] 检查：系统是否跟踪累计退款金额？
+3. manyStepBypasstest:
+ - [] skip throughAddressfill inStep, DirectSubmitPayment
+ - [] skip throughCouponValidateStep
+ - [] inPaymentinModifyOrdercommerce product
 
-5. 退款目标账户：
-   - [ ] 修改退款目标账号参数（如果请求中包含）
-   - [ ] 检查退款是否只能退回原支付渠道
+4. Check:
+ - Orderwhetherchangeas"Paid"Status?
+ - commerce productInventorywhetherreduce less?
+ - item flowwhetherCanas shipping?
 ```
 
-**严重级别：** 严重 — 直接经济损失。
+### Test Point 3.4:Payment Gatewayswitch change attack attack
 
-### 测试点 5.2：退款状态机绕过
+**false set:** Systemsupport holdAlipayandWeChattwo typePaymentmethod mode, switch changePaymentmethod mode timeCancanBypassAmountValidate.
 
-**假设：** 退款流程的审核步骤可以被跳过，直接触发退款执行。
-
-**WooYun 模式：** 逻辑流领域 "退款：请求 → 审核 → 批准 → 支付，跳过审核直接触发支付"（1,391 案例）。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 发起退款申请，获取 refund_id
-2. 不等待审核，直接调用：
-   - [ ] POST /api/refund/approve?refund_id=xxx（自行批准）
-   - [ ] POST /api/refund/execute?refund_id=xxx（直接执行退款）
-   - [ ] 修改退款状态：refund_status=approved / refund_status=completed
+1. select AlipayPayment, Interceptgenerate completePaymentRequestofInterfaceCall
+2. Modify payment_method / pay_type / channel ParameterasWeChatPayment
+3. Observe:
+ - [] Amountwhetherinswitch change through processinCanbeModify?
+ - [] whetherCanas useuseTest Environment/ ofPaymentChannelParameter?
+ - [] switch changetonot existinofPaymentChannel(such as pay_type=test)timeoflinesas?
 
-3. 自我审批测试：
-   - [ ] 用户自己能否审批自己的退款申请？
-   - [ ] 商户能否在无需平台审核的情况下直接退款？
-
-4. 检查：
-   - 退款资金是否实际到账？
-   - 原订单状态是否正确更新？
+4. testPaymentCredentialcrossGatewayuseuse:
+ - [] willAlipayofSuccessCredentialuseforWeChatPaymentofConfirmflow process
 ```
 
-### 测试点 5.3：重复退款
+### Test Point 3.5:Concurrent Payment / dual flower attack attack
 
-**假设：** 同一订单/同一退款请求可被多次提交和执行。
+**false set:** SameOrderCanbeConcurrent Paymentmanytimes, orSameCoupon/BalanceCaninRacewindow interface internal be manytimesuseuse.
 
-**WooYun 模式：** 金融领域 "重放成功的充值回调" + 逻辑流领域竞态条件。
+**WooYun mode:** Logic Flow DomainRace Condition 266 Case(74.8% High Risk) - "from 100 ofBalanceinprovide take done 200".
 
-**测试步骤：**
-
-```
-1. 幂等性测试：
-   - [ ] 相同退款请求发送两次，是否创建了两笔退款？
-   - [ ] 退款成功后，再次点击退款按钮/重发请求
-
-2. 竞态条件测试：
-   - [ ] 使用 Burp Turbo Intruder 并发发送 10 个相同退款请求
-   - [ ] 检查：退款是否执行了多次？资金是否多次返还？
-
-3. 退款回调重放：
-   - [ ] 捕获支付宝/微信的退款成功回调
-   - [ ] 重放该回调，观察系统是否重复处理
-   - [ ] 修改回调中的 refund_id 为其他退款申请
-
-4. 预期结果：
-   - 重复请求应返回"已处理"而非再次执行
-   - 并发请求应只有一个成功
-```
-
-**严重级别：** 严重 — 无限提取资金。
-
-### 测试点 5.4：未支付订单退款
-
-**假设：** 系统未检查订单是否实际支付成功即允许发起退款。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 创建订单但不支付（状态为"待支付"）
-2. 尝试对该订单发起退款：
-   - [ ] POST /api/refund/apply {"order_id": "未支付订单ID", "amount": 299}
-   - [ ] 修改退款请求中的 order_id 为未支付订单
+1. AccountBalanceRace:
+ - Top-Up ¥100 toAccountBalance
+ - useuse Burp Turbo Intruder or Python Scriptsame timeSend 10 "useuseBalancePayment ¥100 Order"ofRequest
+ - [] Check:whether hasmanyOrderPaymentSuccess?BalancewhetherchangeasNegative Number?
 
-3. 已取消订单退款：
-   - [ ] 对已取消的订单发起退款
-   - [ ] 对已退款的订单再次发起退款
+2. CouponRace:
+ - ObtainoneitemssingletimesuseuseCoupon
+ - ConcurrencySubmit 10 useuseSameCouponofunder singleRequest
+ - [] Check:Couponwhetherbe manytimesaudit?
 
-4. 检查：
-   - 系统是否校验订单的支付状态？
-   - 退款是否只能基于有效支付记录？
+3. InventoryRace:
+ - forInventoryonly 1 itemofcommerce product
+ - ConcurrencySubmit 10 buy buyRequest
+ - [] Check:whetherCreatedone manyOrder?InventorywhetherchangeasNegative Number?
+
+4. useuse Python ConcurrencyExample:
+ import threading
+ import requests
+
+ def pay(session, order_id):
+ resp = session.post('/api/pay', json={'order_id': order_id, 'method': 'balance'})
+ print(resp.status_code, resp.json())
+
+ threads = [threading.Thread(target=pay, args=(s, oid)) for _ in range(10)]
+ for t in threads: t.start()
+ for t in threads: t.join()
 ```
 
-### 测试点 5.5：退款越权
+**Severity:** Severe - Directfinancial loss(dual flower/many flower).
 
-**假设：** 用户 A 可以对用户 B 的订单发起退款申请。
+### Test Point 3.6:Coupon/discount deduct abuseuse
 
-**测试步骤：**
+**false set:** CouponValidateexistinlogic logic missing flaw, Canbe serious repeat useuse/cross product type useuseorBypasslimit make.
+
+**WooYun mode:** Financial Domaindiscount deduct/CouponabuseuseCheckclear single(1,056 Case).
+
+**Test Steps:**
 
 ```
-1. 用户 A 获取自己的一个已支付订单 order_id
-2. 用户 B 登录，尝试：
-   - [ ] POST /api/refund/apply {"order_id": "A的订单ID", "reason": "test"}
-   - [ ] 修改退款接口中的 user_id 参数为 A 的 user_id
+1. serious repeat useusetest:
+ - [] useuseCouponunder single -> CancelOrder -> Couponwhetherreturn -> againtimesuseuse
+ - [] useusealready expiredCouponofValidRequestadvancelinesReplay
+ - [] ConcurrencyuseuseSameCoupon(seen 3.5 Racetest)
 
-3. 退款审核越权：
-   - [ ] 普通用户能否访问退款审核接口？
-   - [ ] 能否批准/拒绝他人的退款申请？
+2. discount deduct add test:
+ - [] for already break discount commerce product useuse reduceCoupon
+ - [] same timeSubmitmanyCouponcode
+ - [] inRequestinModify discount Field(such as discount=100 -> all avoid)
+ - [] Modify coupon_value Field
+
+3. cross limit make useuse:
+ - [] willlimit set product type A ofCouponusefor product type B ofcommerce product
+ - [] not reachto" reduce" time useuse reduce coupon
+ - [] newUsercouponusealreadyRegistrationAccountuseuse
+
+4. CouponEnumeration:
+ - [] AnalyzeCouponcode format mode(such as 8 characters number character), AttemptEnumerationValidcoupon code
+ - [] testCouponcodewhether isorder sequence generate complete(Predictable)
 ```
 
 ---
 
-## 六、测试模块五：支付网关集成安全
+## 4. test model block three:Order ManagementSecure
 
-> WooYun 参考：支付绕过 1,056 案例中大量涉及第三方支付集成缺陷
+> WooYun participate reference:Order Tampering 1,227 Case(74.2% High Risk)+ bypass permission 1,705 Case(62.3% High Risk)
 
-### 测试点 6.1：支付宝/微信回调签名验证
+### Test Point 4.1:OrderAuthorization Bypass(IDOR)
 
-**测试步骤：**
+**false set:** Ordercheck query/operation only depend rely order_id Parameter, notValidatewhen firstUserwhether isOrderAllperson.
 
-```
-1. 签名完整性：
-   - [ ] 是否验证了所有关键字段（out_trade_no, total_amount, trade_status）？
-   - [ ] 签名算法是否安全（RSA2 > RSA > MD5）？
-   - [ ] 是否使用了支付宝/微信提供的官方 SDK 验签？
+**WooYun mode:** Authorization Domain "Hua.com horizontal authorization vulnerability(impact responseAlluseuseUser)" - AllUserDataCanPassTraversal ID access ask.
 
-2. 回调源验证：
-   - [ ] 是否验证了回调请求的来源 IP？
-   - [ ] notify_url 是否仅接受 HTTPS？
-   - [ ] 回调 URL 是否可预测/可枚举？
-
-3. 业务参数校验：
-   - [ ] 回调中的 total_amount 是否与订单数据库中的金额比对？
-   - [ ] 回调中的 seller_id / mch_id 是否与商户配置比对？
-   - [ ] trade_status 是否只处理 TRADE_SUCCESS（支付宝）/ SUCCESS（微信）？
-
-4. 异常处理：
-   - [ ] 发送格式错误的回调（缺少字段），观察服务端行为
-   - [ ] 发送 trade_status=TRADE_CLOSED 的回调，观察是否触发退款
-```
-
-### 测试点 6.2：支付凭证复用
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 完成一笔小额支付（如 ¥0.01，如果系统允许）
-2. 获取该笔支付的成功凭证（trade_no / transaction_id）
-3. 尝试将该凭证关联到一笔大额未支付订单
-   - [ ] 修改回调中的 out_trade_no 为大额订单号
-   - [ ] 直接调用订单确认接口，传入已使用的 trade_no
+1. User A Login, Create Order, Obtain order_id(such as 10001)
+2. User B Login, Attemptthe followingoperation:
+ - [] GET /api/order/detail?order_id=10001(View A ofOrderdetailed details)
+ - [] POST /api/order/cancel?order_id=10001(Cancel A ofOrder)
+ - [] POST /api/order/modify?order_id=10001(Modify A ofOrderAddress)
+ - [] GET /api/order/logistics?order_id=10001(View A ofitem flow information)
 
-4. 跨订单回调重放：
-   - [ ] 使用订单 A（¥10）的成功回调参数
-   - [ ] 仅修改 out_trade_no 为订单 B（¥999）的订单号
-   - [ ] 观察订单 B 是否被标记为已支付
+3. ID Traversaltest:
+ - [] recursive increase/recursive reduce order_id(10001 -> 10002 -> 10003...)
+ - [] Record:whethercan access ask otherUserofOrder?
+ - [] CheckOrderdetailed detailsinwhetherDisclosureUsermobile number/Addressetc.Personal Information
+
+4. ID Encoding Bypass:
+ - [] such asif order_id is add secret/Encodingof, Analyzeformat mode(Base64? MD5?)
+ - [] Attempt order_id=0/order_id=-1/order_id=null
+ - [] Parameter Pollution:order_id=10001&order_id=10002
 ```
 
-### 测试点 6.3：支付超时利用
+**Severity:** High - Userhidden privateDisclosure, Cancan impact response all quantityUser.
 
-**假设：** 支付超时后订单取消，但支付网关的延迟回调仍可被处理。
+### Test Point 4.2:OrderStatustamper change
 
-**WooYun 模式：** "114票务网某站逻辑漏洞利用支付超时导致上万用户敏感信息泄漏" — 利用超时窗口的状态不一致。
+**false set:** OrderStatusCanPassModifyRequestParameterbe strong make change updateasArbitraryStatus.
 
-**测试步骤：**
-
-```
-1. 创建订单，发起支付但不完成
-2. 等待订单超时取消（记录超时时间）
-3. 在超时后：
-   - [ ] 尝试完成之前发起的支付（如果支付链接仍有效）
-   - [ ] 手动发送支付成功回调
-   - [ ] 检查：已取消订单是否被重新激活？
-   - [ ] 资金是否被扣取但订单已取消（导致资金悬挂）？
-
-4. 关注点：
-   - 订单取消和支付回调处理之间是否有锁机制？
-   - 是否正确处理了"已取消订单收到支付成功"的场景？
-```
-
----
-
-## 七、测试模块六：通用安全检查
-
-### 测试点 7.1：接口未授权访问
-
-**WooYun 模式：** 未授权访问 2,102+1,891 案例 — "58.2% 的未授权访问 = 管理后台完全暴露"。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 后台管理接口探测：
-   - [ ] /admin/order/list — 管理员订单列表
-   - [ ] /admin/refund/list — 退款审核列表
-   - [ ] /admin/payment/config — 支付配置
-   - [ ] /api/internal/order/* — 内部接口
+1. CreateonePending PaymentOrder
+2. InterceptAllandOrderStatusrelated keyofRequest
+3. AttemptDirectModifyStatusParameter:
+ - [] status=paid / status=2(skip throughPayment)
+ - [] status=shipped(skip throughPayment+handle manage)
+ - [] status=completed(Directcomplete)
+ - [] status=refunded(DirectsetasRefunded -> trigger initiateRefund)
 
-2. 不带任何 Cookie/Token 直接访问上述路径
-3. 如返回 302/401/403，尝试绕过：
-   - [ ] 添加 X-Forwarded-For: 127.0.0.1
-   - [ ] 修改 HTTP 方法（GET → POST → PUT）
-   - [ ] 路径大小写变化：/Admin/ /ADMIN/
-   - [ ] URL 编码绕过：/%61dmin/
+4. Pass API Direct CallStatuschange update:
+ - [] POST /api/order/updateStatus {"order_id": "xxx", "status": "paid"}
+ - [] PUT /api/order/xxx {"state": "completed"}
+
+5. reverse towardStatuschange update:
+ - [] Completed -> Pending Payment(serious new advance injectPaymentflow process, Cancan change price)
+ - [] alreadyCancel -> Pending Payment(repeat Order)
 ```
 
-### 测试点 7.2：敏感信息泄露
+### Test Point 4.3:OrderAmountModify
 
-**测试步骤：**
+**false set:** OrderCreateafter, inPaymentfirstofwindow interface period internalCanModifyOrderAmount.
 
-```
-1. 支付配置泄露：
-   - [ ] 检查前端 JS 中是否硬编码了支付宝 AppID / 微信 MchID
-   - [ ] 检查是否泄露了支付密钥 / API Secret
-   - [ ] 检查 /api/docs 或 /swagger-ui.html 是否暴露
+**WooYun mode:** Financial Domain "inPaymentafter but linesfirstModifyOrder".
 
-2. 订单数据泄露：
-   - [ ] API 响应中是否包含支付密钥/签名盐值
-   - [ ] 错误信息是否暴露了数据库结构/表名
-   - [ ] 日志文件是否可访问（/logs/payment.log）
-
-3. 调试信息：
-   - [ ] ?debug=true 是否开启调试模式
-   - [ ] 生产环境是否使用了支付沙箱配置
-```
-
-### 测试点 7.3：多渠道不一致
-
-**WooYun 模式：** 逻辑流领域 "Web 验证，移动 API 不验证"。
-
-**测试步骤：**
+**Test Steps:**
 
 ```
-1. 分别通过 Web 端和移动端（App/H5）执行相同操作：
-   - [ ] 下单支付 — 金额校验是否一致？
-   - [ ] 退款申请 — 限制条件是否一致？
-   - [ ] 修改订单 — 权限校验是否一致？
+1. under single after, Interceptafter continueAllRequest
+2. check whether hasModifyOrderofInterface(such as PUT /api/order/xxx)
+3. AttemptModify:
+ - [] total_amount / pay_amount Field
+ - [] commerce product number quantity(reduce less number quantity but protect hold principle price not change -> reverse toward many collect)
+ - [] inPaymentfirstModifycollect goodsAddress(testwhethersame timeCanModifyAmount)
+ - [] Modifyoperate feeField:freight=0 or shipping_fee=-10
 
-2. API 版本差异：
-   - [ ] /api/v1/order 和 /api/v2/order 是否有不同的校验逻辑？
-   - [ ] 旧版本 API 是否仍可访问且缺少新增的安全校验？
+4. Time Windowtest:
+ - [] initiate initiatePaymentbut not complete -> ModifyOrder -> completePayment
+ - [] PaymentSuccessafter/commerce ConfirmfirstModifyOrder
+```
+
+### Test Point 4.4:OrderInformation Disclosure
+
+**false set:** Order API Responseininclude include through manySensitive Information, super out when firstUser/page need.
+
+**WooYun mode:** Information DisclosureDomain "API through degreeObtain" - API ResponseFieldnumber > UI CanseenFieldnumber(4,858 Case, 64.7% High Risk).
+
+**Test Steps:**
+
+```
+1. correct commonRequestself ownofOrderdetailed details
+2. for ratio API Responseandpage display:
+ - [] whetherReturndoneCompletemobile number(Non-leak sensitive)?
+ - [] whetherReturndoneCompletecollect goodsAddress?
+ - [] whetherReturndonePaymenttransaction easy number/No. three method single number?
+ - [] whetherReturndoneUser ID / commerce account internal part ID?
+ - [] whetherReturndone otherUserofkey connect information?
+
+3. BatchExporttest:
+ - [] whether exists /api/order/export or /api/order/list?page_size=999999
+ - [] Exportfunction canwhether hasPermissioncontrol make?
 ```
 
 ---
 
-## 八、风险评估矩阵
+## 5. test model block four:Refund FlowSecure
 
-| 测试点 | 风险等级 | WooYun 数据支撑 | 业务影响 |
+> WooYun participate reference:Withdrawal 59 Case(83.1% High Risk)+ Balancetamper change 113 Case(77.9% High Risk)
+
+### Test Point 5.1:RefundAmount Tampering
+
+**false set:** RefundRequestinofAmountCanbeModifyassuper throughOrderreal actualPaymentAmount.
+
+**WooYun mode:** Financial Domain "inClientRequestinModifyBalanceParameter" - no limit resource funds.
+
+**Test Steps:**
+
+```
+1. correct common initiate initiateRefund please(such asOrderPayment ¥299)
+2. InterceptRefundRequest
+3. ModifyRefundAmount:
+ - [] refund_amount=299.01(super outPaymentAmount)
+ - [] refund_amount=2990(10 Amount)
+ - [] refund_amount=999999(extreme end large amount)
+ - [] refund_amount=-1(Negative NumberRefund = deduct payment?)
+ - [] refund_amount=0(zeroyuanRefund, but protect retain refund goodsStatus)
+
+4. part partRefundabuseuse:
+ - [] please part partRefund ¥100 -> againtimes please ¥100 -> serious repeat vertical totalRefund > OrderAmount
+ - [] Check:Systemwhether planRefundAmount?
+
+5. RefundTargetAccount:
+ - [] ModifyRefundTargetAccountParameter(such asifRequestininclude include)
+ - [] CheckRefundwhethercan onlyrefund return principlePaymentchannel channel
+```
+
+**Severity:** Severe - Directfinancial loss.
+
+### Test Point 5.2:RefundState-Machine Bypass
+
+**false set:** Refund Flowofaudit auditStepCanas be skip through, Directtrigger initiateRefundExecute.
+
+**WooYun mode:** Logic Flow Domain "Refund:Request -> audit audit -> batch accurate -> Payment, skip through audit auditDirecttrigger initiatePayment"(1,391 Case).
+
+**Test Steps:**
+
+```
+1. initiate initiateRefund please, Obtain refund_id
+2. notetc.pending audit audit, Direct Call:
+ - [] POST /api/refund/approve?refund_id=xxx(selflinesbatch accurate)
+ - [] POST /api/refund/execute?refund_id=xxx(DirectExecuteRefund)
+ - [] ModifyRefundStatus:refund_status=approved / refund_status=completed
+
+3. self I audit batch test:
+ - [] Userself ownwhether canaudit batch self ownofRefund please?
+ - [] commerce accountwhether caninno need toPlatformaudit auditofdetails underDirectRefund?
+
+4. Check:
+ - Refundresource fundswhetherreal actualtoaccount?
+ - principleOrderStatuswhethercorrect confirmUpdate?
+```
+
+### Test Point 5.3:Duplicate Refund
+
+**false set:** SameOrder/SameRefundRequestCanbe manytimesSubmitandExecute.
+
+**WooYun mode:** Financial Domain "ReplaySuccessofTop-UpCallback" + Logic Flow DomainRace Condition.
+
+**Test Steps:**
+
+```
+1. Idempotencyness test:
+ - [] related sameRefundRequestSendtwotimes, whetherCreatedone two entryRefund?
+ - [] RefundSuccessafter, againtimespoint attackRefundby /ResendRequest
+
+2. Race Conditiontest:
+ - [] useuse Burp Turbo Intruder ConcurrencySend 10 related sameRefundRequest
+ - [] Check:RefundwhetherExecutedone manytimes?resource fundswhethermanytimesreturn?
+
+3. RefundCallbackReplay:
+ - [] Alipay/WeChatofRefundSuccessCallback
+ - [] ReplaythisCallback, ObserveSystemwhetherserious repeat handle manage
+ - [] ModifyCallbackinof refund_id asotherRefund please
+
+4. Expected Result:
+ - serious repeatRequestshouldReturn"already handle manage"whileNon-againtimesExecute
+ - ConcurrencyRequestshouldonly has oneSuccess
+```
+
+**Severity:** Severe - no limit provide take resource funds.
+
+### Test Point 5.4:notPaymentOrderRefund
+
+**false set:** SystemnotCheckOrderwhetherreal actualPaymentSuccessthat is allow allow initiate initiateRefund.
+
+**Test Steps:**
+
+```
+1. Create Orderbut notPayment(Statusas"Pending Payment")
+2. Attemptfor thisOrderinitiate initiateRefund:
+ - [] POST /api/refund/apply {"order_id": "notPaymentOrderID", "amount": 299}
+ - [] ModifyRefundRequestinof order_id asnotPaymentOrder
+
+3. alreadyCancelOrderRefund:
+ - [] for alreadyCancelofOrderinitiate initiateRefund
+ - [] forRefundedofOrderagaintimesinitiate initiateRefund
+
+4. Check:
+ - SystemwhetherValidateOrderofPaymentStatus?
+ - Refundwhethercan onlybased onValidPaymentRecord?
+```
+
+### Test Point 5.5:Refundbypass permission
+
+**false set:** User A Canas forUser B ofOrderinitiate initiateRefund please.
+
+**Test Steps:**
+
+```
+1. User A Obtainself ownofonePaidOrder order_id
+2. User B Login, Attempt:
+ - [] POST /api/refund/apply {"order_id": "AofOrderID", "reason": "test"}
+ - [] ModifyRefundInterfaceinof user_id Parameteras A of user_id
+
+3. Refundaudit audit bypass permission:
+ - [] Regular Userwhether canaccess askRefundaudit auditInterface?
+ - [] whether canbatch accurate/reject reject other personofRefund please?
+```
+
+---
+
+## 6. test model block:Payment Gatewaycollect completeSecure
+
+> WooYun participate reference:Payment Bypass 1,056 Caseinlarge quantity involvingNo. three methodPaymentcollect complete missing flaw
+
+### Test Point 6.1:Alipay/WeChatCallbackSignatureValidate
+
+**Test Steps:**
+
+```
+1. SignatureCompleteness:
+ - [] whetherValidatedoneAllkeyField(out_trade_no, total_amount, trade_status)?
+ - [] Signaturealgorithm methodwhetherSecure(RSA2 > RSA > MD5)?
+ - [] whetheruseusedoneAlipay/WeChatprovide provideof method SDK validate?
+
+2. CallbacksourceValidate:
+ - [] whetherValidatedoneCallbackRequestofcome source IP?
+ - [] notify_url whetheronly connect affected HTTPS?
+ - [] Callback URL whetherPredictable/CanEnumeration?
+
+3. Business ParameterValidate:
+ - [] Callbackinof total_amount whetherandOrderDatabaseinofAmountratio for?
+ - [] Callbackinof seller_id / mch_id whetherandcommerce accountConfigurationratio for?
+ - [] trade_status whetheronly handle manage TRADE_SUCCESS(Alipay)/ SUCCESS(WeChat)?
+
+4. abnormal common handle manage:
+ - [] Sendformat mode errorofCallback(missing lessField), ObserveServerlinesas
+ - [] Send trade_status=TRADE_CLOSED ofCallback, Observewhethertrigger initiateRefund
+```
+
+### Test Point 6.2:PaymentCredentialrepeatuse
+
+**Test Steps:**
+
+```
+1. complete one entry small amountPayment(such as ¥0.01, such asifSystemallow allow)
+2. Obtainthis entryPaymentofSuccessCredential(trade_no / transaction_id)
+3. AttemptwillthisCredentialkey connecttoone entry large amount notPaymentOrder
+ - [] ModifyCallbackinof out_trade_no aslarge amountOrdernumber
+ - [] Direct CallOrderConfirmInterface, pass inject already useuseof trade_no
+
+4. crossOrderCallbackReplay:
+ - [] useuseOrder A(¥10)ofSuccessCallbackParameter
+ - [] onlyModify out_trade_no asOrder B(¥999)ofOrdernumber
+ - [] ObserveOrder B whetherbe identifier recordasPaid
+```
+
+### Test Point 6.3:Paymentsuper time exploituse
+
+**false set:** Paymentsuper time afterOrderCancel, butPayment Gatewayof CallbackstillCanbe handle manage.
+
+**WooYun mode:** "114Ticketing site logic flaw used payment timeout to leak sensitive information for tens of thousands of users" - exploitusesuper time window interfaceofStatusnot one cause.
+
+**Test Steps:**
+
+```
+1. Create Order, initiate initiatePaymentbut not complete
+2. etc.pendingOrdersuper timeCancel(Recordsuper time time between)
+3. insuper time after:
+ - [] Attemptcomplete of first initiate initiateofPayment(such asifPaymentlink connect stillValid)
+ - [] mobile dynamicSendPaymentSuccessCallback
+ - [] Check:alreadyCancelOrderwhetherbe serious new?
+ - [] resource fundswhetherbe deduct take butOrderalreadyCancel(Causingresource funds)?
+
+4. key inject point:
+ - OrderCancelandPaymentCallbackhandle manage betweenwhether haslock machine make?
+ - whethercorrect confirm handle manage done"alreadyCancelOrdercollecttoPaymentSuccess"ofscenario scene?
+```
+
+---
+
+## 7. test model block six:wilduseSecureCheck
+
+### Test Point 7.1:InterfaceUnauthorized Access
+
+**WooYun mode:** Unauthorized Access 2,102+1,891 Case - "58.2% ofUnauthorized Access = manage manage backend console complete all expose exposure".
+
+**Test Steps:**
+
+```
+1. backend console manage manageInterfaceprobe test:
+ - [] /admin/order/list - AdministratorOrderlist
+ - [] /admin/refund/list - Refundaudit audit list
+ - [] /admin/payment/config - PaymentConfiguration
+ - [] /api/internal/order/* - internal partInterface
+
+2. not with any Cookie/Token Directaccess ask above descriptionPath
+3. such asReturn 302/401/403, AttemptBypass:
+ - [] Add X-Forwarded-For: 127.0.0.1
+ - [] Modify HTTP Method(GET -> POST -> PUT)
+ - [] Pathcase change ize:/Admin/ /ADMIN/
+ - [] URL Encoding Bypass:/%61dmin/
+```
+
+### Test Point 7.2:Sensitive InformationDisclosure
+
+**Test Steps:**
+
+```
+1. PaymentConfiguration Disclosure:
+ - [] CheckFrontend JS inwhetherhardEncodingdoneAlipay AppID / WeChat MchID
+ - [] CheckwhetherDisclosuredonePaymentKey / API Secret
+ - [] Check /api/docs or /swagger-ui.html whetherexpose exposure
+
+2. OrderDataDisclosure:
+ - [] API Responseinwhetherinclude includePaymentKey/Signature value
+ - [] error informationwhetherexpose exposure doneDatabaseresult structure/table name
+ - [] LogFilewhetherCanaccess ask(/logs/payment.log)
+
+3. debugging information:
+ - []?debug=true whetheropen enable debugging mode
+ - [] generate asset environment environmentwhetheruseusedonePayment Configuration
+```
+
+### Test Point 7.3:many channel channel not one cause
+
+**WooYun mode:** Logic Flow Domain "Web Validate, move dynamic API notValidate".
+
+**Test Steps:**
+
+```
+1. part levelPass Web endandMobile Client(App/H5)Executerelated same operation:
+ - [] under singlePayment - AmountValidatewhetherone cause?
+ - [] Refund please - limit make conditionwhetherone cause?
+ - [] ModifyOrder - PermissionValidatewhetherone cause?
+
+2. API version version error abnormal:
+ - [] /api/v1/order and /api/v2/order whether hasDifferentofValidatelogic logic?
+ - [] old version version API whetherstillCanaccess ask and missing less new increaseofSecureValidate?
+```
+
+---
+
+## 8. risk assess assess matrix matrix
+
+| Test Point | Risk Level | WooYun Datasupport | Business Impact |
 |--------|---------|----------------|---------|
-| 支付金额篡改 (3.1) | **严重** | 金额篡改 176 案例，83.0% 高危 | 直接经济损失 |
-| 支付回调伪造 (3.2) | **严重** | 支付绕过 1,056 案例，68.7% 高危 | 无限免费购买 |
-| 重复退款 (5.3) | **严重** | 提现 59 案例，83.1% 高危 | 无限资金提取 |
-| 退款金额篡改 (5.1) | **严重** | 余额篡改 113 案例，77.9% 高危 | 超额退款 |
-| 并发支付双花 (3.5) | **严重** | 竞态条件 266 案例，74.8% 高危 | 余额双花 |
-| 订单状态篡改 (4.2) | **高** | 订单篡改 1,227 案例，74.2% 高危 | 跳过支付 |
-| 支付状态机绕过 (3.3) | **高** | 设计缺陷 1,391 案例，65.3% 高危 | 免费获取商品 |
-| 退款状态机绕过 (5.2) | **高** | 逻辑漏洞 266 案例，74.8% 高危 | 绕过审核退款 |
-| 订单越权 (4.1) | **高** | 越权 1,705 案例，62.3% 高危 | 用户隐私泄露 |
-| 购物车价格篡改 (2.1) | **高** | 价格篡改 70 案例，74.3% 高危 | 低价购买 |
-| 优惠券滥用 (3.6) | **中** | 支付绕过子类别 | 优惠损失 |
-| 接口未授权访问 (7.1) | **高** | 弱口令/未授权 7,513 案例，58.2% 高危 | 管理后台沦陷 |
-| 信息泄露 (7.2) | **中** | 信息泄露 4,858 案例，64.7% 高危 | 辅助后续攻击 |
+| Payment Amount Tampering (3.1) | **Severe** | Amount Tampering 176 Case, 83.0% High Risk | Directfinancial loss |
+| Payment Callback Forgery (3.2) | **Severe** | Payment Bypass 1,056 Case, 68.7% High Risk | no limit avoid fee buy buy |
+| Duplicate Refund (5.3) | **Severe** | Withdrawal 59 Case, 83.1% High Risk | no limit resource funds provide take |
+| RefundAmount Tampering (5.1) | **Severe** | Balancetamper change 113 Case, 77.9% High Risk | super amountRefund |
+| Concurrent Paymentdual flower (3.5) | **Severe** | Race Condition 266 Case, 74.8% High Risk | Balancedual flower |
+| OrderStatustamper change (4.2) | **High** | Order Tampering 1,227 Case, 74.2% High Risk | skip throughPayment |
+| PaymentState-Machine Bypass (3.3) | **High** | Design Flaw 1,391 Case, 65.3% High Risk | avoid feeObtaincommerce product |
+| RefundState-Machine Bypass (5.2) | **High** | logic logic vulnerability 266 Case, 74.8% High Risk | Bypassaudit auditRefund |
+| Orderbypass permission (4.1) | **High** | bypass permission 1,705 Case, 62.3% High Risk | Userhidden privateDisclosure |
+| Shopping Cartprice format tamper change (2.1) | **High** | price format tamper change 70 Case, 74.3% High Risk | Lowprice buy buy |
+| Couponabuseuse (3.6) | **in** | Payment BypasssubCategory | priority loss loss |
+| InterfaceUnauthorized Access (7.1) | **High** | Weak Credentials/Unauthorized 7,513 Case, 58.2% High Risk | manage manage backend console flaw |
+| Information Disclosure (7.2) | **in** | Information Disclosure 4,858 Case, 64.7% High Risk | after continue attack attack |
 
 ---
 
-## 九、测试执行优先级
+## 9. testExecutePriority
 
-根据 WooYun 数据中的高危占比排序，建议按以下优先级执行测试：
+root according WooYun Datainofhigh-risk percentagerank sequence, create protocol bythe followingPriorityExecutetest:
 
-### P0 — 必须首先测试（严重 / 直接经济损失）
-1. 支付回调伪造与签名验证 (3.2, 6.1)
-2. 支付金额篡改 (3.1)
-3. 退款金额篡改与重复退款 (5.1, 5.3)
-4. 并发双花 / 竞态条件 (3.5)
+### P0 - must first test(Severe / Directfinancial loss)
+1. Payment Callback ForgeryandSignatureValidate (3.2, 6.1)
+2. Payment Amount Tampering (3.1)
+3. RefundAmount TamperingandDuplicate Refund (5.1, 5.3)
+4. Concurrencydual flower / Race Condition (3.5)
 
-### P1 — 高优先级（高危 / 业务逻辑绕过）
-5. 支付状态机绕过 (3.3)
-6. 订单状态篡改 (4.2)
-7. 退款状态机绕过 (5.2)
-8. 购物车价格/数量篡改 (2.1, 2.2)
-9. 订单越权访问 (4.1)
+### P1 - HighPriority(High Risk / business logic logicBypass)
+5. PaymentState-Machine Bypass (3.3)
+6. OrderStatustamper change (4.2)
+7. RefundState-Machine Bypass (5.2)
+8. Shopping Cartprice format/number quantity tamper change (2.1, 2.2)
+9. OrderAuthorization Bypass (4.1)
 
-### P2 — 标准优先级
-10. 优惠券滥用 (3.6)
-11. 支付凭证复用 (6.2)
-12. 支付超时利用 (6.3)
-13. 商品 ID 替换 (2.3)
-14. 未支付订单退款 (5.4)
+### P2 - identifier accuratePriority
+10. Couponabuseuse (3.6)
+11. PaymentCredentialrepeatuse (6.2)
+12. Paymentsuper time exploituse (6.3)
+13. commerce product ID Replace (2.3)
+14. notPaymentOrderRefund (5.4)
 
-### P3 — 补充测试
-15. 信息泄露 (7.2)
-16. 接口未授权访问 (7.1)
-17. 多渠道不一致 (7.3)
-18. 退款越权 (5.5)
-19. 支付网关切换攻击 (3.4)
+### P3 - supplement topup test
+15. Information Disclosure (7.2)
+16. InterfaceUnauthorized Access (7.1)
+17. many channel channel not one cause (7.3)
+18. Refundbypass permission (5.5)
+19. Payment Gatewayswitch change attack attack (3.4)
 
 ---
 
-## 十、预期交付物
+## 10. expected period transaction pay item
 
-| 交付物 | 内容 |
+| transaction pay item | content |
 |--------|------|
-| 漏洞报告 | 每个发现的漏洞按第四阶段模板输出（严重级别 + WooYun 模式 + 业务影响 + 重现步骤 + 补救建议） |
-| 测试证据 | 每个测试点的请求/响应截图（Burp Suite 导出） |
-| 风险矩阵 | 汇总所有发现，按严重级别 × 可利用性排序 |
-| 修复建议 | 基于 WooYun 防御模式的服务端修复方案（非客户端补丁） |
+| vulnerability report | EachDiscoverofvulnerability byNo. fourPhasemodel template output out(Severity + WooYun mode + Business Impact + Reproduction Steps + supplement create protocol) |
+| testEvidence | EachTest PointofRequest/Responseintercept image(Burp Suite Export) |
+| risk matrix matrix | remit totalAllDiscover, bySeverity x Canexploituseness rank sequence |
+| Remediation Recommendation | based on WooYun defense defense modeofServerfix repeat method plan(Non-Clientsupplement) |
 
 ---
 
-## 附录：WooYun 关键统计引用
+## Appendix:WooYun keyStatisticsciteuse
 
-| 指标 | 数值 | 来源 |
+| specified identifier | number value | come source |
 |------|------|------|
-| 金融领域总案例 | 2,919 | WooYun 数据库 2010-2016 |
-| 支付绕过案例 | 1,056（68.7% 高危） | financial-domain.md |
-| 订单篡改案例 | 1,227（74.2% 高危） | financial-domain.md |
-| 金额篡改案例 | 176（83.0% 高危） | financial-domain.md |
-| 余额篡改案例 | 113（77.9% 高危） | financial-domain.md |
-| 提现漏洞案例 | 59（83.1% 高危） | financial-domain.md |
-| 价格篡改案例 | 70（74.3% 高危） | financial-domain.md |
-| 逻辑流领域总案例 | 1,679 | logic-flow-domain.md |
-| 状态机绕过案例 | 1,391（65.3% 高危） | logic-flow-domain.md |
-| 竞态条件案例 | 266（74.8% 高危） | logic-flow-domain.md |
-| 越权访问案例 | 1,705（62.3% 高危） | authorization-domain.md |
-| 信息泄露案例 | 4,858（64.7% 高危） | information-domain.md |
-| 全量漏洞数据库 | 22,132 | SKILL.md |
+| Financial DomaintotalCase | 2,919 | WooYun Database 2010-2016 |
+| Payment BypassCase | 1,056(68.7% High Risk) | financial-domain.md |
+| Order TamperingCase | 1,227(74.2% High Risk) | financial-domain.md |
+| Amount TamperingCase | 176(83.0% High Risk) | financial-domain.md |
+| Balancetamper changeCase | 113(77.9% High Risk) | financial-domain.md |
+| WithdrawalvulnerabilityCase | 59(83.1% High Risk) | financial-domain.md |
+| price format tamper changeCase | 70(74.3% High Risk) | financial-domain.md |
+| Logic Flow DomaintotalCase | 1,679 | logic-flow-domain.md |
+| State-Machine BypassCase | 1,391(65.3% High Risk) | logic-flow-domain.md |
+| Race ConditionCase | 266(74.8% High Risk) | logic-flow-domain.md |
+| Authorization BypassCase | 1,705(62.3% High Risk) | authorization-domain.md |
+| Information DisclosureCase | 4,858(64.7% High Risk) | information-domain.md |
+| all quantity vulnerabilityDatabase | 22,132 | SKILL.md |
 
 ---
 
-> **核心提醒：** "客户端请求中出现的任何财务数值都是一个待验证的假设。价格、数量、折扣、余额、手续费——如果客户端发送了它，客户端就可以修改它。" — WooYun 金融领域铁律
+> **audit core provide:** "ClientRequestinout currentofany finance service number value all is one pendingValidateoffalse set.price format/number quantity/discount deduct/Balance/mobile continue fee -- such asifClientSenddone, ClientCanasModify." - WooYun Financial Domain law

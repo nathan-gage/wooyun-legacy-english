@@ -1,215 +1,215 @@
-# H5 商城 SRC 漏洞挖掘计划（2天）
+# H5 commerce SRC vulnerability plan (2days)
 
-## 目标概况
+## Targetapprox
 
-- **目标**: 电商平台 H5 商城（微信内嵌页面）
-- **已有资源**: 普通用户账号、抓包环境
-- **已知 API**:
-  - `GET /api/user/info` — 用户信息查询
-  - `GET /api/order/list` — 订单列表
-  - `POST /api/payment/create` — 创建支付
-  - `POST /api/address/update` — 地址更新
-
----
-
-## Day 1: 高危漏洞优先突破（约 10h）
-
-### P0 — 越权漏洞（IDOR）[预计 3-4h]
-
-> **理由**: 电商场景下越权是最高频、最高危的漏洞类型，SRC 通常评为高危/严重。
-
-#### /api/user/info — 水平越权读取
-
-1. 抓取正常请求，识别用户标识参数（`userId`、`uid`、`id`、或 JWT 中的 sub 字段）
-2. 替换为其他用户 ID（遍历、+1/-1、已知第二账号 ID），观察是否返回他人信息
-3. 关注返回字段：手机号、真实姓名、身份证号、邮箱 — 任何一个泄露即可报
-
-#### /api/order/list — 水平越权读取订单
-
-1. 同上方法替换用户标识，尝试读取他人订单
-2. 如果有 `orderId` 参数，尝试遍历订单号查看他人订单详情
-3. 检查是否存在 `/api/order/detail?orderId=xxx` 类似端点
-
-#### /api/address/update — 越权修改他人地址
-
-1. 抓取更新地址请求，找到 `addressId` 或类似标识
-2. 替换为他人地址 ID，尝试修改（用无害数据测试，确认后立即恢复）
-3. 同时检查是否存在 `/api/address/list`、`/api/address/delete` 越权
-
-#### /api/payment/create — 越权支付 / 订单篡改
-
-1. 创建支付时，替换 `orderId` 为他人订单，观察是否能代付或劫持支付流程
-2. 这是严重级别漏洞，谨慎测试，点到为止
-
-### P1 — 支付逻辑漏洞 [预计 3-4h]
-
-> **理由**: 电商核心业务，直接造成资金损失，通常评为严重。
-
-#### 金额篡改
-
-1. `/api/payment/create` 请求中找到金额字段（`amount`、`totalPrice`、`price`）
-2. 尝试修改为 0.01、0、负数（-1）、超大数
-3. 观察后端是否重新校验金额（对比订单实际金额）
-
-#### 数量/商品篡改
-
-1. 下单流程中修改商品数量为 0 或负数，观察总价计算
-2. 替换商品 ID 为低价商品，保持高价商品的订单上下文
-3. 检查优惠券/折扣是否可叠加（重复使用同一优惠券 ID）
-
-#### 支付状态伪造
-
-1. 分析支付回调接口（通常为 `/api/payment/callback` 或 `/api/payment/notify`）
-2. 尝试直接构造支付成功的回调请求
-3. 检查签名验证是否存在（缺失签名校验 = 严重漏洞）
-
-#### 竞态条件（Race Condition）
-
-1. 同一优惠券/余额，并发发起多笔支付请求（10-20 并发）
-2. 工具: `turbo intruder` 或 Python `asyncio` + `aiohttp` 并发
-3. 观察是否出现余额多扣、优惠券多用
-
-### P2 — 信息泄露 [预计 2h]
-
-> **理由**: 快速出成果，作为保底产出。
-
-#### API 响应过度暴露
-
-1. 逐个检查已知 API 的响应 JSON，是否包含不应返回的字段
-2. 重点关注: `idCard`、`phone`（完整手机号 vs 脱敏）、`password`/`salt`、`token`、`openid`、内部 ID
-3. 检查列表接口是否返回全量数据（无分页上限 → 拖库风险）
-
-#### 错误信息泄露
-
-1. 对每个 API 发送畸形参数（空值、超长字符串、SQL 特殊字符 `'`）
-2. 观察错误响应是否暴露: 堆栈信息、数据库类型、内部路径、第三方 SDK 版本
-
-#### 微信相关泄露
-
-1. 检查页面源码/JS 中是否硬编码 `appId`、`appSecret`（严重）
-2. 检查 JSSDK 配置接口是否泄露敏感信息
-3. 检查 `openid` 是否在前端明文传递且可被替换（结合越权）
+- **Target**: electronic commercePlatform H5 commerce (WeChatinternal page)
+- **already has resource source**: Regular UserAccount/packet capture environment environment
+- **already notify API**:
+ - `GET /api/user/info` - Userinformation check query
+ - `GET /api/order/list` - Orderlist
+ - `POST /api/payment/create` - CreatePayment
+ - `POST /api/address/update` - AddressUpdate
 
 ---
 
-## Day 2: 中高危漏洞扩展 + 深度利用（约 10h）
+## Day 1: High Riskvulnerability priority first (constraint 10h)
 
-### P3 — 接口发现与未授权访问 [预计 2-3h]
+### P0 - bypass permission vulnerability(IDOR)[expected plan 3-4h]
 
-> **理由**: 扩大攻击面，发现隐藏的高危端点。
+> **Reason**: electronic commerce scenario scene under bypass permission is mostHighfrequency/mostHigh RiskofVulnerability Type, SRC wild common assessasHigh Risk/Severe.
 
-#### 接口枚举
+#### /api/user/info - Horizontal Authorization BypassRead
 
-1. **JS 文件分析**: 下载所有 JS 文件（webpack 打包），搜索 `/api/` 路径
-   ```
-   关键词: /api/, axios, fetch, request, baseURL, endpoint
-   ```
-2. **Source Map**: 检查是否存在 `.js.map` 文件（常见疏忽），还原完整前端源码
-3. **常见路径爆破**:
-   - `/api/admin/*` — 后台接口
-   - `/api/user/delete`、`/api/user/update` — CRUD 补全
-   - `/api/coupon/*`、`/api/refund/*`、`/api/logistics/*`
-   - `/swagger-ui.html`、`/api-docs`、`/doc.html` — API 文档
-   - `/actuator`、`/env`、`/heapdump` — Spring Boot 端点
+1. capture take correct commonRequest, IdentifyUseridentifier identifyParameter(`userId`/`uid`/`id`/or JWT inof sub Field)
+2. ReplaceasotherUser ID(Traversal/+1/-1/already notifyNo. twoAccount ID), ObservewhetherReturnother person information
+3. key injectReturnField:mobile number/real realName/Identity Cardnumber/Email - any oneDisclosurethat isCanreport
 
-#### 未授权访问
+#### /api/order/list - Horizontal Authorization BypassReadOrder
 
-1. 对发现的所有接口，移除 Cookie/Token 后重放
-2. 检查是否有接口无需认证即可访问
-3. 特别关注管理类接口（用户管理、订单管理、商品管理）
+1. same aboveMethodReplaceUseridentifier identify, AttemptReadother personOrder
+2. such asif has `orderId` Parameter, AttemptTraversalOrdernumberViewother personOrderdetailed details
+3. Checkwhether exists `/api/order/detail?orderId=xxx` type Endpoint
 
-### P4 — 注入类漏洞 [预计 2-3h]
+#### /api/address/update - bypass permissionModifyother personAddress
 
-#### SQL 注入
+1. capture takeUpdateAddressRequest, to `addressId` ortype identifier identify
+2. Replaceasother personAddress ID, AttemptModify(useno Datatest, Confirmafter standalone that is repeat)
+3. same timeCheckwhether exists `/api/address/list`/`/api/address/delete` bypass permission
 
-1. 对所有参数尝试基础 payload: `'`、`' OR '1'='1`、`1 AND 1=1`
-2. 重点目标:
-   - `/api/order/list` 的排序/搜索/筛选参数
-   - `/api/user/info` 的查询参数
-3. 时间盲注检测: `1' AND SLEEP(5)--`，观察响应延迟
-4. 工具: sqlmap 辅助验证（`--level 3 --risk 2`，不要 `--dump`）
+#### /api/payment/create - bypass permissionPayment / Order Tampering
 
-#### XSS（存储型优先）
+1. CreatePaymenttime, Replace `orderId` asother personOrder, Observewhethercan code payor holdPaymentflow process
+2. this isSeverityvulnerability, test, pointtoasstop
 
-1. 地址字段（`/api/address/update`）写入 XSS payload:
-   ```
-   收货人: <img src=x onerror=alert(1)>
-   详细地址: "><script>alert(document.domain)</script>
-   ```
-2. 如果商城有评论/评价功能，同样注入
-3. 检查是否在管理后台触发（Blind XSS → 用 XSS Hunter 或自建回调）
-4. 微信环境特殊考虑: `javascript:` 伪协议、`<a href>` 跳转
+### P1 - Paymentlogic logic vulnerability [expected plan 3-4h]
+
+> **Reason**: electronic commerce audit core business, Directforge complete resource funds loss loss, wild common assessasSevere.
+
+#### Amount Tampering
+
+1. `/api/payment/create` RequestintoAmountField(`amount`/`totalPrice`/`price`)
+2. AttemptModifyas 0.01/0/Negative Number(-1)/super large number
+3. ObserveBackendwhetherserious newValidateAmount(for ratioOrderreal actualAmount)
+
+#### number quantity/commerce product tamper change
+
+1. under single flow processinModifycommerce product number quantityas 0 orNegative Number, Observetotal priceCompute
+2. Replacecommerce product ID asLowprice commerce product, protect holdHighprice commerce productofOrderabove under text
+3. CheckCoupon/discount deductwhetherCan add(serious repeat useuseSameCoupon ID)
+
+#### PaymentStatusforgery
+
+1. AnalyzePaymentCallbackInterface(wild commonas `/api/payment/callback` or `/api/payment/notify`)
+2. AttemptDirectstructure forgePaymentSuccessofCallbackRequest
+3. CheckSignatureValidatewhether exists(MissingSignatureValidate = Severevulnerability)
+
+#### Race Condition(Race Condition)
+
+1. SameCoupon/Balance, Concurrencyinitiate initiate many entryPaymentRequest(10-20 Concurrency)
+2. Tool: `turbo intruder` or Python `asyncio` + `aiohttp` Concurrency
+3. Observewhetherout currentBalancemany deduct/Couponmanyuse
+
+### P2 - Information Disclosure [expected plan 2h]
+
+> **Reason**: fast rate out complete if, operationasprotect asset out.
+
+#### API Responsethrough degree expose exposure
+
+1. one-by-oneCheckalready notify API ofResponse JSON, whetherinclude includeshould notReturnofField
+2. serious point key inject: `idCard`/`phone`(Completemobile number vs leak sensitive)/`password`/`salt`/`token`/`openid`/internal part ID
+3. ChecklistInterfacewhetherReturnall quantityData(no part page above limit -> library risk)
+
+#### errorInformation Disclosure
+
+1. forEach API Send Parameter(Emptyvalue/super long character symbol string/SQL Special Characters `'`)
+2. ObserveerrorResponsewhetherexpose exposure: stack stack information/Databasetype/internal partPath/No. three method SDK version version
+
+#### WeChatrelated keyDisclosure
+
+1. Checkpage source code/JS inwhetherhardEncoding `appId`/`appSecret`(Severe)
+2. Check JSSDK ConfigurationInterfacewhetherDisclosureSensitive Information
+3. Check `openid` whetherinFrontendclear text pass recursive andCanbeReplace(result combine bypass permission)
+
+---
+
+## Day 2: inHigh Riskvulnerability + deep degree exploituse(constraint 10h)
+
+### P3 - InterfaceDiscoverandUnauthorized Access [expected plan 2-3h]
+
+> **Reason**: large attack attack page, Discoverhidden hiddenofHigh RiskEndpoint.
+
+#### InterfaceEnumeration
+
+1. **JS FileAnalyze**: DownloadAll JS File(webpack break include), search `/api/` Path
+ ```
+ keywords: /api/, axios, fetch, request, baseURL, endpoint
+ ```
+2. **Source Map**: Checkwhether exists `.js.map` File(common seen), principleCompleteFrontendsource code
+3. **common seenPathBrute Force**:
+ - `/api/admin/*` - backend consoleInterface
+ - `/api/user/delete`/`/api/user/update` - CRUD supplement all
+ - `/api/coupon/*`/`/api/refund/*`/`/api/logistics/*`
+ - `/swagger-ui.html`/`/api-docs`/`/doc.html` - API Document
+ - `/actuator`/`/env`/`/heapdump` - Spring Boot Endpoint
+
+#### Unauthorized Access
+
+1. forDiscoverofAllInterface, move remove Cookie/Token afterReplay
+2. check whether there isInterfaceno need toAuthenticationthat isCanaccess ask
+3. special level key inject manage manage typeInterface(Usermanage manage/Order Management/commerce product manage manage)
+
+### P4 - inject inject type vulnerability [expected plan 2-3h]
+
+#### SQL inject inject
+
+1. forAllParameterAttemptbase foundation payload: `'`/`' OR '1'='1`/`1 AND 1=1`
+2. serious pointTarget:
+ - `/api/order/list` ofrank sequence/search/ selectParameter
+ - `/api/user/info` ofcheck queryParameter
+3. time between inject check test: `1' AND SLEEP(5)--`, ObserveResponse
+4. Tool: sqlmap Validate(`--level 3 --risk 2`, not need `--dump`)
+
+#### XSS(Storagetype priority first)
+
+1. AddressField(`/api/address/update`)write inject XSS payload:
+ ```
+ collect goods person: <img src=x onerror=alert(1)>
+ DetailedAddress: "><script>alert(document.domain)</script>
+ ```
+2. such asif commerce has assess comment/assess price function can, same inject inject
+3. Checkwhetherinmanage manage backend console trigger initiate(Blind XSS -> use XSS Hunter orself createCallback)
+4. WeChatenvironment environment special reference: `javascript:` protocol protocol/`<a href>` skip transfer
 
 #### SSRF
 
-1. 如果有头像上传、图片 URL 导入功能，尝试 `http://127.0.0.1`、`http://169.254.169.254`
-2. 检查支付回调 URL 是否可控（`notifyUrl` 参数）
+1. such asif hasHeaderUpload/image image URL Importfunction can, Attempt `http://127.0.0.1`/`http://169.254.169.254`
+2. CheckPaymentCallback URL whetherCancontrol(`notifyUrl` Parameter)
 
-### P5 — 业务逻辑漏洞 [预计 2-3h]
+### P5 - Business Logic Vulnerability [expected plan 2-3h]
 
-#### 短信/验证码相关
+#### short information/CAPTCHArelated key
 
-1. 短信轰炸: 注册/登录/找回密码的发送验证码接口，是否有频率限制
-2. 验证码绕过: 万能验证码（`0000`、`1234`、`8888`）、返回包中是否包含验证码
-3. 验证码复用: 同一验证码是否可多次使用
+1. SMS Bombing: Registration/Login/ returnPasswordofSendCAPTCHAInterface, whether hasRate Limit
+2. CAPTCHA Bypass: ten-thousand canCAPTCHA(`0000`/`1234`/`8888`)/Returnincludeinwhetherinclude includeCAPTCHA
+3. CAPTCHArepeatuse: SameCAPTCHAwhetherCanmanytimesuseuse
 
-#### 用户体系
+#### Userbody system
 
-1. 任意密码重置: 修改手机号参数 → 用自己的验证码 → 重置他人密码
-2. 账号枚举: 注册/登录接口是否区分"用户不存在"和"密码错误"
-3. 登录爆破: 是否有图形验证码、账号锁定机制
+1. ArbitraryPassword Reset: Modifymobile numberParameter -> useself ownofCAPTCHA -> serious set other personPassword
+2. AccountEnumeration: Registration/LoginInterfacewhether part"Usernot existin"and"Passworderror"
+3. LoginBrute Force: whether hasImage CAPTCHA/Account Lockoutmachine make
 
-#### 优惠券/积分
+#### Coupon/ part
 
-1. 优惠券 ID 可遍历 → 领取他人专属优惠券
-2. 积分兑换负数商品 → 积分增加
-3. 已使用优惠券通过修改状态重新使用
+1. Coupon ID CanTraversal -> domain take other person special attributeCoupon
+2. part changeNegative Numbercommerce product -> part increase add
+3. already useuseCouponPassModifyStatusserious new useuse
 
-### P6 — 文件上传 / 其他 [预计 1-2h]
+### P6 - FileUpload / other [expected plan 1-2h]
 
-1. 如果有头像、评价图片上传功能:
-   - 绕过后缀: `.php`、`.jsp`、`.phtml`、双后缀 `1.php.jpg`
-   - Content-Type 绕过: `image/jpeg` + 实际 PHP 内容
-   - 检查上传路径是否可直接访问执行
-2. CORS 配置: 检查 `Access-Control-Allow-Origin` 是否为 `*` 或可控
-3. JSONP 劫持: 检查是否有 callback 参数可注入
+1. such asif hasHeader/assess price image imageUploadfunction can:
+ - Bypassafter: `.php`/`.jsp`/`.phtml`/dual after `1.php.jpg`
+ - Content-Type Bypass: `image/jpeg` + real actual PHP content
+ - CheckUploadPathwhetherdirectly usableaccess askExecute
+2. CORS Configuration: Check `Access-Control-Allow-Origin` whether is `*` orCancontrol
+3. JSONP hold: check whether there is callback ParameterCaninject inject
 
 ---
 
-## 工具清单
+## Toolclear single
 
-| 工具 | 用途 |
+| Tool | Purpose |
 |------|------|
-| Burp Suite Pro | 核心抓包、重放、爆破 |
-| sqlmap | SQL 注入验证 |
-| Turbo Intruder | 并发竞态测试 |
-| ffuf / dirsearch | 路径爆破 |
-| LinkFinder / JSFinder | JS 中提取 API 端点 |
-| 微信开发者工具 | 调试微信 H5 环境 |
-| Xray (被动扫描) | 挂在 Burp 下游，自动检测常见漏洞 |
+| Burp Suite Pro | audit core packet capture/Replay/Brute Force |
+| sqlmap | SQL inject injectValidate |
+| Turbo Intruder | ConcurrencyRacetest |
+| ffuf / dirsearch | PathBrute Force |
+| LinkFinder / JSFinder | JS inprovide take API Endpoint |
+| WeChatopen initiate personTool | debuggingWeChat H5 environment environment |
+| Xray (be dynamicScan) | in Burp under, self dynamic check test common vulnerabilities |
 
-## 微信 H5 特殊注意事项
+## WeChat H5 special inject meaning eventitems
 
-1. **抓包配置**: 微信内置浏览器走系统代理，但需注意证书信任问题（Android 7+ 需 root 或用模拟器）
-2. **鉴权方式**: 大概率基于微信 OAuth → `openid` 作为身份标识，重点关注 `openid` 是否可伪造/替换
-3. **JSSDK**: 检查 `wx.config` 中的签名是否可被重放或伪造
-4. **小程序关联**: 检查是否有对应小程序，小程序和 H5 可能共用后端 API 但鉴权策略不同
+1. **packet captureConfiguration**: WeChatinternal setBrowserSystemcode manage, but need inject meaning cert certificate information any ask problem(Android 7+ need root orusemodel device)
+2. **appraise permission method mode**: large approx rate based onWeChat OAuth -> `openid` operationasidentity copy identifier identify, serious point key inject `openid` whetherCanforgery/Replace
+3. **JSSDK**: Check `wx.config` inofSignaturewhetherCanbeReplayorforgery
+4. **small process sequence key connect**: check whether there isforshouldsmall process sequence, small process sequenceand H5 Cancan totaluseBackend API but appraise permission policy strategyDifferent
 
-## 时间分配总览
+## time between part config total
 
-| 时段 | 内容 | 预期产出 |
+| time | content | expected period asset out |
 |------|------|----------|
-| Day1 上午 | P0 越权测试 | 1-3 个高危/严重 |
-| Day1 下午 | P1 支付逻辑 | 1-2 个严重 |
-| Day1 晚上 | P2 信息泄露 | 2-3 个中危 |
-| Day2 上午 | P3 接口发现 + 未授权 | 扩大攻击面，1-2 个中高危 |
-| Day2 下午 | P4 注入类 | 1-2 个高危（如存在） |
-| Day2 晚上 | P5-P6 业务逻辑 + 扫尾 | 2-3 个中危，整理报告 |
+| Day1 above | P0 bypass permission test | 1-3 High Risk/Severe |
+| Day1 under | P1 Paymentlogic logic | 1-2 Severe |
+| Day1 above | P2 Information Disclosure | 2-3 Medium Risk |
+| Day2 above | P3 InterfaceDiscover + Unauthorized | large attack attack page, 1-2 inHigh Risk |
+| Day2 under | P4 inject inject type | 1-2 High Risk(such asexistin) |
+| Day2 above | P5-P6 business logic logic + | 2-3 Medium Risk, integer manage report |
 
-## 报告撰写要点
+## report write need point
 
-- 每个漏洞单独提交，不要合并
-- 包含: 漏洞标题、危害等级、复现步骤（截图+请求包）、影响范围、修复建议
-- 越权类写清楚影响用户数量级估算
-- 支付类写清楚资金损失的理论上限
-- 先提交高危/严重，再补充中低危（避免重复和撞洞）
+- Eachvulnerability single independentSubmit, not need combine and
+- include include: vulnerability identifier problem/risk etc.level/Reproduction Steps(intercept image+Requestinclude)/Impact Scope/Remediation Recommendation
+- bypass permission type write clear impact responseUsernumber quantity level assess algorithm
+- Paymenttype write clear resource funds loss lossofmanage comment above limit
+- firstSubmitHigh Risk/Severe, again supplement topupinLow Risk(avoid serious repeatandcollision hole)

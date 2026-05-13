@@ -1,69 +1,69 @@
-# LOGIC-FLAWS 漏洞分析
+# LOGIC-FLAWS Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 19
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 19
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  sign: 1次
-  url: 1次
-  account: 1次
-  createTime: 1次
-  timestamp: 1次
-  wp_id: 1次
-  need_exclusive: 1次
-  needChangePwd: 1次
-  user: 1次
-  trivallog: 1次
-```
-
-
-### 攻击模式分布
-```
-  泄露: 1次
-  执行: 1次
-  越权: 1次
-  绕过: 1次
+  sign: 1 occurrence
+  url: 1 occurrence
+  account: 1 occurrence
+  createTime: 1 occurrence
+  timestamp: 1 occurrence
+  wp_id: 1 occurrence
+  need_exclusive: 1 occurrence
+  needChangePwd: 1 occurrence
+  user: 1 occurrence
+  trivallog: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  disclosure: 1 occurrence
+  execution: 1 occurrence
+  privilege overreach: 1 occurrence
+  bypass: 1 occurrence
+```
 
-- TOM在线某接口设计缺陷可导致撞库用户
-  漏洞类型：设计缺陷/逻辑错误
-- 迅雷某客户服务系统存在缺陷可导致成功登陆大量用户账号（分分钟成功数百个）
-  漏洞类型：设计缺陷/逻辑错误
-- 某单位存在安全漏洞股份有限公司设计缺陷信息泄露
-  漏洞类型：设计缺陷/逻辑错误
-- p2p金融安全之利苍贷任意密码重置(土豪账户演示)
-  漏洞类型：设计缺陷/逻辑错误
-- MIUI6 设计缺陷特定情况下可导致锁屏密码被绕过
-  漏洞类型：设计错误/逻辑缺陷
-- 某电商平台折扣优惠商品的业务逻辑问题
-  漏洞类型：设计缺陷/逻辑错误
-- WDCP后台的登录IP可被伪造
-  漏洞类型：设计缺陷/逻辑错误
-- 某手机厂商积分商城刷花瓣兑换产品
-  漏洞类型：设计缺陷/逻辑错误
-- 某通信厂商某重要站点存在任意密码重置漏洞
-  漏洞类型：设计缺陷/逻辑错误
-- 畅途网任意用户密码修改
-  漏洞类型：设计缺陷/逻辑错误
-- 橡果国际任意账户密码重置
-  漏洞类型：设计缺陷/逻辑错误
-- 某连锁酒店验证码设置不当可修改用户密码
-  漏洞类型：网络设计缺陷/逻辑错误
-- 良仓某处缺陷可导致任意用户密码修改
-  漏洞类型：设计缺陷/逻辑错误
-- 一嗨租车越权删除整站发票信息（19W数据）
-  漏洞类型：设计缺陷/逻辑错误
-- 多玩网可以卡任何高于OW权限的灰色马甲
-  漏洞类型：设计缺陷/逻辑错误
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Design flaw in a TOM Online API can lead to credential-stuffing against users
+  Vulnerability type: design defect / logic error
+- Defect in a Xunlei customer service system can lead to successful login to large numbers of user accounts (hundreds within minutes)
+  Vulnerability type: design defect / logic error
+- Information disclosure due to a design flaw at a certain joint-stock company
+  Vulnerability type: design defect / logic error
+- P2P finance security: Licangdai arbitrary password reset (wealthy account demo)
+  Vulnerability type: design defect / logic error
+- MIUI6 design flaw can allow lock-screen password bypass under specific conditions
+  Vulnerability type: design error / logic flaw
+- Business logic issue in discounted promotional products on a certain e-commerce platform
+  Vulnerability type: design defect / logic error
+- WDCP backend login IP can be spoofed
+  Vulnerability type: design defect / logic error
+- Points mall of a certain phone manufacturer can farm Huaban points to redeem products
+  Vulnerability type: design defect / logic error
+- Arbitrary password reset vulnerability on an important site of a certain telecom vendor
+  Vulnerability type: design defect / logic error
+- Arbitrary user password modification on Changtu.com
+  Vulnerability type: design defect / logic error
+- Arbitrary account password reset on Acorn International
+  Vulnerability type: design defect / logic error
+- Improper verification-code settings at a certain hotel chain can modify user passwords
+  Vulnerability type: network design defect / logic error
+- A flaw in Liangcang can cause arbitrary user password modification
+  Vulnerability type: design defect / logic error
+- eHi Car Services privilege overreach deletes invoice information across the whole site (190,000 records)
+  Vulnerability type: design defect / logic error
+- Duowan can pin any gray vest above OW permissions
+  Vulnerability type: design defect / logic error
+
+## High-Frequency Payload Patterns
 ```
 andishangwa	chenzhanlei	220919920610	19920610	2209wan
 ```

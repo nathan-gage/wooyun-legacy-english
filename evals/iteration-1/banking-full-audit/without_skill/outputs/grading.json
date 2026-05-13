@@ -1,34 +1,32 @@
 {
-  "expectations": [
-    {
-      "text": "wooyun-cases: 包含至少3个具体的WooYun真实案例引用（公司名+漏洞描述）",
-      "passed": false,
-      "evidence": "文档中没有引用任何WooYun具体案例。没有出现任何具体公司名称（如TCL、M1905、中原银行、宁波银行等），也没有任何WooYun漏洞报告的描述。整份文档是通用的手机银行安全测试模板。"
-    },
-    {
-      "text": "statistics: 包含量化统计数据（案例数或高危占比百分数）",
-      "passed": false,
-      "evidence": "文档中没有任何WooYun统计数据。没有案例数量（如'22,132案例'、'2,919金融案例'等）或高危占比百分数。风险等级基于CVSS定义（9.0-10.0严重等），不基于历史数据统计。"
-    },
-    {
-      "text": "six-domains: 覆盖全部6个领域（认证、授权、金融、信息泄露、逻辑流、配置）",
-      "passed": true,
-      "evidence": "6个领域全部覆盖：(1) 认证：第二章2.3认证与会话管理（AUTH-01到AUTH-08）+ 第七章密码重置 (2) 授权：第九章9.3越权测试矩阵（IDOR-01到IDOR-05） (3) 金融：第三章转账 + 第四章充值 + 第五章提现 + 第六章理财 (4) 信息泄露：第二章2.2客户端安全（CLI-04/05）+ 第九章API-06 (5) 逻辑流：第九章9.2业务流程安全（BIZ-01到BIZ-06） (6) 配置：第二章2.1通信安全 + 2.2客户端安全。虽然覆盖但缺少独立的信息泄露和配置安全专章，相关内容分散在各处。"
-    },
-    {
-      "text": "function-mapping: 每个银行功能（转账、充值、提现、理财购买、密码重置、实名认证）都有对应的测试项",
-      "passed": true,
-      "evidence": "6个功能都有独立章节：(1) 转账：第三章含TRF-01到TRF-12 + TRF-H01/H02/V01越权测试 (2) 充值：第四章含RCH-01到RCH-08 (3) 提现：第五章含WDR-01到WDR-09 (4) 理财购买：第六章含FIN-01到FIN-12 (5) 密码重置：第七章含PWD-01到PWD-10 + TPW-01到TPW-04 (6) 实名认证：第八章含KYC-01到KYC-12"
-    },
-    {
-      "text": "report-template: 输出格式为可直接使用的报告模板（包含严重级别、影响评估、重现步骤等字段）",
-      "passed": true,
-      "evidence": "文档整体就是一个可直接使用的报告模板：(1) 第十一章'发现问题汇总'有问题统计表和问题详情模板（含风险等级、所属模块、测试项编号、影响范围、复现步骤、请求/响应截图、风险描述、修复建议、修复优先级、修复验证状态） (2) 附录A测试用例执行记录表 (3) 附录B复测记录表 (4) 附录C测试环境信息 (5) 每个测试项表格含'实际结果'和'风险等级'空白列"
-    },
-    {
-      "text": "defense-recommendations: 包含架构级和代码级的防御建议",
-      "passed": true,
-      "evidence": "第十四章'安全加固建议（通用）'分三个层级：14.1服务端（7条：输入校验、幂等设计、并发控制、状态机、权限校验、频率限制、日志审计）、14.2客户端（5条：代码保护、环境检测、安全存储、通信安全、界面保护）、14.3风控体系（4条：设备指纹、行为分析、分级验证、实时监控）。架构级建议如'数据库级别锁/原子操作保证一致性'、'核心逻辑使用C/C++编写'；代码级建议如'密钥使用Android Keystore/iOS Keychain存储'。"
-    }
-  ]
+ "expectations": [{
+ "text": "wooyun-cases: Includes at least 3 concrete real WooYun case references (company name + vulnerability description)",
+ "passed": false,
+ "evidence": "Documentinno has citeuseanyWooYunConcreteCase.no has out current anyConcretecompany company name name(such asTCL/M1905/inprinciple banklines/ banklinesetc.), no has anyWooYunvulnerability reportof description.integer copyDocumentis wilduseofmobile machine banklinesSecuretest model template."
+ },
+ {
+ "text": "statistics: Includes quantitative statistics (case count or high-risk percentage)",
+ "passed": false,
+ "evidence": "Documentinno has anyWooYunStatisticsData.no hasCase Countquantity(such as'22,132Case'/'2,919FinancialCase'etc.)orhigh-risk percentage.Risk Levelbased onCVSSset define(9.0-10.0Severeetc.), not based on history historyDataStatistics."
+ },
+ {
+ "text": "six-domains: Covers all 6 domains (authentication, authorization, financial, information disclosure, logic flow, configuration)",
+ "passed": true,
+ "evidence": "6DomainAllcover cover:(1) Authentication:Chapter 22.3AuthenticationandSessionmanage manage(AUTH-01toAUTH-08)+ Chapter 7Password Reset (2) Authorization:Chapter 99.3bypass permission test matrix matrix(IDOR-01toIDOR-05) (3) Financial:Chapter 3Transfer + Chapter 4Top-Up + Chapter 5Withdrawal + Chapter 6manage finance (4) Information Disclosure:Chapter 22.2ClientSecure(CLI-04/05)+ Chapter 9API-06 (5) logic logic flow:Chapter 99.2business flow processSecure(BIZ-01toBIZ-06) (6) Configuration:Chapter 22.1wild informationSecure + 2.2ClientSecure. cover cover but missing less independent standaloneofInformation DisclosureandConfigurationSecurespecial, related key content part ineach handle."
+ },
+ {
+ "text": "function-mapping: Eachbanklinesfunction can(Transfer/Top-Up/Withdrawal/Wealth Product Purchase/Password Reset/Real-Name Verification)all has forshouldofTest Item",
+ "passed": true,
+ "evidence": "6function can all has independent standaloneSection:(1) Transfer:Chapter 3includeTRF-01toTRF-12 + TRF-H01/H02/V01bypass permission test (2) Top-Up:Chapter 4includeRCH-01toRCH-08 (3) Withdrawal:Chapter 5includeWDR-01toWDR-09 (4) Wealth Product Purchase:Chapter 6includeFIN-01toFIN-12 (5) Password Reset:Chapter 7includePWD-01toPWD-10 + TPW-01toTPW-04 (6) Real-Name Verification:Chapter 8includeKYC-01toKYC-12"
+ },
+ {
+ "text": "report-template: Output format is a directly usable report template(include includeSeverity/impact response assess assess/Reproduction Stepsetc.Field)",
+ "passed": true,
+ "evidence": "Documentinteger body is onedirectly usableuseuseofreport model template:(1) No. ten one 'Discoverask problem remit total'has ask problemStatisticstableandask problem detailed details model template(includeRisk Level/ attribute model block/Test ItemID/Impact Scope/Reproduction Steps/Request/Responseintercept image/risk description/Remediation Recommendation/fix repeatPriority/fix repeatValidateStatus) (2) AppendixATest CaseExecuteRecordtable (3) AppendixBrepeat testRecordtable (4) AppendixCTest Environmentinformation (5) EachTest Itemtable format include'Actual Result'and'Risk Level'Empty list"
+ },
+ {
+ "text": "defense-recommendations: Includes architecture-level and code-level defense recommendations",
+ "passed": true,
+ "evidence": "No. ten four 'SecureHardeningcreate protocol(wilduse)'part three layer level:14.1Server(7condition:output injectValidate/Idempotencyset plan/Concurrencycontrol make/Statusmachine/PermissionValidate/Rate Limit/Logaudit plan)/14.2Client(5condition:Codeprotect protect/environment environment check test/SecureStorage/wild informationSecure/boundary page protect protect)/14.3risk control body system(4condition:set prepare specified pattern/linesasAnalyze/part levelValidate/real time monitor control).architecture structure level create protocolsuch as'Databaselevel level lock/principle sub operation protect cert one cause ness'/'audit core logic logic useuseC/C++compile write';Codelevel create protocolsuch as'KeyuseuseAndroid Keystore/iOS KeychainStorage'."
+ }]
 }

@@ -1,65 +1,65 @@
-# MISCONFIG 漏洞分析
+# MISCONFIG Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 15
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 15
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  ObjName: 1次
-  MODE: 1次
-  Target: 1次
-  Title: 1次
-  rd: 1次
-  version: 1次
-```
-
-
-### 攻击模式分布
-```
-  泄露: 3次
-  注入: 1次
-  弱口令: 1次
-  上传: 1次
+  ObjName: 1 occurrence
+  MODE: 1 occurrence
+  Target: 1 occurrence
+  Title: 1 occurrence
+  rd: 1 occurrence
+  version: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  disclosure: 3 occurrences
+  injection: 1 occurrence
+  weak password: 1 occurrence
+  upload: 1 occurrence
+```
 
-- 某社交平台某社交平台某服务配置不当导致任意文件读取(包括root账号hash及员工svn账号密码等)
-  漏洞类型：系统/服务运维配置不当
-- 某单位存在安全漏洞运维不当导致全部核心机房服务器和部分内网漫游
-  漏洞类型：系统/服务运维配置不当
-- 某电商平台某站任意文件上传&XSS
-  漏洞类型：系统/服务运维配置不当
-- 电信家庭网关存在权限许可和访问控制的漏洞
-  漏洞类型：系统/服务运维配置不当
-- 逐浪CMS特定版本疑似存在一个鸡肋后门
-  漏洞类型：默认配置不当
-- PPTV游戏某站配置不当导致shell/入内网
-  漏洞类型：系统/服务运维配置不当
-- 某电脑厂商物流平台配置不当导致大量信息泄露(各种订单，各种报表)
-  漏洞类型：系统/服务运维配置不当
-- 某单位存在安全漏洞分用户信息泄漏
-  漏洞类型：应用配置错误
-- 某单位存在安全漏洞某站弱口令到SQL注入导致用户(姓名\电话\邮箱等)信息泄露
-  漏洞类型：应用配置错误
-- 奇艺几个CDN
-  漏洞类型：系统/服务运维配置不当
-- 努比亚主题分站漏洞打包
-  漏洞类型：系统/服务运维配置不当
-- IT分众子站源代码泄露
-  漏洞类型：系统/服务运维配置不当
-- 某单位存在安全漏洞某分站配置不当
-  漏洞类型：系统/服务运维配置不当
-- 某单位存在安全漏洞某分站可直shell入内网
-  漏洞类型：系统/服务运维配置不当
-- 9166wan网页游戏某 MongoDB 配置不当
-  漏洞类型：系统/服务运维配置不当
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Misconfiguration in a certain service on a certain social platform leads to arbitrary file read (including root account hashes, employee SVN account passwords, etc.)
+  Vulnerability type: improper system/service operations configuration
+- A certain organization has improper operations causing access to all core data-center servers and parts of the intranet
+  Vulnerability type: improper system/service operations configuration
+- Arbitrary file upload & XSS on a site of a certain e-commerce platform
+  Vulnerability type: improper system/service operations configuration
+- Telecom home gateway has permission and access-control vulnerabilities
+  Vulnerability type: improper system/service operations configuration
+- A specific version of Zoomla CMS appears to have a low-value backdoor
+  Vulnerability type: improper default configuration
+- Misconfiguration on a PPTV Games site leads to shell / intranet access
+  Vulnerability type: improper system/service operations configuration
+- Misconfiguration on a computer manufacturer's logistics platform leads to massive information disclosure (various orders, various reports)
+  Vulnerability type: improper system/service operations configuration
+- A certain organization has a security vulnerability causing partial user information disclosure
+  Vulnerability type: application configuration error
+- A certain organization's site goes from weak password to SQL injection, causing user information disclosure (names\phone numbers\emails, etc.)
+  Vulnerability type: application configuration error
+- Several Qiyi CDNs
+  Vulnerability type: improper system/service operations configuration
+- Nubia theme subsite vulnerability bundle
+  Vulnerability type: improper system/service operations configuration
+- Source-code disclosure on an IT Focus subsite
+  Vulnerability type: improper system/service operations configuration
+- Misconfiguration on a subsite of a certain organization
+  Vulnerability type: improper system/service operations configuration
+- A subsite of a certain organization can directly shell into the intranet
+  Vulnerability type: improper system/service operations configuration
+- 9166wan web game has a MongoDB misconfiguration
+  Vulnerability type: improper system/service operations configuration
+
+## High-Frequency Payload Patterns
 ```
 or:*:15240:0:99999:7:::games:*:15240:0:99999:7:::gop
 ```

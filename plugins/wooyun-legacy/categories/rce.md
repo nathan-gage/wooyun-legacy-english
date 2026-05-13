@@ -1,54 +1,54 @@
-# RCE 漏洞分析
+# RCE Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 3
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 3
 
 
-> 总案例数: 3
+> Total case count: 3
 
-### 高频参数
+### High-Frequency Parameters
 ```
-  repo: 1次
-  apkpackagename: 1次
-  error: 1次
-  packagename: 1次
-  intent: 1次
+  repo: 1 occurrence
+  apkpackagename: 1 occurrence
+  error: 1 occurrence
+  packagename: 1 occurrence
+  intent: 1 occurrence
 ```
 
-### 典型案例
+### Representative Cases
 
 #### wooyun-2015-0145365
-**某搜索引擎输入法安卓版存在远程获取信息控制用户行为漏洞（可恶意推入内容等4G网络内可找到目标）**
-- 参数: `repo, apkpackagename, error, packagename, intent`
+**The Android version of a certain search engine's input method has a vulnerability allowing remote information retrieval and user-behavior control (can maliciously push content, and targets can be found within a 4G network, etc.)**
+- Parameters: `repo, apkpackagename, error, packagename, intent`
 - Payload: `oreign Address         State       PID/Program namet`
 
 #### wooyun-2014-048949
-**114网址导航(app)命令执行**
+**114 Website Navigation (app) command execution**
 - Payload: `org/papers/548<script>function execute(cmdArgs) {ret`
 
 #### wooyun-2011-01334
-**某电商平台某电商IM工具远程ActiveX溢出0DAY**
+**Remote ActiveX overflow 0-day in an e-commerce IM tool on a certain e-commerce platform**
 - Payload: `<script>var buffer = '';while (buffer.length < 1111) buff`
 
 ---
 
 
-### 攻击模式分布
+### Attack Pattern Distribution
 ```
-  执行: 3次
+  execution: 3 occurrences
 ```
 
 
-## 典型案例标题
+## Representative Case Titles
 
-- 撸啊撸多玩盒子APP远程命令执行漏洞
-  漏洞类型：远程代码执行
-- dolphin zero APP远程代码执行漏洞
-  漏洞类型：远程代码执行
-- 飞鱼星路由器命令任意执行可ROOT控制路由
-  漏洞类型：远程代码执行
+- LoL Duowan Box APP remote command execution vulnerability
+  Vulnerability type: remote code execution
+- dolphin zero APP remote code execution vulnerability
+  Vulnerability type: remote code execution
+- Feiyuxing router arbitrary command execution allows ROOT control of the router
+  Vulnerability type: remote code execution
 
-## 高频 Payload 模式
+## High-Frequency Payload Patterns
 ```
-org/papers/548我的android系统是4.1.2function execute(cmdA
+org/papers/548my android system is 4.1.2function execute(cmdA
 ```

@@ -1,62 +1,62 @@
-# WEAK-PASSWORD 漏洞分析
+# WEAK-PASSWORD Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 15
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 15
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  id: 2次
-  dir: 1次
-  systemID: 1次
-```
-
-
-### 攻击模式分布
-```
-  弱口令: 11次
-  泄露: 4次
-  执行: 1次
-  上传: 1次
+  id: 2 occurrences
+  dir: 1 occurrence
+  systemID: 1 occurrence
 ```
 
 
-## 典型案例标题
-
-- 借前人的经验沦陷某省1400w流动人口信息
-  漏洞类型：后台弱口令
-- 58同城某业务至少8个站点存在弱口令导致再次Getshell(可再次漫游内网)
-  漏洞类型：服务弱口令
-- 某单位存在安全漏洞公平台存在weblogic及登陆弱口令（泄露大量内部信息，可shell)
-  漏洞类型：后台弱口令
-- 北斗精准农业综合服务弱密码可调度监控农机
-  漏洞类型：后台弱口令
-- 国家电网某站点弱口令(大量的居民缴费数据\貌似可对用户供电控制)
-  漏洞类型：后台弱口令
-- 某单位存在安全漏洞门及公司产品标准制定（涉及部委用户）
-  漏洞类型：后台弱口令
-- 某单位存在安全漏洞统一认证平台
-  漏洞类型：后台弱口令
-- 搜房网弱口令一枚泄露房源详情5W条
-  漏洞类型：后台弱口令
-- 海洋王某综合档案查询系统弱口令
-  漏洞类型：基础设施弱口令
-- 某家电厂商一处弱口令泄露敏感信息（任意文件删除）
-  漏洞类型：后台弱口令
-- 某单位存在安全漏洞集群机房某某通信厂商Tecal E6000 MM刀片服务器WEB弱口令导致telnet命令执行
-  漏洞类型：服务弱口令
-- 某单位存在安全漏洞某后台存在弱口令#万名学生信息泄露#严重泄露机密资料#
-  漏洞类型：后台弱口令
-- 父母网某后台弱口令一枚
-  漏洞类型：服务弱口令
-- 某单位存在安全漏洞sql漏洞
-  漏洞类型：基础设施弱口令
-- 城市轨道交通工程测量管理信息系统弱口令和任意文件上传
-  漏洞类型：后台弱口令
-
-## 高频 Payload 模式
+### Attack Pattern Distribution
 ```
-orm.jsp，存在weblogic弱口令12345678，登陆后可部署war包，发现前人留马痕迹。
+  weak password: 11 occurrences
+  disclosure: 4 occurrences
+  execution: 1 occurrence
+  upload: 1 occurrence
+```
+
+
+## Representative Case Titles
+
+- Using predecessors' experience to compromise 14 million floating-population records in a certain province
+  Vulnerability type: backend weak password
+- At least 8 sites in a 58.com business have weak passwords, leading to getshell again (can roam the intranet again)
+  Vulnerability type: service weak password
+- A certain organization's public platform has WebLogic and login weak passwords (leaks large amounts of internal information; shell possible)
+  Vulnerability type: backend weak password
+- Beidou precision agriculture integrated service weak password can schedule and monitor agricultural machinery
+  Vulnerability type: backend weak password
+- Weak password on a State Grid site (large amounts of resident payment data \ apparently can control users' power supply)
+  Vulnerability type: backend weak password
+- A certain organization has a security vulnerability in department and company product standard setting (involving ministry-level users)
+  Vulnerability type: backend weak password
+- A certain organization's unified authentication platform has a security vulnerability
+  Vulnerability type: backend weak password
+- One weak password on SouFun leaks 50,000 property-listing details
+  Vulnerability type: backend weak password
+- Weak password in Ocean's King integrated archive query system
+  Vulnerability type: infrastructure weak password
+- One weak password at a home-appliance manufacturer leaks sensitive information (arbitrary file deletion)
+  Vulnerability type: backend weak password
+- A certain organization's cluster data center has a telecom vendor Tecal E6000 MM blade-server WEB weak password leading to telnet command execution
+  Vulnerability type: service weak password
+- A certain organization's backend has a weak password #ten thousand student records leaked #serious leak of confidential materials#
+  Vulnerability type: backend weak password
+- One backend weak password on Parents Network
+  Vulnerability type: service weak password
+- A certain organization has a SQL vulnerability
+  Vulnerability type: infrastructure weak password
+- Weak password and arbitrary file upload in an urban rail transit engineering survey management information system
+  Vulnerability type: backend weak password
+
+## High-Frequency Payload Patterns
+```
+orm.jsp, WebLogic weak password 12345678 exists; after login, a WAR package can be deployed, and traces of a predecessor's webshell were found.
 ```

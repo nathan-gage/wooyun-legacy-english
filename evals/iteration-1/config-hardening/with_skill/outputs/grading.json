@@ -1,34 +1,32 @@
 {
-  "expectations": [
-    {
-      "text": "wooyun-cases: 包含至少2个具体WooYun案例（需有公司名）",
-      "passed": true,
-      "evidence": "包含7个具体案例：ChinaCache（JBoss配置不当Getshell）、DaoCloud（弱口令+Docker Remote API未授权）、同程旅游（配置不当任意文件上传getshell/root）、微糖（SQL注入影响860W患者/46W医生）、TCL（配置不当导致600万顾客信息泄露）、复星保德信（配置不当GetShell影响大量保单信息）、阳光保险（敏感信息泄露进入内网系统）"
-    },
-    {
-      "text": "statistics: 包含WooYun量化统计（案例数或占比）",
-      "passed": true,
-      "evidence": "配置不当域1,796案例72.6%高危、弱凭证域7,513案例58.2%高危（WooYun全库34%）、信息泄露域4,858案例64.7%高危、全数据集22,132案例。明确引用'admin/admin、root/空是WooYun全库中出现频率最高的默认凭证模式'"
-    },
-    {
-      "text": "all-components: 覆盖Tomcat/MySQL/Redis/Nginx",
-      "passed": true,
-      "evidence": "四大组件完整覆盖：一、Tomcat（16项：默认凭证/信息泄露/连接器/Session）、二、MySQL（16项：认证权限/网络暴露/安全配置/数据保护）、三、Redis（12项：认证访问/危险命令/运行安全）、四、Nginx（22项：信息泄露/访问控制/安全头/SSL/反向代理），共96个检查项"
-    },
-    {
-      "text": "default-creds: 含默认凭证检查",
-      "passed": true,
-      "evidence": "Tomcat: #3检查tomcat-users.xml中tomcat/tomcat、admin/admin默认账号；MySQL: #17检查root空密码、#18空密码账号、#19匿名账号；Redis: #33检查requirepass是否设置且非foobared；并引用WooYun数据'phpMyAdmin root/空密码出现频率极高'"
-    },
-    {
-      "text": "specific-commands: 含可执行命令",
-      "passed": true,
-      "evidence": "每个检查项均附具体命令，如：curl检测Manager（#1）、grep检查tomcat-users.xml（#3）、mysql -u root --password='' 测试空密码（#17）、redis-cli ping测试无密码连接（#34）、ss -tlnp | grep 端口检查监听（#24/#36）、grep server_tokens检查Nginx配置（#45）"
-    },
-    {
-      "text": "priority-ranking: 有优先级排序",
-      "passed": true,
-      "evidence": "每个检查项标注严重/高危/中危/低危等级。统计摘要：严重22项、高危42项、中危20项、低危12项。文末WooYun关键统计基于真实数据排序优先级，核心教训强调默认配置是最高优先修复项"
-    }
-  ]
+ "expectations": [{
+ "text": "wooyun-cases: include includeat least2ConcreteWooYunCase(company name required)",
+ "passed": true,
+ "evidence": "include include7ConcreteCase:ChinaCache(JBossMisconfigurationGetshell)/DaoCloud(Weak Credentials+Docker Remote APIUnauthorized)/same process (MisconfigurationArbitrary File Uploadgetshell/root)/micro (SQLinject inject impact response860W person/46W generate)/TCL(Misconfiguration Leading To600ten-thousand clientInformation Disclosure)/repeat protect information(MisconfigurationGetShellimpact response large quantity protect single information)/Sunshine Insurance(Sensitive InformationDisclosureadvance injectInternal NetworkSystem)"
+ },
+ {
+ "text": "statistics: include includeWooYunQuantitative Statistics(case count or percentage)",
+ "passed": true,
+ "evidence": "Misconfigurationdomain1,796Case72.6%High Risk/weakCredentialdomain7,513Case58.2%High Risk(WooYunall library34%)/Information Disclosuredomain4,858Case64.7%High Risk/allDatacollect22,132Case.clear confirm citeuse'admin/admin/root/EmptyisWooYunall libraryinout current frequency rate mostHighofDefault Credentialsmode'"
+ },
+ {
+ "text": "all-components: cover coverTomcat/MySQL/Redis/Nginx",
+ "passed": true,
+ "evidence": "four large array itemCompletecover cover:1. Tomcat(16items:Default Credentials/Information Disclosure/continuous connect device/Session)/2. MySQL(16items:AuthenticationPermission/Networkexpose exposure/Security Configuration/Dataprotect protect)/3. Redis(12items:Authenticationaccess ask/risk Command/operatelinesSecure)/4. Nginx(22items:Information Disclosure/Access Control/SecureHeader/SSL/reverse toward code manage), total96Check Item"
+ },
+ {
+ "text": "default-creds: includeDefault CredentialsCheck",
+ "passed": true,
+ "evidence": "Tomcat: #3Checktomcat-users.xmlintomcat/tomcat/admin/admindefault authAccount;MySQL: #17CheckrootBlank Password/#18Blank PasswordAccount/#19 nameAccount;Redis: #33Checkrequirepasswhetherset set andNon-foobared;and citeuseWooYunData'phpMyAdmin root/Blank Passwordout current frequency rateCritical'"
+ },
+ {
+ "text": "specific-commands: includeCanExecuteCommand",
+ "passed": true,
+ "evidence": "EachCheck Itemaverage attachConcreteCommand, such as:curlcheck testManager(#1)/grepChecktomcat-users.xml(#3)/mysql -u root --password='' testBlank Password(#17)/redis-cli pingtest noPasswordcontinuous connect(#34)/ss -tlnp | grep PortCheckmonitor (#24/#36)/grep server_tokensCheckNginxConfiguration(#45)"
+ },
+ {
+ "text": "priority-ranking: hasPriorityrank sequence",
+ "passed": true,
+ "evidence": "EachCheck Itemidentifier injectSevere/High Risk/Medium Risk/Low Risketc.level.Statistics need:Severe22items/High Risk42items/Medium Risk20items/Low Risk12items.text WooYunkeyStatisticsbased on real realDatarank sequencePriority, audit core lesson lesson strong debugDefault Configurationis mostHighpriority first fix repeatitems"
+ }]
 }

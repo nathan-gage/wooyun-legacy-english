@@ -1,41 +1,41 @@
-# FILE-TRAVERSAL 漏洞分析
+# FILE-TRAVERSAL Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 5
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 5
 
 
-> 总案例数: 5
+> Total case count: 5
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  urlParam: 1次
-  url: 1次
-  dd: 1次
-  RelatedPath: 1次
-```
-
-
-### 攻击模式分布
-```
-  遍历: 2次
-  泄露: 1次
+  urlParam: 1 occurrence
+  url: 1 occurrence
+  dd: 1 occurrence
+  RelatedPath: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  traversal: 2 occurrences
+  disclosure: 1 occurrence
+```
 
-- 淘客帝国CMS 任意文件读取
-  漏洞类型：任意文件遍历/下载
-- 某单位存在安全漏洞网站任意文件下载漏洞
-  漏洞类型：任意文件遍历/下载
-- 某单位存在安全漏洞内部资料泄露）
-  漏洞类型：任意文件遍历/下载
-- 华云数据某站存在任意文件读取漏洞
-  漏洞类型：任意文件遍历/下载
-- siteserver某子站存在目录遍历漏洞
-  漏洞类型：任意文件遍历/下载
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Taoke Empire CMS arbitrary file read
+  Vulnerability type: arbitrary file traversal / download
+- A certain organization's website has an arbitrary file download vulnerability
+  Vulnerability type: arbitrary file traversal / download
+- A certain organization has a security vulnerability causing internal material disclosure)
+  Vulnerability type: arbitrary file traversal / download
+- Arbitrary file read vulnerability on a Huayun Data site
+  Vulnerability type: arbitrary file traversal / download
+- Directory traversal vulnerability on a SiteServer subsite
+  Vulnerability type: arbitrary file traversal / download
+
+## High-Frequency Payload Patterns
 ```
 org/bugs/wooyun-2015-0116550/trace/4ca5456cb29a089f5
 ```

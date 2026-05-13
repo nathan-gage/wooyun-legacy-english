@@ -1,31 +1,31 @@
-# CSRF 漏洞分析
+# CSRF Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 3
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 3
 
 
-> 总案例数: 3
+> Total case count: 3
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  url: 1次
-  desc: 1次
-  callback: 1次
-  get_recent_photos: 1次
-  _: 1次
+  url: 1 occurrence
+  desc: 1 occurrence
+  callback: 1 occurrence
+  get_recent_photos: 1 occurrence
+  _: 1 occurrence
 ```
 
 
-## 典型案例标题
+## Representative Case Titles
 
-- 格瓦拉生活网多处CSRF可刷粉，发影评及回复
-  漏洞类型：CSRF
-- 某相册服务CSRF保存图片
-  漏洞类型：CSRF
-- 佳品网CSRF可登陆任意用户漏洞
-  漏洞类型：CSRF
+- Multiple CSRF issues on Gewara Lifestyle Network can inflate followers and post movie reviews and replies
+  Vulnerability type: CSRF
+- CSRF in a certain album service saves images
+  Vulnerability type: CSRF
+- CSRF on Jiapin.com allows login as arbitrary users
+  Vulnerability type: CSRF
 
-## 高频 Payload 模式
+## High-Frequency Payload Patterns
 ```
-orm action="https://example.com/[已脱敏]
+orm action="https://example.com/[redacted]
 ```

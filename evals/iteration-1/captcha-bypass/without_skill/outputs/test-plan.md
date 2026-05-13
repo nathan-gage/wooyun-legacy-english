@@ -1,481 +1,481 @@
-# 图形验证码安全测试方案
+# Image CAPTCHASecureTest Plan
 
-## 一、测试范围
+## 1. Test Scope
 
-| 业务场景 | 验证码类型 | 保护对象 |
+| business scenario scene | CAPTCHAtype | protect protect for |
 |---------|-----------|---------|
-| 登录页面 | 图形验证码 | 防暴力破解 |
-| 注册页面 | 图形验证码 | 防批量注册 |
-| 短信验证码发送接口 | 图形验证码 | 防短信轰炸 |
+| Loginpage | Image CAPTCHA | defenseBrute Force |
+| Registrationpage | Image CAPTCHA | defenseBatchRegistration |
+| SMS Verification CodeSendInterface | Image CAPTCHA | defenseSMS Bombing |
 
 ---
 
-## 二、测试用例矩阵
+## 2. Test Casematrix matrix
 
-### 2.1 验证码生命周期缺陷
+### 2.1 CAPTCHAgenerate fatal cycle period missing flaw
 
-#### TC-01: 验证码重复使用（最高优先级）
+#### TC-01: CAPTCHAserious repeat useuse(mostHighPriority)
 
-**攻击原理**: 验证码在验证成功后未失效，可被重复提交。
+**Attack Principle**: CAPTCHAinValidateSuccessafter notInvalidate, Canbe serious repeatSubmit.
 
-**测试步骤**:
-1. 获取验证码，人工识别正确答案
-2. 提交登录请求（正确验证码 + 错误密码），记录请求
-3. 不刷新验证码，修改密码字段后重放请求
-4. 观察是否仍返回"密码错误"而非"验证码错误"
+**Test Steps**:
+1. ObtainCAPTCHA, person toolIdentifycorrect confirmAnswer
+2. SubmitLoginRequest(correct confirmCAPTCHA + errorPassword), RecordRequest
+3. not New CAPTCHA, ModifyPasswordFieldafterReplayRequest
+4. ObservewhetherstillReturn"Passworderror"whileNon-"CAPTCHAerror"
 
-**判定标准**: 同一验证码值在首次验证后应立即失效。第二次提交必须返回验证码错误。
+**Pass/Fail Criteria**: SameCAPTCHAvalueintimesValidateaftershouldImmediately Invalidate.No. twotimesSubmitmustReturnCAPTCHAerror.
 
-**变体测试**:
-- 验证成功后重用（登录成功场景）
-- 验证失败后重用（登录失败场景）
-- 跨接口重用（登录页获取的验证码用于注册接口）
-
----
-
-#### TC-02: 验证码不过期 / TTL 过长
-
-**攻击原理**: 验证码长时间有效，攻击者有充裕时间识别或暴力猜解。
-
-**测试步骤**:
-1. 获取验证码并记录时间戳
-2. 等待不同时间间隔后提交（1min / 5min / 10min / 30min / 1h）
-3. 观察验证码是否仍然有效
-
-**判定标准**: 验证码有效期应 <= 5 分钟。推荐 2 分钟。
+**variant test**:
+- ValidateSuccessafter serioususe(LoginSuccessscenario scene)
+- ValidateFailureafter serioususe(LoginFailurescenario scene)
+- crossInterfaceserioususe(LoginpageObtainofCAPTCHAuseforRegistrationInterface)
 
 ---
 
-#### TC-03: 验证码与会话绑定缺失
+#### TC-02: CAPTCHAnot expired / TTL Too Long
 
-**攻击原理**: 验证码未绑定到特定 Session/Token，攻击者可用自己的验证码替换目标用户的验证码。
+**Attack Principle**: CAPTCHAlong time betweenValid, attack attack person has topup time betweenIdentifyorexpose power decode.
 
-**测试步骤**:
-1. 浏览器 A 打开登录页，获取验证码 A 和 Session A
-2. 浏览器 B 打开登录页，获取验证码 B 和 Session B
-3. 用 Session A + 验证码 B 的答案提交请求
-4. 观察是否验证通过
+**Test Steps**:
+1. ObtainCAPTCHAandRecordtimestamp
+2. etc.pendingDifferenttime between between isolate afterSubmit(1min / 5min / 10min / 30min / 1h)
+3. ObserveCAPTCHAwhetherstill Valid
 
-**判定标准**: 验证码必须与生成时的 Session/Token 严格绑定。跨 Session 使用必须失败。
-
----
-
-### 2.2 验证逻辑绕过
-
-#### TC-04: 删除验证码参数
-
-**攻击原理**: 服务端在验证码参数缺失时跳过校验。
-
-**测试步骤**:
-1. 正常抓包获取登录/注册请求
-2. 删除请求中的验证码字段（如 `captcha`、`code`、`verifyCode`）
-3. 发送请求，观察响应
-
-**判定标准**: 缺少验证码参数时必须拒绝请求，不得跳过验证。
+**Pass/Fail Criteria**: CAPTCHAValidity Periodshould <= 5 minutes.infer 2 minutes.
 
 ---
 
-#### TC-05: 验证码参数置空
+#### TC-03: CAPTCHAandSessionBindingMissing
 
-**攻击原理**: 服务端对空值校验不严格。
+**Attack Principle**: CAPTCHANot Boundtospecial set Session/Token, attack attack personCanuseself ownofCAPTCHAReplaceTargetUserofCAPTCHA.
 
-**测试步骤**:
-1. 将验证码字段设置为以下值分别测试:
-   - 空字符串 `""`
-   - `null`
-   - `undefined`
-   - `0`
-   - `false`
-   - 空格 `" "`
-   - 空数组 `[]`
+**Test Steps**:
+1. Browser A break openLoginpage, ObtainCAPTCHA A and Session A
+2. Browser B break openLoginpage, ObtainCAPTCHA B and Session B
+3. use Session A + CAPTCHA B ofAnswerSubmitRequest
+4. ObservewhetherValidatePass
 
-**判定标准**: 所有异常值均应返回验证码错误。
+**Pass/Fail Criteria**: CAPTCHAmustandgenerate complete timeof Session/Token severe formatBinding.cross Session useusemustFailure.
 
 ---
 
-#### TC-06: 万能验证码 / 测试后门
+### 2.2 Validatelogic logicBypass
 
-**攻击原理**: 开发环境遗留的测试验证码（如 `0000`、`1234`、`9999`、`test`）未在生产环境移除。
+#### TC-04: DeleteCAPTCHAParameter
 
-**测试步骤**:
-1. 尝试以下常见后门值: `0000`, `1234`, `4567`, `6666`, `8888`, `9999`, `test`, `admin`, `captcha`
-2. 检查配置文件/前端代码中是否有验证码白名单
-3. 检查是否存在特殊 Header（如 `X-Skip-Captcha: true`）可跳过验证
+**Attack Principle**: ServerinCAPTCHAParameterMissingtime skip throughValidate.
 
-**判定标准**: 不应存在任何硬编码的通过值。
+**Test Steps**:
+1. correct common packet captureObtainLogin/RegistrationRequest
+2. DeleteRequestinofCAPTCHAField(such as `captcha`/`code`/`verifyCode`)
+3. SendRequest, ObserveResponse
 
----
-
-#### TC-07: 验证码大小写敏感性测试
-
-**攻击原理**: 不区分大小写会降低暴力破解的字符空间（36^n 降为 10+26=36 降为 10+1=不变，实际是从 62^n 降至 36^n）。
-
-**测试步骤**:
-1. 获取包含字母的验证码
-2. 分别提交全大写、全小写、混合大小写版本
-3. 观察哪些被接受
-
-**判定标准**: 记录当前策略。如不区分大小写，需评估对安全性的影响并确认字符空间是否足够。
+**Pass/Fail Criteria**: missing lessCAPTCHAParametertimemustreject rejectRequest, not skip throughValidate.
 
 ---
 
-### 2.3 客户端安全
+#### TC-05: CAPTCHAParametersetEmpty
 
-#### TC-08: 验证码答案客户端泄露
+**Attack Principle**: ServerforEmptyvalueValidatenot severe format.
 
-**攻击原理**: 验证码答案通过 HTTP 响应、Cookie、Hidden Field 等方式泄露到客户端。
+**Test Steps**:
+1. willCAPTCHAFieldset setasthe followingvalue part level test:
+ - Emptycharacter symbol string `""`
+ - `null`
+ - `undefined`
+ - `0`
+ - `false`
+ - Emptyformat `" "`
+ - Emptynumber array `[]`
 
-**测试步骤**:
-1. 获取验证码图片时，检查完整 HTTP 响应:
-   - Response Body（JSON 字段中是否包含答案）
-   - Response Headers（如 `X-Captcha-Code`、`X-Verify-Code` 等自定义 Header）
-   - Set-Cookie（Cookie 值中是否包含验证码明文或可逆编码）
-2. 检查 HTML 源码中 hidden input 是否包含答案
-3. 检查 JavaScript 变量/localStorage/sessionStorage
-4. 检查验证码图片的文件名/URL 是否包含答案（如 `/captcha?code=a3Xk`）
-
-**判定标准**: 验证码答案不应以任何形式传输到客户端。
-
----
-
-#### TC-09: 验证码前端校验
-
-**攻击原理**: 验证码仅在前端 JavaScript 校验，服务端不校验。
-
-**测试步骤**:
-1. 使用浏览器开发者工具禁用 JavaScript
-2. 直接构造 HTTP 请求（不经过前端表单）提交到后端接口
-3. 使用 Burp Suite / 抓包工具绕过前端直接发送请求
-
-**判定标准**: 服务端必须独立校验验证码，不依赖前端。
+**Pass/Fail Criteria**: Allabnormal common value averageshouldReturnCAPTCHAerror.
 
 ---
 
-#### TC-10: 验证码图片可预测
+#### TC-06: ten-thousand canCAPTCHA / test after
 
-**攻击原理**: 验证码生成算法使用可预测的随机种子或固定序列。
+**Attack Principle**: open initiate environment environment retainoftestCAPTCHA(such as `0000`/`1234`/`9999`/`test`)notingenerate asset environment environment move remove.
 
-**测试步骤**:
-1. 连续请求 100 张验证码图片
-2. 分析是否存在重复模式
-3. 检查是否存在固定的验证码池（如只有 100 张图循环使用）
-4. 检查验证码 URL 中的参数是否可预测（如递增 ID）
+**Test Steps**:
+1. Attemptthe followingcommon seen after value: `0000`, `1234`, `4567`, `6666`, `8888`, `9999`, `test`, `admin`, `captcha`
+2. CheckConfigurationFile/FrontendCodeinwhether hasCAPTCHAWhitelist
+3. Checkwhether existsspecial Header(such as `X-Skip-Captcha: true`)Canskip throughValidate
 
-**判定标准**: 验证码应使用密码学安全的随机数生成器，不存在可预测模式。
+**Pass/Fail Criteria**: should notexistinany hardEncodingofPassvalue.
 
 ---
 
-### 2.4 暴力破解防护
+#### TC-07: CAPTCHACase Sensitivitytest
 
-#### TC-11: 验证码字符空间不足
+**Attack Principle**: not part case LowBrute ForceofCharacter Space(36^n as 10+26=36 as 10+1=not change, real actual isfrom 62^n 36^n).
 
-**攻击原理**: 纯数字 4 位验证码仅有 10^4 = 10000 种可能，可在短时间内穷举。
+**Test Steps**:
+1. Obtaininclude include character ofCAPTCHA
+2. part levelSubmitall large write/all small write/mix combine case version version
+3. Observewhich some be connect affected
 
-**测试步骤**:
-1. 观察验证码组成（纯数字/字母+数字/含特殊字符）
-2. 统计验证码长度
-3. 计算总字符空间
+**Pass/Fail Criteria**: Recordwhen first policy strategy.such asnot part case, need assess assess forSecurenessofimpact response andConfirmCharacter Spacewhether.
 
-**判定标准**:
+---
 
-| 组合方式 | 位数 | 空间大小 | 安全评价 |
+### 2.3 ClientSecure
+
+#### TC-08: CAPTCHAAnswerClient-Side Disclosure
+
+**Attack Principle**: CAPTCHAAnswerPass HTTP Response/Cookie/Hidden Field etc.method modeDisclosuretoClient.
+
+**Test Steps**:
+1. ObtainCAPTCHAimage image time, CheckComplete HTTP Response:
+ - Response Body(JSON Fieldinwhetherinclude includeAnswer)
+ - Response Headers(such as `X-Captcha-Code`/`X-Verify-Code` etc.self set define Header)
+ - Set-Cookie(Cookie valueinwhetherinclude includeCAPTCHAclear textorCanEncoding)
+2. Check HTML source codein hidden input whetherinclude includeAnswer
+3. Check JavaScript change quantity/localStorage/sessionStorage
+4. CheckCAPTCHAimage imageofFilename/URL whetherinclude includeAnswer(such as `/captcha?code=a3Xk`)
+
+**Pass/Fail Criteria**: CAPTCHAAnswershould notas any mode pass outputtoClient.
+
+---
+
+#### TC-09: CAPTCHAFrontend Validation
+
+**Attack Principle**: CAPTCHAonlyinFrontend JavaScript Validate, ServernotValidate.
+
+**Test Steps**:
+1. useuseBrowseropen initiate personTooldisableuse JavaScript
+2. Directstructure forge HTTP Request(without going throughFrontendtable single)SubmittoBackendInterface
+3. useuse Burp Suite / packet captureToolBypassFrontendDirectSendRequest
+
+**Pass/Fail Criteria**: Servermustindependent standaloneValidateCAPTCHA, not depend relyFrontend.
+
+---
+
+#### TC-10: CAPTCHAimage imagePredictable
+
+**Attack Principle**: CAPTCHAgenerate complete algorithm method useusePredictableof machine type suborFixedsequence list.
+
+**Test Steps**:
+1. continuous continueRequest 100 itemsCAPTCHAimage image
+2. Analyzewhether existsserious repeat mode
+3. Checkwhether existsFixedofCAPTCHA(such asonly has 100 itemsimage follow environment useuse)
+4. CheckCAPTCHA URL inofParameterwhetherPredictable(such asrecursive increase ID)
+
+**Pass/Fail Criteria**: CAPTCHAshoulduseusePasswordSecureof machine number generate complete device, not existinPredictablemode.
+
+---
+
+### 2.4 Brute Forcedefense protect
+
+#### TC-11: CAPTCHACharacter SpaceInsufficient
+
+**Attack Principle**: number character 4 charactersCAPTCHAonly has 10^4 = 10000 typeCancan, Caninshort time between internalExhaustive Guessing.
+
+**Test Steps**:
+1. ObserveCAPTCHAarray complete(number character/character +number character/includeSpecial Characters)
+2. StatisticsCAPTCHAlong degree
+3. ComputetotalCharacter Space
+
+**Pass/Fail Criteria**:
+
+| array combine method mode | characters number | Emptybetween large small | Secureassess price |
 |---------|------|---------|---------|
-| 纯数字 | 4 | 10,000 | 极不安全 |
-| 纯数字 | 6 | 1,000,000 | 勉强 |
-| 字母+数字 | 4 | 1,679,616 | 一般 |
-| 字母+数字 | 6 | 2,176,782,336 | 安全 |
+| number character | 4 | 10,000 | extremeInsecure |
+| number character | 6 | 1,000,000 | strong |
+| character +number character | 4 | 1,679,616 | one |
+| character +number character | 6 | 2,176,782,336 | Secure |
 
-推荐: 字母+数字混合，至少 4 位，配合频率限制。
-
----
-
-#### TC-12: 无频率限制 / 限制不足
-
-**攻击原理**: 接口无请求频率限制，允许高速暴力猜解验证码。
-
-**测试步骤**:
-1. 用脚本对登录接口每秒发送 10/50/100 次请求（每次使用不同验证码值）
-2. 观察是否触发限流（HTTP 429 / 封禁 / 延迟响应）
-3. 测试对验证码获取接口的频率限制（短时间大量请求新验证码）
-4. 测试限流维度:
-   - 按 IP 限流
-   - 按账号限流
-   - 按 Session 限流
-
-**判定标准**: 应在以下任一维度实施频率限制:
-- 单 IP 每分钟请求次数上限
-- 单账号每分钟尝试次数上限
-- 验证码连续错误 N 次后锁定（建议 5 次）
+infer: character +number character mix combine, at least 4 characters, config combineRate Limit.
 
 ---
 
-#### TC-13: 限流绕过
+#### TC-12: noRate Limit / limit makeInsufficient
 
-**攻击原理**: 频率限制可通过特定手段绕过。
+**Attack Principle**: InterfacenoRequestRate Limit, allow allowHighrate expose power decodeCAPTCHA.
 
-**测试步骤**:
-1. **IP 轮换**: 使用代理池轮换 IP，测试是否仅按 IP 限流
-2. **Header 伪造**: 添加 `X-Forwarded-For`、`X-Real-IP`、`X-Client-IP` 等 Header 伪造来源 IP
-3. **大小写/编码变体**: 将 URL 路径大小写变换、URL 编码（如 `/Login` vs `/login` vs `/%6Cogin`）
-4. **参数污染**: 添加无意义参数绕过缓存键（如 `?_=timestamp`）
-5. **协议切换**: HTTP vs HTTPS 是否共享限流计数器
-6. **Session 重建**: 清除 Cookie 获取新 Session 是否重置限流计数
+**Test Steps**:
+1. useScriptforLoginInterfaceeach Send 10/50/100 timesRequest(eachtimesuseuseDifferentCAPTCHAvalue)
+2. Observewhethertrigger initiateRate Limiting(HTTP 429 / disable / Response)
+3. test forCAPTCHAObtainInterfaceofRate Limit(short time between large quantityRequestNew CAPTCHA)
+4. testRate LimitingDimension:
+ - by IP Rate Limiting
+ - byAccountRate Limiting
+ - by Session Rate Limiting
 
-**判定标准**: 限流机制不应被上述任何手段绕过。
+**Pass/Fail Criteria**: shouldinthe followingany oneDimensionreal Rate Limit:
+- single IP eachminutesRequesttimesnumber above limit
+- singleAccounteachminutesAttempttimesnumber above limit
+- CAPTCHAConsecutive Errors N timesafter lock set(create protocol 5 times)
 
 ---
 
-### 2.5 OCR/AI 识别对抗
+#### TC-13: Rate LimitingBypass
 
-#### TC-14: 验证码抗 OCR 能力
+**Attack Principle**: Rate LimitCanPassspecial set mobile Bypass.
 
-**攻击原理**: 简单验证码可被 OCR 引擎或 AI 模型高准确率识别。
+**Test Steps**:
+1. **IP rotate change**: useusecode manage rotate change IP, testwhetheronly by IP Rate Limiting
+2. **Header forgery**: Add `X-Forwarded-For`/`X-Real-IP`/`X-Client-IP` etc. Header forgery come source IP
+3. **case/Encodingvariant**: will URL Pathcase change change/URL Encoding(such as `/Login` vs `/login` vs `/%6Cogin`)
+4. **Parameter Pollution**: Addno meaning defineParameterBypass exist key(such as `?_=timestamp`)
+5. **protocol protocol switch change**: HTTP vs HTTPS whethersharedRate Limitingplan number device
+6. **Session serious create**: clear remove Cookie Obtainnew Session whetherserious setRate Limitingplan number
 
-**测试步骤**:
-1. 批量下载 200 张验证码图片
-2. 使用以下工具/服务进行识别:
-   - Tesseract OCR（开源基线）
-   - ddddocr（专攻验证码的开源库）
-   - 多模态大模型（GPT-4o / Claude / Qwen-VL）
-   - 第三方打码平台（超级鹰等）
-3. 统计各工具的识别准确率
+**Pass/Fail Criteria**: Rate Limitingmachine makeshould notbe above description any mobile Bypass.
 
-**判定标准**:
+---
 
-| 识别率 | 风险等级 | 行动建议 |
+### 2.5 OCR/AI IdentifyforResistance To
+
+#### TC-14: CAPTCHAResistance To OCR can power
+
+**Attack Principle**: simple singleCAPTCHACanbe OCR cite or AI model typeHighaccurate confirm rateIdentify.
+
+**Test Steps**:
+1. BatchDownload 200 itemsCAPTCHAimage image
+2. useusethe followingTool/service advancelinesIdentify:
+ - Tesseract OCR(open source base line)
+ - ddddocr(special attackCAPTCHAofopen source library)
+ - Multimodal LLM(GPT-4o / Claude / Qwen-VL)
+ - Third-Party CAPTCHA-Solving Platform(super level etc.)
+3. StatisticseachToolofIdentifyaccurate confirm rate
+
+**Pass/Fail Criteria**:
+
+| Recognition Rate | Risk Level | linesdynamic create protocol |
 |-------|---------|---------|
-| > 80% | 高危 | 必须更换验证码方案 |
-| 50-80% | 中危 | 增加干扰元素或升级方案 |
-| 20-50% | 低危 | 可接受，持续监控 |
-| < 20% | 安全 | 无需行动 |
+| > 80% | High Risk | mustupdate changeCAPTCHAmethod plan |
+| 50-80% | Medium Risk | increase add yuanorescalate level method plan |
+| 20-50% | Low Risk | Acceptable, hold continue monitor control |
+| < 20% | Secure | no need tolinesdynamic |
 
-**评估维度**:
-- 字符扭曲程度
-- 干扰线/噪点强度
-- 字符粘连程度
-- 背景复杂度
-- 字体多样性
-
----
-
-#### TC-15: 验证码图片信息泄露
-
-**攻击原理**: 验证码图片元数据或属性泄露答案信息。
-
-**测试步骤**:
-1. 检查图片 EXIF 元数据
-2. 检查图片 alt 属性、title 属性
-3. 检查图片 base64 编码中是否有规律（相同答案 = 相同编码 = 固定图库）
-4. 用相同答案获取多张图片，对比图片 hash 是否一致（识别图库模式）
-
-**判定标准**: 图片不应包含任何可推导出答案的元数据或模式。
+**assess assessDimension**:
+- Character Distortion Level
+- Interference Lines/Noisestrong degree
+- Character Adhesion Level
+- Background Complexity
+- Font Diversity
 
 ---
 
-### 2.6 接口逻辑缺陷
+#### TC-15: CAPTCHAimage imageInformation Disclosure
 
-#### TC-16: 短信接口的验证码校验绑定
+**Attack Principle**: CAPTCHAimage imageyuanDataorattributesDisclosureAnswerinformation.
 
-**攻击原理**: 图形验证码校验与短信发送接口未原子化绑定，可分步绕过。
+**Test Steps**:
+1. Checkimage image EXIF yuanData
+2. Checkimage image alt attributes/title attributes
+3. Checkimage image base64 Encodinginwhether hasscale law(related sameAnswer = related sameEncoding = FixedImage Library)
+4. userelated sameAnswerObtainmanyitemsimage image, for ratio image image hash whetherone cause(IdentifyImage Librarymode)
 
-**测试步骤**:
-1. 正常流程: 输入图形验证码 -> 调用短信发送接口 -> 服务端校验图形验证码 -> 发送短信
-2. 攻击流程:
-   - 用正确的图形验证码调用短信发送接口一次（通过校验）
-   - 不刷新图形验证码，直接重复调用短信发送接口
-   - 观察是否能连续发送短信（绕过图形验证码限制）
-
-**判定标准**: 每次调用短信发送接口都应独立校验图形验证码。图形验证码在单次短信发送后应立即失效。
+**Pass/Fail Criteria**: image imageshould notinclude include anyCaninferExportAnswerofyuanDataormode.
 
 ---
 
-#### TC-17: 验证码与业务参数解耦
+### 2.6 Interfacelogic logic missing flaw
 
-**攻击原理**: 验证码校验通过后，后续业务请求不再关联验证码结果，可篡改业务参数。
+#### TC-16: SMS InterfaceofCAPTCHAValidateBinding
 
-**测试步骤**:
-1. 用手机号 A + 正确验证码发送短信 -> 成功
-2. 截获请求，修改手机号为 B，重发相同请求（保持验证码不变）
-3. 观察短信是否发送到手机号 B
+**Attack Principle**: Image CAPTCHAValidateandSMS Sending InterfacenotAtomicBinding, CanStepwise Bypass.
 
-**判定标准**: 验证码校验应绑定关键业务参数（如手机号）。参数变更后验证码应失效。
+**Test Steps**:
+1. correct common flow process: output injectImage CAPTCHA -> CallSMS Sending Interface -> ServerValidateImage CAPTCHA -> Sendshort information
+2. attack attack flow process:
+ - usecorrect confirmofImage CAPTCHACallSMS Sending Interfaceonetimes(PassValidate)
+ - notRefreshImage CAPTCHA, Directserious repeatCallSMS Sending Interface
+ - Observewhethercan continuous continueSendshort information(BypassImage CAPTCHAlimit make)
 
----
-
-#### TC-18: 并发竞争条件
-
-**攻击原理**: 利用并发请求在验证码失效前多次使用同一验证码。
-
-**测试步骤**:
-1. 获取一个有效验证码
-2. 同时发送 20-50 个并发请求，全部携带相同的正确验证码
-3. 统计成功通过校验的请求数
-
-**判定标准**: 同一验证码在并发场景下也应只能成功使用一次（需原子化校验+失效操作）。
+**Pass/Fail Criteria**: eachtimesCallSMS Sending Interfaceallshouldindependent standaloneValidateImage CAPTCHA.Image CAPTCHAinsingletimesshort informationSendaftershouldImmediately Invalidate.
 
 ---
 
-### 2.7 流程绕过
+#### TC-17: CAPTCHAandBusiness ParameterDecoupling
 
-#### TC-19: 直接调用下游接口
+**Attack Principle**: CAPTCHAValidatePassafter, after continue businessRequestnot again key connectCAPTCHAResult, Cantamper changeBusiness Parameter.
 
-**攻击原理**: 绕过验证码页面，直接调用登录/注册的后端接口。
+**Test Steps**:
+1. usemobile number A + correct confirmCAPTCHASendshort information -> Success
+2. intercept Request, Modifymobile numberas B, Resendrelated sameRequest(protect holdCAPTCHAnot change)
+3. Observeshort informationwhetherSendtomobile number B
 
-**测试步骤**:
-1. 分析前端代码，找到实际的后端接口地址
-2. 不经过验证码获取/校验步骤，直接构造请求调用:
-   - 登录接口 (`/api/login`)
-   - 注册接口 (`/api/register`)
-   - 短信发送接口 (`/api/sms/send`)
-3. 测试不携带验证码相关字段时接口的响应
-
-**判定标准**: 后端接口必须强制校验验证码，无论请求来源。
+**Pass/Fail Criteria**: CAPTCHAValidateshouldBindingkeyBusiness Parameter(such asmobile number).Parameterchange update afterCAPTCHAshouldInvalidate.
 
 ---
 
-#### TC-20: 步骤跳跃
+#### TC-18: Concurrent Race Condition
 
-**攻击原理**: 多步骤流程中跳过验证码步骤。
+**Attack Principle**: exploituseConcurrencyRequestinCAPTCHAInvalidatefirst manytimesuseuseSameCAPTCHA.
 
-**测试步骤**:
-1. 分析注册/登录是否为多步骤流程（如 Step1: 验证码 -> Step2: 填写信息 -> Step3: 提交）
-2. 直接跳到 Step2/Step3，不执行 Step1
-3. 检查服务端是否验证步骤完整性
+**Test Steps**:
+1. ObtainoneValidCAPTCHA
+2. same timeSend 20-50 ConcurrencyRequest, All with related sameofcorrect confirmCAPTCHA
+3. StatisticsSuccessPassValidateofRequestnumber
 
-**判定标准**: 服务端应维护步骤状态，拒绝跳跃执行。
-
----
-
-### 2.8 特殊场景
-
-#### TC-21: 验证码刷新后旧码有效
-
-**攻击原理**: 点击刷新获取新验证码后，旧验证码仍然有效。
-
-**测试步骤**:
-1. 获取验证码 A 并记录答案
-2. 点击刷新，获取验证码 B
-3. 用验证码 A 的答案提交请求
-4. 观察是否验证通过
-
-**判定标准**: 刷新验证码时，旧验证码必须立即失效。
+**Pass/Fail Criteria**: SameCAPTCHAinConcurrencyscenario scene under shouldcan onlySuccessuseuseonetimes(needAtomicValidate+Invalidateoperation).
 
 ---
 
-#### TC-22: 多验证码并存
+### 2.7 Flow Bypass
 
-**攻击原理**: 同一 Session 可同时生成多个有效验证码。
+#### TC-19: Direct CallDownstream Interface
 
-**测试步骤**:
-1. 在同一 Session 下并发请求 10 个验证码
-2. 分别尝试用每个验证码的答案提交
-3. 观察有多少个验证码同时有效
+**Attack Principle**: BypassCAPTCHApage, Direct CallLogin/RegistrationofBackendInterface.
 
-**判定标准**: 同一 Session 在同一时间应只有最新生成的一个验证码有效。
+**Test Steps**:
+1. AnalyzeFrontendCode, toreal actualofBackendInterfaceAddress
+2. without going throughCAPTCHAObtain/ValidateStep, Directstructure forgeRequestCall:
+ - LoginInterface (`/api/login`)
+ - RegistrationInterface (`/api/register`)
+ - SMS Sending Interface (`/api/sms/send`)
+3. test not withCAPTCHArelated keyFieldtimeInterfaceofResponse
 
----
-
-#### TC-23: 异常输入处理
-
-**攻击原理**: 异常输入导致服务端错误或绕过校验。
-
-**测试步骤**:
-1. 提交超长验证码值（1000+ 字符）
-2. 提交特殊字符（`<script>`, `' OR 1=1--`, `../`, `%00`）
-3. 提交非字符串类型（数组 `["a","b"]`、对象 `{"code":"1234"}`、整数）
-4. 提交 Unicode 字符（全角数字、同形字符攻击）
-
-**判定标准**: 所有异常输入应返回统一的验证码错误响应，不应触发 500 错误或信息泄露。
+**Pass/Fail Criteria**: BackendInterfacemuststrong makeValidateCAPTCHA, no commentRequestcome source.
 
 ---
 
-## 三、测试优先级排序
+#### TC-20: Step Skipping
 
-### P0 - 必须立即测试（绕过即高危）
+**Attack Principle**: manyStepflow processinskip throughCAPTCHAStep.
 
-| 编号 | 测试项 | 危害 |
+**Test Steps**:
+1. AnalyzeRegistration/Loginwhether ismanyStepflow process(such as Step1: CAPTCHA -> Step2: fill in information -> Step3: Submit)
+2. Directskipto Step2/Step3, notExecute Step1
+3. CheckServerwhetherValidateStepCompleteness
+
+**Pass/Fail Criteria**: Servershouldmaintain protectStepStatus, reject reject skip Execute.
+
+---
+
+### 2.8 special scenario scene
+
+#### TC-21: CAPTCHARefreshafterOld CodeValid
+
+**Attack Principle**: point attackRefreshObtainNew CAPTCHAafter, oldCAPTCHAstill Valid.
+
+**Test Steps**:
+1. ObtainCAPTCHA A andRecordAnswer
+2. point attackRefresh, ObtainCAPTCHA B
+3. useCAPTCHA A ofAnswerSubmitRequest
+4. ObservewhetherValidatePass
+
+**Pass/Fail Criteria**: New CAPTCHAtime, oldCAPTCHAmustImmediately Invalidate.
+
+---
+
+#### TC-22: Multiple Concurrent CAPTCHAs
+
+**Attack Principle**: Same Session Cansame time generate complete manyValidCAPTCHA.
+
+**Test Steps**:
+1. inSame Session underConcurrencyRequest 10 CAPTCHA
+2. part levelAttemptuseEachCAPTCHAofAnswerSubmit
+3. Observehas many lessCAPTCHAsame timeValid
+
+**Pass/Fail Criteria**: Same Session inSametime betweenshouldonly has most new generate completeofoneCAPTCHAValid.
+
+---
+
+#### TC-23: Abnormal Inputhandle manage
+
+**Attack Principle**: Abnormal InputCausingServererrororBypassValidate.
+
+**Test Steps**:
+1. Submitsuper longCAPTCHAvalue(1000+ character symbol)
+2. SubmitSpecial Characters(`<script>`, `' OR 1=1--`, `../`, `%00`)
+3. SubmitNon-character symbol string type(number array `["a","b"]`/for `{"code":"1234"}`/integer number)
+4. Submit Unicode character symbol(all number character/Homoglyph Attack)
+
+**Pass/Fail Criteria**: AllAbnormal InputshouldReturnsystem oneofCAPTCHAerrorResponse, should nottrigger initiate 500 errororInformation Disclosure.
+
+---
+
+## 3. Test Priority Ranking
+
+### P0 - muststandalone that is test(Bypassthat isHigh Risk)
+
+| ID | Test Item | risk |
 |-----|-------|------|
-| TC-01 | 验证码重复使用 | 完全失去防护，可无限暴力破解 |
-| TC-04 | 删除验证码参数 | 完全绕过验证码 |
-| TC-05 | 验证码参数置空 | 完全绕过验证码 |
-| TC-08 | 答案客户端泄露 | 自动化获取答案，验证码形同虚设 |
-| TC-09 | 前端校验 | 后端不校验等于无防护 |
-| TC-16 | 短信接口验证码绑定 | 绕过图形验证码实现短信轰炸 |
-| TC-18 | 并发竞争条件 | 单码多用，批量攻击 |
-| TC-19 | 直接调用下游接口 | 完全跳过验证码流程 |
+| TC-01 | CAPTCHAserious repeat useuse | complete all loss defense protect, Canno limitBrute Force |
+| TC-04 | DeleteCAPTCHAParameter | complete allBypassCAPTCHA |
+| TC-05 | CAPTCHAParametersetEmpty | complete allBypassCAPTCHA |
+| TC-08 | AnswerClient-Side Disclosure | self dynamic izeObtainAnswer, CAPTCHA same set |
+| TC-09 | Frontend Validation | BackendnotValidateetc.for no defense protect |
+| TC-16 | SMS InterfaceCAPTCHABinding | BypassImage CAPTCHAreal currentSMS Bombing |
+| TC-18 | Concurrent Race Condition | single code manyuse, Batchattack attack |
+| TC-19 | Direct CallDownstream Interface | complete all skip throughCAPTCHAflow process |
 
-### P1 - 优先测试（中高风险）
+### P1 - priority first test(inHighrisk)
 
-| 编号 | 测试项 | 危害 |
+| ID | Test Item | risk |
 |-----|-------|------|
-| TC-03 | Session 绑定缺失 | 跨会话替换验证码 |
-| TC-06 | 万能验证码 | 后门直接绕过 |
-| TC-12 | 无频率限制 | 穷举验证码 |
-| TC-14 | 抗 OCR 能力 | 自动化批量识别 |
-| TC-17 | 业务参数解耦 | 篡改手机号发送短信 |
-| TC-21 | 刷新后旧码有效 | 扩大攻击时间窗口 |
+| TC-03 | Session BindingMissing | crossSessionReplaceCAPTCHA |
+| TC-06 | ten-thousand canCAPTCHA | after DirectBypass |
+| TC-12 | noRate Limit | Exhaustive GuessingCAPTCHA |
+| TC-14 | Resistance To OCR can power | self dynamic izeBatchIdentify |
+| TC-17 | Business ParameterDecoupling | tamper changemobile numberSendshort information |
+| TC-21 | RefreshafterOld CodeValid | large attack attackTime Window |
 
-### P2 - 常规测试（中低风险）
+### P2 - common scale test(inLowrisk)
 
-| 编号 | 测试项 | 危害 |
+| ID | Test Item | risk |
 |-----|-------|------|
-| TC-02 | TTL 过长 | 扩大识别/猜解窗口 |
-| TC-07 | 大小写敏感性 | 缩小字符空间 |
-| TC-10 | 验证码可预测 | 模式识别绕过 |
-| TC-11 | 字符空间不足 | 降低穷举成本 |
-| TC-13 | 限流绕过 | 频率限制失效 |
-| TC-15 | 图片信息泄露 | 辅助自动化识别 |
-| TC-20 | 步骤跳跃 | 流程绕过 |
-| TC-22 | 多验证码并存 | 扩大猜解面 |
-| TC-23 | 异常输入处理 | 异常行为 / 信息泄露 |
+| TC-02 | TTL Too Long | largeIdentify/ decode window interface |
+| TC-07 | Case Sensitivity | smallCharacter Space |
+| TC-10 | CAPTCHAPredictable | modeIdentifyBypass |
+| TC-11 | Character SpaceInsufficient | LowExhaustive Guessingcomplete version |
+| TC-13 | Rate LimitingBypass | Rate LimitInvalidate |
+| TC-15 | image imageInformation Disclosure | self dynamic izeIdentify |
+| TC-20 | Step Skipping | Flow Bypass |
+| TC-22 | Multiple Concurrent CAPTCHAs | large decode page |
+| TC-23 | Abnormal Inputhandle manage | abnormal commonlinesas / Information Disclosure |
 
 ---
 
-## 四、测试工具链
+## 4. Test Toolchain
 
-| 用途 | 工具 |
+| Purpose | Tool |
 |------|-----|
-| 抓包/重放 | Burp Suite / mitmproxy |
-| 并发测试 | Burp Intruder / Turbo Intruder / 自编脚本 |
-| OCR 基线 | Tesseract / ddddocr |
-| AI 识别 | GPT-4o / Claude Vision / Qwen-VL |
-| 脚本自动化 | Python requests + threading |
-| 浏览器自动化 | Playwright / browser-use |
+| packet capture/Replay | Burp Suite / mitmproxy |
+| Concurrencytest | Burp Intruder / Turbo Intruder / self compileScript |
+| OCR base line | Tesseract / ddddocr |
+| AI Identify | GPT-4o / Claude Vision / Qwen-VL |
+| Scriptself dynamic ize | Python requests + threading |
+| Browserself dynamic ize | Playwright / browser-use |
 
 ---
 
-## 五、修复建议概览
+## 5. Remediation Recommendations Overview
 
-当测试发现问题后，参考以下修复方向：
+when testDiscoverask problem after, participate referencethe followingfix repeat method toward:
 
-| 问题类别 | 修复方案 |
+| Issue Category | fix repeat method plan |
 |---------|---------|
-| 验证码重复使用 | 校验成功/失败后立即从 Redis/DB 删除，校验和删除为原子操作 |
-| Session 未绑定 | 生成时将验证码与 SessionID 绑定存储，校验时严格匹配 |
-| 客户端泄露 | 验证码答案只存服务端（Redis），Response 中仅返回验证码图片或 Token |
-| 频率限制缺失 | IP + 账号双维度限流，配合滑动窗口算法，连续错误升级为账号锁定 |
-| 抗 OCR 不足 | 升级为行为式验证码（滑块/点选/旋转）或接入专业验证码服务（reCAPTCHA / hCaptcha / 极验） |
-| 并发竞争 | 使用 Redis SETNX 或分布式锁保证验证码校验+失效的原子性 |
-| 短信轰炸 | 图形验证码单次有效 + 同号码 60s 冷却 + 每日上限 |
+| CAPTCHAserious repeat useuse | ValidateSuccess/Failureafter standalone that isfrom Redis/DB Delete, ValidateandDeleteasprinciple sub operation |
+| Session Not Bound | generate complete timewillCAPTCHAand SessionID BindingStorage, Validatetime severe format match config |
+| Client-Side Disclosure | CAPTCHAAnsweronly existServer(Redis), Response inonlyReturnCAPTCHAimage imageor Token |
+| Rate LimitMissing | IP + AccountdualDimensionRate Limiting, config combine dynamic window interface algorithm method, Consecutive Errorsescalate levelasAccount Lockout |
+| Resistance To OCR Insufficient | escalate levelaslinesasmodeCAPTCHA(block/point select/ transfer)orconnect inject special businessCAPTCHAservice(reCAPTCHA / hCaptcha / extreme validate) |
+| Concurrency | useuse Redis SETNX orDistributed Lockprotect certCAPTCHAValidate+InvalidateofAtomicity |
+| SMS Bombing | Image CAPTCHAsingletimesValid + same number code 60s Cooldown + Daily Limit |
 
 ---
 
-## 六、测试报告模板
+## 6. Test Report Template
 
-每条测试用例执行后，按以下格式记录：
+each conditionTest CaseExecuteafter, bythe followingformat modeRecord:
 
 ```
-测试编号: TC-XX
-测试项: xxx
-测试时间: YYYY-MM-DD HH:MM
-测试接口: POST /api/xxx
-测试结果: 通过 / 未通过
-风险等级: 高危 / 中危 / 低危
-复现步骤:
-  1. ...
-  2. ...
-证据:
-  - 请求报文截图/文本
-  - 响应报文截图/文本
-修复建议: xxx
+Test ID: TC-XX
+Test Item: xxx
+Test Time: YYYY-MM-DD HH:MM
+Test Interface: POST /api/xxx
+Test Result: Pass / Fail
+Risk Level: High Risk / Medium Risk / Low Risk
+Reproduction Steps:
+ 1....
+ 2....
+Evidence:
+ - Requestreport text intercept image/text
+ - Responsereport text intercept image/text
+Remediation Recommendation: xxx
 ```

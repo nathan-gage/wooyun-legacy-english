@@ -1,10 +1,9 @@
 
 ---
-### [wooyun-2014-078509] 蘑菇街存在XXE漏洞
-**厂商**: 蘑菇街 | **年份**: 2014 | **类型**: 设计缺陷/逻辑错误
+### [wooyun-2014-078509] Mogujie has an XXE vulnerability
+**Vendor**: Mogujie | **Year**: 2014 | **Type**: design defect / logic error
 
 
-> 总案例数: 0
+> Total case count: 0
 
-## 典型案例标题
-
+## Representative Case Titles

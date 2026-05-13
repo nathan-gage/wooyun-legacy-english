@@ -1,515 +1,515 @@
-# 社交平台密码重置功能 — 攻击向量与测试计划
+# social transactionPlatformPassword Resetfunction can - Attack VectorandTest Plan
 
-## 目录
+## directory record
 
-1. [短信验证码重置](#1-短信验证码重置)
-2. [邮箱链接重置](#2-邮箱链接重置)
-3. [安全问题重置](#3-安全问题重置)
-4. [跨重置方式通用攻击向量](#4-跨重置方式通用攻击向量)
-5. [业务逻辑层攻击向量](#5-业务逻辑层攻击向量)
-6. [客户端侧攻击向量](#6-客户端侧攻击向量)
-
----
-
-## 1. 短信验证码重置
-
-### 1.1 验证码暴力破解
-
-**攻击向量：** 验证码为纯数字且位数较短（4-6位），攻击者可穷举所有可能值。
-
-**测试步骤：**
-1. 输入目标手机号，触发发送验证码
-2. 拦截验证码验证请求（如 `POST /api/reset/verify-sms`）
-3. 使用 Burp Suite Intruder 对验证码字段进行暴力枚举（0000-9999 或 000000-999999）
-4. 观察是否存在频率限制（Rate Limiting）：
-   - 连续提交 10 次错误验证码后是否被锁定
-   - 是否返回不同的 HTTP 状态码或错误信息
-5. 检查锁定机制是否可被绕过：
-   - 更换 IP（通过代理池）后是否重置计数
-   - 更换 User-Agent 后是否重置计数
-   - 添加 `X-Forwarded-For` / `X-Real-IP` 头是否绕过 IP 限制
-   - 在验证码字段前后添加空格、换行符（`%20`、`%0a`）是否绕过输入校验
-
-### 1.2 验证码可预测性
-
-**攻击向量：** 验证码生成算法不安全，可被预测或推导。
-
-**测试步骤：**
-1. 同一手机号连续请求 20 次验证码，记录所有收到的验证码
-2. 分析是否存在可预测的模式（递增、时间戳相关、伪随机种子可推导）
-3. 不同手机号同时请求验证码，检查是否存在相同验证码
-4. 检查验证码是否在响应包中直接返回（查看响应 Body、Headers、Set-Cookie）
-
-### 1.3 验证码时效性
-
-**攻击向量：** 验证码有效期过长或无过期机制，扩大暴力破解窗口。
-
-**测试步骤：**
-1. 请求验证码后，等待 5 分钟、10 分钟、30 分钟、1 小时后分别尝试使用
-2. 记录验证码实际有效期
-3. 请求新验证码后，测试旧验证码是否仍然有效（验证码未失效/覆盖）
-4. 同一手机号连续请求多个验证码，测试所有验证码是否都能使用
-
-### 1.4 验证码与手机号绑定校验
-
-**攻击向量：** 服务端未校验验证码与手机号的绑定关系。
-
-**测试步骤：**
-1. 用手机号 A 请求验证码，收到验证码 X
-2. 用手机号 B 请求验证码，收到验证码 Y
-3. 尝试用手机号 A + 验证码 Y 提交验证（交叉使用）
-4. 拦截验证请求，将手机号字段替换为目标用户手机号，验证码使用自己收到的验证码
-5. 检查是否能通过验证并进入密码重置页面
-
-### 1.5 验证码重放
-
-**攻击向量：** 已使用的验证码未失效，可重复使用。
-
-**测试步骤：**
-1. 正常使用验证码完成一次密码重置
-2. 使用相同的验证码再次提交验证请求
-3. 观察是否能再次通过验证
-
-### 1.6 短信轰炸
-
-**攻击向量：** 发送验证码接口无频率限制，可被用于短信轰炸。
-
-**测试步骤：**
-1. 对同一手机号连续调用发送验证码接口，观察限制策略
-2. 对不同手机号批量调用，检查是否有全局频率限制
-3. 测试是否可通过以下方式绕过限制：
-   - 手机号前加 `+86`、`086`、`0086`、空格、连字符
-   - 手机号末尾加 `%00`（空字节截断）
-   - 参数污染（同时传递多个手机号参数）
-
-### 1.7 验证步骤跳过
-
-**攻击向量：** 验证码验证与密码重置是分步操作，可直接跳到重置步骤。
-
-**测试步骤：**
-1. 发起密码重置流程，获取流程中的所有请求
-2. 不提交验证码，直接构造密码重置请求（通常是流程的最后一步）
-3. 检查服务端是否在密码重置步骤独立验证了验证码已通过
-4. 修改客户端状态（如 JS 变量、LocalStorage、Cookie 中的 step 标识）尝试跳过验证步骤
-
-### 1.8 手机号格式绕过
-
-**攻击向量：** 手机号输入未标准化，不同格式被视为不同用户。
-
-**测试步骤：**
-1. 测试以下手机号格式变体是否指向同一用户：
-   - `13800138000`
-   - `+8613800138000`
-   - `008613800138000`
-   - `138 0013 8000`（含空格）
-   - `138-0013-8000`（含连字符）
-2. 检查不同格式是否共享频率限制计数器
-3. 检查不同格式是否能接收并使用同一验证码
+1. [SMS Verification Codeserious set](#1-SMS Verification Codeserious set)
+2. [Emaillink connect serious set](#2-Emaillink connect serious set)
+3. [Secureask problem serious set](#3-Secureask problem serious set)
+4. [cross serious set method mode wilduseAttack Vector](#4-cross serious set method mode wilduseAttack Vector)
+5. [business logic logic layerAttack Vector](#5-business logic logic layerAttack Vector)
+6. [ClientAttack Vector](#6-ClientAttack Vector)
 
 ---
 
-## 2. 邮箱链接重置
+## 1. SMS Verification Codeserious set
 
-### 2.1 重置 Token 可预测性
+### 1.1 CAPTCHABrute Force
 
-**攻击向量：** 重置链接中的 Token 生成算法不安全，可被预测或碰撞。
+**Attack Vector:** CAPTCHAas number character and characters number short(4-6characters), attack attack personCanExhaustive GuessingAllCancan value.
 
-**测试步骤：**
-1. 对同一邮箱连续请求 20 次重置链接，收集所有 Token
-2. 分析 Token 的组成（长度、字符集、是否 Base64 编码）
-3. 解码 Token，检查是否包含可预测信息（用户ID、时间戳、邮箱哈希）
-4. 检查 Token 是否为 UUID v1（基于时间戳，可部分预测）
-5. 不同用户同时请求，检查 Token 是否存在规律性
-6. 测试 Token 的熵值：如果长度 < 20 字符且字符集有限，评估暴力破解可行性
+**Test Steps:**
+1. output injectTargetmobile number, trigger initiateSendCAPTCHA
+2. InterceptCAPTCHAValidateRequest(such as `POST /api/reset/verify-sms`)
+3. useuse Burp Suite Intruder forCAPTCHAFieldadvancelinesexpose powerEnumeration(0000-9999 or 000000-999999)
+4. Observewhether existsRate Limit(Rate Limiting):
+ - continuous continueSubmit 10 timeserrorCAPTCHAafterwhetherbe lock set
+ - whetherReturnDifferentof HTTP Statuscodeorerror information
+5. Checklock set machine makewhetherCanbeBypass:
+ - update change IP(Passcode manage)afterwhetherserious set plan number
+ - update change User-Agent afterwhetherserious set plan number
+ - Add `X-Forwarded-For` / `X-Real-IP` HeaderwhetherBypass IP limit make
+ - inCAPTCHAFieldfirst afterAddEmptyformat/changelinessymbol(`%20`/`%0a`)whetherBypassoutput injectValidate
 
-### 2.2 重置链接 Token 暴力破解
+### 1.2 CAPTCHAPredictableness
 
-**攻击向量：** Token 空间不够大或服务端未限制尝试次数。
+**Attack Vector:** CAPTCHAgenerate complete algorithm methodInsecure, Canbe predictionorinfer.
 
-**测试步骤：**
-1. 获取一个合法 Token 的格式和长度
-2. 向重置密码的 URL 发送大量带有随机 Token 的请求
-3. 观察服务端的响应：
-   - 是否有频率限制
-   - 无效 Token 和有效 Token 的响应是否有可区分差异（时间差、响应长度）
-4. 如果 Token 较短（如 6-8 位纯数字），使用 Intruder 进行枚举
+**Test Steps:**
+1. Samemobile numbercontinuous continueRequest 20 timesCAPTCHA, RecordAllcollecttoofCAPTCHA
+2. Analyzewhether existsPredictableofmode(recursive increase/timestamp related key/ machine type subCaninfer)
+3. Differentmobile numbersame timeRequestCAPTCHA, Checkwhether existsrelated sameCAPTCHA
+4. CheckCAPTCHAwhetherinResponseincludeinDirectReturn(ViewResponse Body/Headers/Set-Cookie)
 
-### 2.3 Token 时效性
+### 1.3 CAPTCHAtime valid ness
 
-**攻击向量：** 重置 Token 长期有效或多次有效。
+**Attack Vector:** CAPTCHAValidity PeriodToo Longorno expired machine make, largeBrute Forcewindow interface.
 
-**测试步骤：**
-1. 请求重置链接后，等待不同时间段（1小时、6小时、24小时、48小时）后尝试使用
-2. 使用 Token 完成密码重置后，再次使用同一 Token，检查是否仍有效
-3. 请求新的重置链接后，检查旧 Token 是否失效
-4. 用户通过其他方式（如短信验证码）成功修改密码后，检查邮箱 Token 是否失效
+**Test Steps:**
+1. RequestCAPTCHAafter, etc.pending 5 minutes/10 minutes/30 minutes/1 hoursafter part levelAttemptuseuse
+2. RecordCAPTCHAreal actualValidity Period
+3. RequestNew CAPTCHAafter, test oldCAPTCHAwhetherstill Valid(CAPTCHAnotInvalidate/cover cover)
+4. Samemobile numbercontinuous continueRequestmanyCAPTCHA, testAllCAPTCHAwhetherall can useuse
 
-### 2.4 Token 与用户绑定校验
+### 1.4 CAPTCHAandmobile numberBindingValidate
 
-**攻击向量：** Token 未与特定用户绑定，可篡改目标用户。
+**Attack Vector:** ServernotValidateCAPTCHAandmobile numberofBindingkey system.
 
-**测试步骤：**
-1. 用自己的邮箱请求重置链接，获取 Token
-2. 在重置密码请求中，将邮箱/用户ID字段修改为目标用户
-3. 检查是否能重置目标用户的密码
-4. 如果重置 URL 包含用户标识参数（如 `?token=xxx&email=yyy`），尝试修改 email 参数
+**Test Steps:**
+1. usemobile number A RequestCAPTCHA, collecttoCAPTCHA X
+2. usemobile number B RequestCAPTCHA, collecttoCAPTCHA Y
+3. Attemptusemobile number A + CAPTCHA Y SubmitValidate(transaction useuse)
+4. InterceptValidateRequest, willmobile numberFieldReplaceasTargetUsermobile number, CAPTCHAuseuseself own collecttoofCAPTCHA
+5. CheckwhethercanPassValidateand advance injectPassword Resetpage
 
-### 2.5 Host Header 注入
+### 1.5 CAPTCHAReplay
 
-**攻击向量：** 服务端根据 Host Header 生成重置链接，攻击者可将链接指向恶意域名。
+**Attack Vector:** already useuseofCAPTCHAnotInvalidate, Canserious repeat useuse.
 
-**测试步骤：**
-1. 拦截密码重置请求，修改 Host Header 为攻击者控制的域名
-   ```
-   Host: evil.com
-   ```
-2. 检查发送到用户邮箱的重置链接是否使用了 `evil.com` 域名
-3. 测试以下变体：
-   - `Host: evil.com`（直接替换）
-   - `Host: legitimate.com\r\nHost: evil.com`（双 Host Header）
-   - `X-Forwarded-Host: evil.com`
-   - `X-Host: evil.com`
-   - `Forwarded: host=evil.com`
-   - `Host: legitimate.com@evil.com`
-   - `Host: legitimate.com.evil.com`
-4. 如果成功，攻击场景：受害者点击链接 -> Token 发送到攻击者服务器
+**Test Steps:**
+1. correct common useuseCAPTCHAcomplete onetimesPassword Reset
+2. useuserelated sameofCAPTCHAagaintimesSubmitValidateRequest
+3. Observewhethercan againtimesPassValidate
 
-### 2.6 重置链接参数篡改
+### 1.6 SMS Bombing
 
-**攻击向量：** 重置链接中的参数可被篡改。
+**Attack Vector:** SendCAPTCHAInterfacenoRate Limit, CanbeuseforSMS Bombing.
 
-**测试步骤：**
-1. 分析重置链接的完整结构，识别所有参数
-2. 逐个修改参数值，观察服务端行为：
-   - 修改 `user_id` / `uid` 参数
-   - 修改 `email` 参数
-   - 修改 `timestamp` / `expires` 参数（延长有效期）
-3. 删除签名/校验参数，检查 Token 是否仍有效
-4. 测试参数污染：添加重复参数（如 `?email=victim@x.com&email=attacker@x.com`）
+**Test Steps:**
+1. forSamemobile numbercontinuous continueCallSendCAPTCHAInterface, Observelimit make policy strategy
+2. forDifferentmobile numberBatchCall, check whether there isall globalRate Limit
+3. testwhetherCanPassthe followingmethod modeBypasslimit make:
+ - mobile numberfirst add `+86`/`086`/`0086`/Emptyformat/continuous character symbol
+ - mobile number add `%00`(Emptycharacter section intercept judge)
+ - Parameter Pollution(same time pass recursive manymobile numberParameter)
 
-### 2.7 Referer 泄露 Token
+### 1.7 ValidateStepskip through
 
-**攻击向量：** 重置页面包含外部资源引用，Token 通过 Referer Header 泄露。
+**Attack Vector:** CAPTCHAValidateandPassword Resetis part step operation, directly usableskiptoserious setStep.
 
-**测试步骤：**
-1. 打开重置密码页面（带 Token 的 URL）
-2. 检查页面是否加载外部资源（第三方 JS、CSS、图片、iframe）
-3. 检查页面是否包含外链（社交分享按钮、广告链接）
-4. 如果存在外部资源/外链，检查请求的 Referer Header 是否包含 Token
-5. 检查页面是否设置了 `Referrer-Policy` Header
+**Test Steps:**
+1. initiate initiatePassword Resetflow process, Obtainflow processinofAllRequest
+2. notSubmitCAPTCHA, Directstructure forgePassword ResetRequest(wild common is flow processofmost after one step)
+3. CheckServerwhetherinPassword ResetStepindependent standaloneValidatedoneCAPTCHAalreadyPass
+4. ModifyClientStatus(such as JS change quantity/LocalStorage/Cookie inof step identifier identify)Attemptskip throughValidateStep
 
-### 2.8 邮箱大小写 / 别名绕过
+### 1.8 mobile numberformat modeBypass
 
-**攻击向量：** 邮箱地址处理不一致，导致安全逻辑被绕过。
+**Attack Vector:** mobile numberoutput inject not identifier accurate ize, Differentformat mode be asDifferentUser.
 
-**测试步骤：**
-1. 测试邮箱大小写变体：`User@Example.com` vs `user@example.com`
-2. 测试 Gmail 特有的 `+` 别名：`user+tag@gmail.com` vs `user@gmail.com`
-3. 测试 Gmail 忽略点号的特性：`u.s.e.r@gmail.com` vs `user@gmail.com`
-4. 检查这些变体是否：
-   - 被识别为同一用户
-   - 共享频率限制
-   - 生成的 Token 是否可互换使用
+**Test Steps:**
+1. testthe followingmobile numberformat mode variantwhetherspecified towardSameUser:
+ - `13800138000`
+ - `+8613800138000`
+ - `008613800138000`
+ - `138 0013 8000`(includeEmptyformat)
+ - `138-0013-8000`(include continuous character symbol)
+2. CheckDifferentformat modewhethersharedRate Limitplan number device
+3. CheckDifferentformat modewhethercan connect collect and useuseSameCAPTCHA
 
 ---
 
-## 3. 安全问题重置
+## 2. Emaillink connect serious set
 
-### 3.1 安全问题答案暴力破解
+### 2.1 serious set Token Predictableness
 
-**攻击向量：** 安全问题答案空间有限（如"你的出生城市"），可暴力枚举。
+**Attack Vector:** serious set link connectinof Token generate complete algorithm methodInsecure, Canbe predictionorcollision collision.
 
-**测试步骤：**
-1. 确定目标用户的安全问题
-2. 根据问题类型准备字典：
-   - 出生城市 → 中国主要城市列表（~300个）
-   - 母亲姓氏 → 中国常见姓氏列表（~100个）
-   - 小学名称 → 城市+常见小学名组合
-   - 宠物名字 → 常见宠物名字典
-   - 最喜欢的电影/书 → 热门作品列表
-3. 使用 Burp Intruder 对答案字段进行字典攻击
-4. 检查频率限制和锁定机制
-5. 测试锁定绕过方法（同 1.1 中的绕过技术）
+**Test Steps:**
+1. forSameEmailcontinuous continueRequest 20 timesserious set link connect, collect collectAll Token
+2. Analyze Token ofarray complete(long degree/character symbol collect/whether Base64 Encoding)
+3. decode code Token, Checkwhetherinclude includePredictableinformation(UserID/timestamp/Emailhash hash)
+4. Check Token whether is UUID v1(based on timestamp, Canpart part prediction)
+5. DifferentUsersame timeRequest, Check Token whether existsscale law ness
+6. test Token of value:such asif long degree < 20 character symbol and character symbol collect has limit, assess assessBrute ForceCanlinesness
 
-### 3.2 安全问题信息泄露
+### 2.2 serious set link connect Token Brute Force
 
-**攻击向量：** 安全问题本身泄露了用户隐私信息。
+**Attack Vector:** Token Emptybetween not largeorServernot limit makeAttempttimesnumber.
 
-**测试步骤：**
-1. 输入目标用户名/手机号/邮箱，进入安全问题验证页面
-2. 检查安全问题是否直接显示（攻击者可利用问题内容进行社工）
-3. 检查安全问题是否在 API 响应中返回完整问题文本
-4. 尝试枚举不同用户，批量收集安全问题信息
+**Test Steps:**
+1. Obtainone combine method Token offormat modeandlong degree
+2. toward serious setPasswordof URL Sendlarge quantity with has machine Token ofRequest
+3. ObserveServerofResponse:
+ - whether hasRate Limit
+ - no valid Token andValid Token ofResponsewhether hasCan part error abnormal(time between error/Responselong degree)
+4. such asif Token short(such as 6-8 characters number character), useuse Intruder advancelinesEnumeration
 
-### 3.3 安全问题答案校验缺陷
+### 2.3 Token time valid ness
 
-**攻击向量：** 答案匹配逻辑过于宽松或存在缺陷。
+**Attack Vector:** serious set Token long periodValidormanytimesValid.
 
-**测试步骤：**
-1. 测试答案是否区分大小写
-2. 测试答案是否忽略前后空格
-3. 测试空答案是否能通过验证
-4. 测试超长答案是否导致截断后匹配（如答案为"北京"，输入"北京市朝阳区"因截断为"北京"而通过）
-5. 测试 SQL 注入：`' OR '1'='1`、`' OR 1=1--`、`" OR ""="`
-6. 测试 NoSQL 注入：`{"$gt": ""}` / `{"$ne": null}`
-7. 测试特殊字符：`%00`（空字节截断）、Unicode 变体字符
+**Test Steps:**
+1. Requestserious set link connect after, etc.pendingDifferenttime between (1hours/6hours/24hours/48hours)afterAttemptuseuse
+2. useuse Token completePassword Resetafter, againtimesuseuseSame Token, CheckwhetherstillValid
+3. Requestnewofserious set link connect after, Checkold Token whetherInvalidate
+4. UserPassother method mode(such asSMS Verification Code)SuccessModifyPasswordafter, CheckEmail Token whetherInvalidate
 
-### 3.4 安全问题答案在响应中泄露
+### 2.4 Token andUserBindingValidate
 
-**攻击向量：** 服务端在响应中返回了正确答案或提示。
+**Attack Vector:** Token notandspecial setUserBinding, Cantamper changeTargetUser.
 
-**测试步骤：**
-1. 提交错误答案，仔细检查响应包的所有内容：
-   - 响应 Body（包括隐藏字段、注释）
-   - 响应 Headers
-   - Set-Cookie 值
-2. 检查错误提示是否泄露信息（如"答案的前两个字正确"）
-3. 检查前端 JS 源码中是否包含答案校验逻辑或答案哈希值
-4. 检查页面 HTML 源码中是否有隐藏的表单字段包含答案
+**Test Steps:**
+1. useself ownofEmailRequestserious set link connect, Obtain Token
+2. inserious setPasswordRequestin, willEmail/UserIDFieldModifyasTargetUser
+3. Checkwhethercan serious setTargetUserofPassword
+4. such asif serious set URL include includeUseridentifier identifyParameter(such as `?token=xxx&email=yyy`), AttemptModify email Parameter
 
-### 3.5 安全问题绕过
+### 2.5 Host Header inject inject
 
-**攻击向量：** 可以跳过安全问题验证直接重置密码。
+**Attack Vector:** Serverroot according Host Header generate complete serious set link connect, attack attack personCanwilllink connect specified toward meaningDomain Name.
 
-**测试步骤：**
-1. 分析密码重置流程的所有 API 请求
-2. 跳过安全问题验证步骤，直接发送重置密码请求
-3. 修改请求中的 `step` / `phase` / `verified` 参数
-4. 删除请求中的安全问题相关参数，检查服务端是否要求
+**Test Steps:**
+1. InterceptPassword ResetRequest, Modify Host Header asattack attack person control makeofDomain Name
+ ```
+ Host: evil.com
+ ```
+2. CheckSendtoUserEmailofserious set link connectwhetheruseusedone `evil.com` Domain Name
+3. testthe followingvariant:
+ - `Host: evil.com`(DirectReplace)
+ - `Host: legitimate.com\r\nHost: evil.com`(dual Host Header)
+ - `X-Forwarded-Host: evil.com`
+ - `X-Host: evil.com`
+ - `Forwarded: host=evil.com`
+ - `Host: legitimate.com@evil.com`
+ - `Host: legitimate.com.evil.com`
+4. such asifSuccess, attack attack scenario scene:affected person point attack link connect -> Token Sendtoattack attack personServer
 
-### 3.6 社工辅助攻击
+### 2.6 serious set link connectParametertamper change
 
-**攻击向量：** 安全问题的答案可通过社交媒体/公开信息获取。
+**Attack Vector:** serious set link connectinofParameterCanbe tamper change.
 
-**测试步骤：**
-1. 列出所有可用的安全问题类型
-2. 评估每个问题的答案是否可从公开信息获取：
-   - 出生城市 → 社交媒体资料/简历
-   - 母亲姓氏 → 家族社交关系
-   - 小学名称 → 社交媒体/同学录
-   - 宠物名字 → 社交媒体照片
-3. 评估总体安全性：需要多少公开信息即可猜出答案
+**Test Steps:**
+1. Analyzeserious set link connectofCompleteresult structure, IdentifyAllParameter
+2. one-by-oneModifyParametervalue, ObserveServerlinesas:
+ - Modify `user_id` / `uid` Parameter
+ - Modify `email` Parameter
+ - Modify `timestamp` / `expires` Parameter(longValidity Period)
+3. DeleteSignature/ValidateParameter, Check Token whetherstillValid
+4. testParameter Pollution:Addserious repeatParameter(such as `?email=victim@x.com&email=attacker@x.com`)
 
----
+### 2.7 Referer Disclosure Token
 
-## 4. 跨重置方式通用攻击向量
+**Attack Vector:** serious set page include include external part resource source citeuse, Token Pass Referer Header Disclosure.
 
-### 4.1 用户枚举
+**Test Steps:**
+1. break open serious setPasswordpage(with Token of URL)
+2. Checkpagewhetheradd external part resource source(No. three method JS/CSS/image image/iframe)
+3. Checkpagewhetherinclude include external link(social transaction part by / report link connect)
+4. such asif existinexternal part resource source/external link, CheckRequestof Referer Header whetherinclude include Token
+5. Checkpagewhetherset set done `Referrer-Policy` Header
 
-**攻击向量：** 密码重置接口可被用于枚举有效用户。
+### 2.8 Emailcase / level nameBypass
 
-**测试步骤：**
-1. 分别输入已注册和未注册的手机号/邮箱/用户名
-2. 对比响应差异：
-   - 响应内容差异（"验证码已发送" vs "该手机号未注册"）
-   - 响应时间差异（已注册用户可能因额外查询耗时更长）
-   - HTTP 状态码差异
-   - 响应长度差异
-3. 检查是否所有重置方式的入口都存在枚举问题
-4. 测试批量枚举的可行性（频率限制）
+**Attack Vector:** EmailAddresshandle manage not one cause, CausingSecurelogic logic beBypass.
 
-### 4.2 重置凭证在响应中泄露
-
-**攻击向量：** 验证码或 Token 在 HTTP 响应中直接返回。
-
-**测试步骤：**
-1. 请求发送验证码/重置链接
-2. 仔细检查响应的所有位置：
-   - Response Body（JSON 字段、HTML 注释）
-   - Response Headers（自定义 Header）
-   - Set-Cookie
-3. 使用 Burp Suite 的 Search 功能在响应中搜索验证码数字
-4. 检查 WebSocket 连接是否推送了验证码
-
-### 4.3 密码重置后 Session 管理
-
-**攻击向量：** 密码重置后旧 Session 未失效。
-
-**测试步骤：**
-1. 在浏览器 A 中登录目标账号
-2. 在浏览器 B 中执行密码重置
-3. 检查浏览器 A 的 Session 是否仍然有效
-4. 检查移动端 Token（如 JWT/Refresh Token）是否仍然有效
-5. 检查 API Token 是否仍然有效
-
-### 4.4 新密码策略缺陷
-
-**攻击向量：** 重置密码时的密码策略弱于正常注册时的策略。
-
-**测试步骤：**
-1. 尝试设置弱密码（`123456`、`password`、与用户名相同）
-2. 尝试设置空密码
-3. 尝试设置与旧密码相同的密码
-4. 测试密码长度限制（最短/最长）
-5. 对比重置流程与注册流程的密码策略是否一致
-
-### 4.5 重置流程的 CSRF
-
-**攻击向量：** 密码重置请求缺少 CSRF 保护，攻击者可构造恶意页面自动提交。
-
-**测试步骤：**
-1. 检查密码重置的关键请求是否包含 CSRF Token
-2. 删除 CSRF Token 后提交请求，检查是否仍被接受
-3. 使用其他用户的 CSRF Token 提交请求
-4. 检查 CSRF Token 是否与 Session 绑定
-5. 构造 PoC HTML 页面测试自动提交
-
-### 4.6 竞态条件 (Race Condition)
-
-**攻击向量：** 并发请求导致验证逻辑被绕过。
-
-**测试步骤：**
-1. 验证码使用次数限制绕过：
-   - 获取一个有效验证码
-   - 使用 Burp Suite Turbo Intruder 或自定义脚本同时发送 50+ 个使用该验证码的请求
-   - 检查是否有多个请求成功通过验证
-2. 频率限制绕过：
-   - 同时发送大量发送验证码的请求
-   - 检查是否超过了正常的发送频率限制
-3. Token 一次性使用绕过：
-   - 使用相同 Token 并发提交多个密码重置请求，设置不同的新密码
-   - 检查最终密码被设置为哪个值
-
-### 4.7 重置方式切换逻辑缺陷
-
-**攻击向量：** 不同重置方式之间的状态管理存在缺陷。
-
-**测试步骤：**
-1. 通过短信方式发起重置，获取到"验证通过"的 Session/Token 状态
-2. 切换到安全问题方式，检查是否保留了"已验证"状态
-3. 在一种方式中通过验证后，尝试用另一种方式的接口完成密码重置
-4. 检查不同方式的频率限制是否独立（如短信被锁后切换到安全问题是否不受限）
+**Test Steps:**
+1. testEmailcase variant:`User@Example.com` vs `user@example.com`
+2. test Gmail special hasof `+` level name:`user+tag@gmail.com` vs `user@gmail.com`
+3. test Gmail ignore point numberofspecial ness:`u.s.e.r@gmail.com` vs `user@gmail.com`
+4. Checkthis some variantwhether:
+ - beIdentifyasSameUser
+ - sharedRate Limit
+ - generate completeof Token whetherCan change useuse
 
 ---
 
-## 5. 业务逻辑层攻击向量
+## 3. Secureask problem serious set
 
-### 5.1 参数篡改
+### 3.1 Secureask problemAnswerBrute Force
 
-**攻击向量：** 修改请求参数以操控重置流程。
+**Attack Vector:** Secureask problemAnswerEmptybetween has limit(such as"ofout generate "), Canexpose powerEnumeration.
 
-**测试步骤：**
-1. 拦截所有重置流程请求，识别关键参数
-2. 测试以下篡改：
-   - 修改 `user_id` / `uid` / `account` 为其他用户
-   - 修改 `phone` / `email` 为其他用户的联系方式
-   - 修改 `step` / `stage` / `verified` 参数跳过验证
-   - 修改 `method` / `type` 参数切换验证方式
-   - 添加 `admin=true` / `role=admin` 等权限参数
-3. 测试参数类型混淆：
-   - 字符串改为数组：`phone=13800138000` → `phone[]=13800138000`
-   - 字符串改为对象：`phone=13800138000` → `phone[key]=13800138000`
-   - 数字改为字符串：`code=123456` → `code="123456"`
+**Test Steps:**
+1. confirm setTargetUserofSecureask problem
+2. root according ask problem type accurate prepareDictionary:
+ - out generate -> innational primary need list(~300)
+ - -> innational common seen list(~100)
+ - small name name -> +common seen small name array combine
+ - item name character -> common seen item nameDictionary
+ - most ofelectronic impact/certificate -> operation product list
+3. useuse Burp Intruder forAnswerFieldadvancelinesDictionaryattack attack
+4. CheckRate Limitandlock set machine make
+5. test lock setBypassMethod(same 1.1 inofBypasstechnique)
 
-### 5.2 多步骤验证的状态管理
+### 3.2 Secureask problemInformation Disclosure
 
-**攻击向量：** 多步骤流程中，各步骤的验证状态管理不安全。
+**Attack Vector:** Secureask problem version identityDisclosuredoneUserhidden private information.
 
-**测试步骤：**
-1. 正常完成第一步（输入手机号/邮箱）
-2. 分析第二步请求中携带的状态信息（Cookie、Token、Session ID）
-3. 尝试直接构造第二步或第三步的请求，跳过前置步骤
-4. 使用自己账号完成全部验证步骤，获取"已验证"状态
-5. 替换请求中的目标用户标识为受害者，提交密码重置
-6. 检查 Token/Session 是否绑定了用户身份且服务端独立验证
+**Test Steps:**
+1. output injectTargetUsername/mobile number/Email, advance injectSecureask problemValidatepage
+2. CheckSecureask problemwhetherDirectdisplay(attack attack personCanexploituseask problem content advancelinesSocial Engineering)
+3. CheckSecureask problemwhetherin API ResponseinReturnCompleteask problem text
+4. AttemptEnumerationDifferentUser, Batchcollect collectSecureask problem information
 
-### 5.3 密码重置 Token 与认证 Token 混用
+### 3.3 Secureask problemAnswerValidatemissing flaw
 
-**攻击向量：** 登录 Token 可被用作密码重置凭证，或反之。
+**Attack Vector:** Answermatch config logic logic through for orexistinmissing flaw.
 
-**测试步骤：**
-1. 获取正常登录的 Session Token
-2. 尝试将其用于密码重置接口
-3. 获取密码重置 Token
-4. 尝试将其用于需要认证的其他接口（如修改个人信息）
+**Test Steps:**
+1. testAnswerwhether part case
+2. testAnswerwhetherignore first afterEmptyformat
+3. testEmptyAnswerwhethercanPassValidate
+4. test super longAnswerwhetherCausingintercept judge after match config(such asAnsweras" ", output inject" "because intercept judgeas" "whilePass)
+5. test SQL inject inject:`' OR '1'='1`/`' OR 1=1--`/`" OR ""="`
+6. test NoSQL inject inject:`{"$gt": ""}` / `{"$ne": null}`
+7. testSpecial Characters:`%00`(Emptycharacter section intercept judge)/Unicode variant character symbol
 
-### 5.4 批量重置 / 拒绝服务
+### 3.4 Secureask problemAnswerinResponseinDisclosure
 
-**攻击向量：** 批量触发密码重置可导致用户被锁定或资源耗尽。
+**Attack Vector:** ServerinResponseinReturndone correct confirmAnswerorprovide show.
 
-**测试步骤：**
-1. 对同一用户频繁触发密码重置，检查是否导致账号锁定
-2. 批量对不同用户触发密码重置，检查是否有全局限制
-3. 检查短信/邮件发送是否有成本控制（防止恶意消耗短信配额）
-4. 评估是否可通过密码重置流程阻止合法用户正常使用
+**Test Steps:**
+1. SubmiterrorAnswer, detailCheckResponseincludeofAllcontent:
+ - Response Body(include hidden hiddenField/inject)
+ - Response Headers
+ - Set-Cookie value
+2. Checkerror provide showwhetherDisclosureinformation(such as"Answeroffirst two character correct confirm")
+3. CheckFrontend JS source codeinwhetherinclude includeAnswerValidatelogic logicorAnswerhash hash value
+4. Checkpage HTML source codeinwhether hashidden hiddenoftable singleFieldinclude includeAnswer
 
-### 5.5 OAuth / 第三方登录与密码重置冲突
+### 3.5 Secureask problemBypass
 
-**攻击向量：** 通过密码重置为仅使用第三方登录的账号设置密码，劫持账号。
+**Attack Vector:** Canas skip throughSecureask problemValidateDirectserious setPassword.
 
-**测试步骤：**
-1. 确认平台是否支持第三方登录（微信、QQ、微博等）
-2. 检查仅通过第三方登录注册的账号是否有绑定手机号/邮箱
-3. 如果有绑定，尝试通过密码重置流程为该账号设置密码
-4. 设置密码后，是否可以用手机号/邮箱 + 密码直接登录，绕过第三方认证
+**Test Steps:**
+1. AnalyzePassword Resetflow processofAll API Request
+2. skip throughSecureask problemValidateStep, DirectSendserious setPasswordRequest
+3. ModifyRequestinof `step` / `phase` / `verified` Parameter
+4. DeleteRequestinofSecureask problem related keyParameter, CheckServerwhetherneed require
 
----
+### 3.6 Social Engineering attack attack
 
-## 6. 客户端侧攻击向量
+**Attack Vector:** Secureask problemofAnswerCanPasssocial transaction body/company open informationObtain.
 
-### 6.1 前端验证绕过
-
-**攻击向量：** 安全验证仅在前端执行，可通过修改前端代码或直接调用 API 绕过。
-
-**测试步骤：**
-1. 检查验证码校验是否在前端 JS 中完成
-2. 检查前端是否有步骤控制逻辑（如根据 JS 变量判断是否可进入下一步）
-3. 使用浏览器开发者工具修改 JS 变量/函数返回值
-4. 直接使用 curl/Postman 调用 API，跳过所有前端验证
-5. 检查前端是否缓存了验证码或 Token
-
-### 6.2 验证码/Token 客户端存储泄露
-
-**攻击向量：** 敏感信息存储在客户端可访问的位置。
-
-**测试步骤：**
-1. 检查 LocalStorage / SessionStorage 中是否存储了验证码或 Token
-2. 检查 Cookie 中是否包含敏感信息（且是否标记为 HttpOnly / Secure）
-3. 检查 URL 参数中是否包含 Token（可通过浏览器历史记录泄露）
-4. 检查浏览器开发者工具 Network 面板中的请求/响应
-
-### 6.3 CORS 配置错误
-
-**攻击向量：** 密码重置 API 的 CORS 配置过于宽松。
-
-**测试步骤：**
-1. 从非授权域发送跨域请求到密码重置 API
-2. 检查 `Access-Control-Allow-Origin` 响应头：
-   - 是否为 `*`
-   - 是否反射 `Origin` 请求头
-   - 是否允许 `null` Origin
-3. 检查 `Access-Control-Allow-Credentials` 是否为 `true`
-4. 如果 CORS 配置宽松，构造恶意页面从用户浏览器发送重置请求
-
-### 6.4 点击劫持 (Clickjacking)
-
-**攻击向量：** 密码重置页面可被嵌入到恶意 iframe 中。
-
-**测试步骤：**
-1. 检查密码重置页面的响应头是否包含 `X-Frame-Options`
-2. 检查是否有 `Content-Security-Policy` 的 `frame-ancestors` 指令
-3. 构造包含目标重置页面 iframe 的 PoC HTML
-4. 测试是否可以诱导用户在不知情的情况下完成密码重置操作
+**Test Steps:**
+1. list outAllCanuseofSecureask problem type
+2. assess assessEachask problemofAnswerwhetherCanfromcompany open informationObtain:
+ - out generate -> social transaction body resource /simple history
+ - -> social transaction key system
+ - small name name -> social transaction body/same record
+ - item name character -> social transaction body photo image
+3. assess assess total bodySecureness:requiresmany less company open information that isCan outAnswer
 
 ---
 
-## 测试工具清单
+## 4. cross serious set method mode wilduseAttack Vector
 
-| 工具 | 用途 |
+### 4.1 UserEnumeration
+
+**Attack Vector:** Password ResetInterfaceCanbeuseforEnumerationValidUser.
+
+**Test Steps:**
+1. part level output inject alreadyRegistrationandnotRegistrationofmobile number/Email/Username
+2. for ratioResponseerror abnormal:
+ - Responsecontent error abnormal("CAPTCHAalreadySend" vs "thismobile numbernotRegistration")
+ - Responsetime between error abnormal(alreadyRegistrationUserCancan because amount external check query time update long)
+ - HTTP Statuscode error abnormal
+ - Responselong degree error abnormal
+3. CheckwhetherAllserious set method modeofinject interface all existinEnumerationask problem
+4. testBatchEnumerationofCanlinesness(Rate Limit)
+
+### 4.2 serious setCredentialinResponseinDisclosure
+
+**Attack Vector:** CAPTCHAor Token in HTTP ResponseinDirectReturn.
+
+**Test Steps:**
+1. RequestSendCAPTCHA/serious set link connect
+2. detailCheckResponseofAllcharacters set:
+ - Response Body(JSON Field/HTML inject)
+ - Response Headers(self set define Header)
+ - Set-Cookie
+3. useuse Burp Suite of Search function caninResponseinsearchCAPTCHAnumber character
+4. Check WebSocket continuous connectwhetherinfer doneCAPTCHA
+
+### 4.3 Password Resetafter Session manage manage
+
+**Attack Vector:** Password Resetafter old Session notInvalidate.
+
+**Test Steps:**
+1. inBrowser A inLoginTargetAccount
+2. inBrowser B inExecutePassword Reset
+3. CheckBrowser A of Session whetherstill Valid
+4. CheckMobile Client Token(such as JWT/Refresh Token)whetherstill Valid
+5. Check API Token whetherstill Valid
+
+### 4.4 newPasswordpolicy strategy missing flaw
+
+**Attack Vector:** serious setPasswordtimeofPasswordpolicy strategy weak for correct commonRegistrationtimeofpolicy strategy.
+
+**Test Steps:**
+1. Attemptset set weakPassword(`123456`/`password`/andUsername related same)
+2. Attemptset setBlank Password
+3. Attemptset setandoldPasswordrelated sameofPassword
+4. testPasswordlong degree limit make(most short/most long)
+5. for ratio serious set flow processandRegistrationflow processofPasswordpolicy strategywhetherone cause
+
+### 4.5 serious set flow processof CSRF
+
+**Attack Vector:** Password ResetRequestmissing less CSRF protect protect, attack attack personCanstructure forge meaning page self dynamicSubmit.
+
+**Test Steps:**
+1. CheckPassword ResetofkeyRequestwhetherinclude include CSRF Token
+2. Delete CSRF Token afterSubmitRequest, Checkwhetherstill be connect affected
+3. useuseotherUserof CSRF Token SubmitRequest
+4. Check CSRF Token whetherand Session Binding
+5. structure forge PoC HTML page test self dynamicSubmit
+
+### 4.6 Race Condition (Race Condition)
+
+**Attack Vector:** ConcurrencyRequestCausingValidatelogic logic beBypass.
+
+**Test Steps:**
+1. CAPTCHAuseusetimesnumber limit makeBypass:
+ - ObtainoneValidCAPTCHA
+ - useuse Burp Suite Turbo Intruder orself set defineScriptsame timeSend 50+ useusethisCAPTCHAofRequest
+ - check whether there ismanyRequestSuccessPassValidate
+2. Rate LimitBypass:
+ - same timeSendlarge quantitySendCAPTCHAofRequest
+ - Checkwhethersuper through done correct commonofSendRate Limit
+3. Token onetimesness useuseBypass:
+ - useuserelated same Token ConcurrencySubmitmanyPassword ResetRequest, set setDifferentofnewPassword
+ - Checkmost finalPasswordbe set setaswhich value
+
+### 4.7 serious set method mode switch change logic logic missing flaw
+
+**Attack Vector:** Differentserious set method mode betweenofStatusmanage manage existinmissing flaw.
+
+**Test Steps:**
+1. Passshort information method mode initiate initiate serious set, Obtainto"ValidatePass"of Session/Token Status
+2. switch changetoSecureask problem method mode, Checkwhetherprotect retain done"alreadyValidate"Status
+3. inone type method modeinPassValidateafter, Attemptuse one type method modeofInterfacecompletePassword Reset
+4. CheckDifferentmethod modeofRate Limitwhetherindependent standalone(such asshort information be lock after switch changetoSecureask problemwhethernot affected limit)
+
+---
+
+## 5. business logic logic layerAttack Vector
+
+### 5.1 Parametertamper change
+
+**Attack Vector:** ModifyRequestParameteras operation control serious set flow process.
+
+**Test Steps:**
+1. InterceptAllserious set flow processRequest, IdentifykeyParameter
+2. testthe followingtamper change:
+ - Modify `user_id` / `uid` / `account` asotherUser
+ - Modify `phone` / `email` asotherUserofconnect system method mode
+ - Modify `step` / `stage` / `verified` Parameterskip throughValidate
+ - Modify `method` / `type` Parameterswitch changeValidatemethod mode
+ - Add `admin=true` / `role=admin` etc.PermissionParameter
+3. testParametertype mix:
+ - character symbol string changeasnumber array:`phone=13800138000` -> `phone[]=13800138000`
+ - character symbol string changeasfor:`phone=13800138000` -> `phone[key]=13800138000`
+ - number character changeascharacter symbol string:`code=123456` -> `code="123456"`
+
+### 5.2 manyStepValidateofStatusmanage manage
+
+**Attack Vector:** manyStepflow processin, eachStepofValidateStatusmanage manageInsecure.
+
+**Test Steps:**
+1. correct common completeNo. one step(output injectmobile number/Email)
+2. AnalyzeNo. two stepRequestin withofStatusinformation(Cookie/Token/Session ID)
+3. AttemptDirectstructure forgeNo. two steporNo. three stepofRequest, skip through first setStep
+4. useuseself ownAccountcompleteAllValidateStep, Obtain"alreadyValidate"Status
+5. ReplaceRequestinofTargetUseridentifier identifyasaffected person, SubmitPassword Reset
+6. Check Token/Session whetherBindingdoneUseridentity copy andServerindependent standaloneValidate
+
+### 5.3 Password Reset Token andAuthentication Token mixuse
+
+**Attack Vector:** Login Token CanbeuseoperationPassword ResetCredential, orreverse of.
+
+**Test Steps:**
+1. Obtaincorrect commonLoginof Session Token
+2. AttemptwillotheruseforPassword ResetInterface
+3. ObtainPassword Reset Token
+4. AttemptwillotheruseforrequiresAuthenticationofotherInterface(such asModifyPersonal Information)
+
+### 5.4 Batchserious set / reject reject service
+
+**Attack Vector:** Batchtrigger initiatePassword ResetCanCausingUserbe lock setorresource source.
+
+**Test Steps:**
+1. forSameUserfrequency trigger initiatePassword Reset, CheckwhetherCausingAccount Lockout
+2. BatchforDifferentUsertrigger initiatePassword Reset, check whether there isall global limit make
+3. Checkshort information/ itemSendwhether hascomplete version control make(defense stop meaning message short information config amount)
+4. assess assesswhetherCanPassPassword Resetflow process stop combine methodUsercorrect common useuse
+
+### 5.5 OAuth / No. three methodLoginandPassword Reset
+
+**Attack Vector:** PassPassword Resetasonly useuseNo. three methodLoginofAccountset setPassword, holdAccount.
+
+**Test Steps:**
+1. ConfirmPlatformwhethersupport holdNo. three methodLogin(WeChat/QQ/micro etc.)
+2. CheckonlyPassNo. three methodLoginRegistrationofAccountwhether hasBindingmobile number/Email
+3. such asif hasBinding, AttemptPassPassword Resetflow processasthisAccountset setPassword
+4. set setPasswordafter, whetherCanasusemobile number/Email + PasswordDirectLogin, BypassNo. three methodAuthentication
+
+---
+
+## 6. ClientAttack Vector
+
+### 6.1 FrontendValidateBypass
+
+**Attack Vector:** SecureValidateonlyinFrontendExecute, CanPassModifyFrontendCodeorDirect Call API Bypass.
+
+**Test Steps:**
+1. CheckCAPTCHAValidatewhetherinFrontend JS incomplete
+2. CheckFrontendwhether hasStepcontrol make logic logic(such asroot according JS change quantity determine judgewhetherCanadvance inject under one step)
+3. useuseBrowseropen initiate personToolModify JS change quantity/ numberReturnvalue
+4. Directuseuse curl/Postman Call API, skip throughAllFrontendValidate
+5. CheckFrontendwhether exist doneCAPTCHAor Token
+
+### 6.2 CAPTCHA/Token ClientStorageDisclosure
+
+**Attack Vector:** Sensitive InformationStorageinClientCanaccess askofcharacters set.
+
+**Test Steps:**
+1. Check LocalStorage / SessionStorage inwhetherStoragedoneCAPTCHAor Token
+2. Check Cookie inwhetherinclude includeSensitive Information(andwhetheridentifier recordas HttpOnly / Secure)
+3. Check URL Parameterinwhetherinclude include Token(CanPassBrowserhistory historyRecordDisclosure)
+4. CheckBrowseropen initiate personTool Network page templateinofRequest/Response
+
+### 6.3 CORS Configurationerror
+
+**Attack Vector:** Password Reset API of CORS Configurationthrough for.
+
+**Test Steps:**
+1. fromNon-Authorization DomainSendcross domainRequesttoPassword Reset API
+2. Check `Access-Control-Allow-Origin` ResponseHeader:
+ - whether is `*`
+ - whetherreverse map `Origin` RequestHeader
+ - whetherallow allow `null` Origin
+3. Check `Access-Control-Allow-Credentials` whether is `true`
+4. such asif CORS Configuration, structure forge meaning pagefromUserBrowserSendserious setRequest
+
+### 6.4 point attack hold (Clickjacking)
+
+**Attack Vector:** Password ResetpageCanbe injectto meaning iframe in.
+
+**Test Steps:**
+1. CheckPassword ResetpageofResponseHeaderwhetherinclude include `X-Frame-Options`
+2. check whether there is `Content-Security-Policy` of `frame-ancestors` specified command
+3. structure forge include includeTargetserious set page iframe of PoC HTML
+4. testwhetherCanas Userinnot notify detailsofdetails under completePassword Resetoperation
+
+---
+
+## testToolclear single
+
+| Tool | Purpose |
 |------|------|
-| Burp Suite Professional | 请求拦截、Intruder 暴力破解、Turbo Intruder 竞态测试 |
-| OWASP ZAP | 自动化扫描、被动扫描、Fuzzer |
-| Postman / curl | API 直接调用、参数篡改 |
-| Python + requests | 自动化脚本、批量测试 |
-| Hydra / ffuf | 字典攻击、暴力破解 |
-| 浏览器开发者工具 | 前端分析、JS 调试、网络流量分析 |
+| Burp Suite Professional | Request Interception/Intruder Brute Force/Turbo Intruder Racetest |
+| OWASP ZAP | self dynamic izeScan/be dynamicScan/Fuzzer |
+| Postman / curl | API Direct Call/Parametertamper change |
+| Python + requests | self dynamic izeScript/Batchtest |
+| Hydra / ffuf | Dictionaryattack attack/Brute Force |
+| Browseropen initiate personTool | FrontendAnalyze/JS debugging/Networkflow quantityAnalyze |
 
-## 严重等级评估标准
+## Severeetc.level assess assess identifier accurate
 
-| 等级 | 描述 | 示例 |
+| etc.level | description | Example |
 |------|------|------|
-| **Critical** | 无需用户交互即可重置任意用户密码 | Token 可预测、验证步骤可跳过、参数篡改直接重置 |
-| **High** | 需要少量条件即可重置他人密码 | Host Header 注入、验证码暴力破解无限制、IDOR |
-| **Medium** | 可辅助攻击或造成信息泄露 | 用户枚举、安全问题泄露、短信轰炸、Session 未失效 |
-| **Low** | 影响有限或需要苛刻条件 | 弱密码策略、Referer 泄露、CORS 配置不当 |
-| **Info** | 安全建议 | 缺少速率限制日志、验证码有效期过长 |
+| **Critical** | no need toUsertransaction that isCanserious setArbitraryUserPassword | Token Predictable/ValidateStepCanskip through/Parametertamper changeDirectserious set |
+| **High** | requiresless quantity condition that isCanserious set other personPassword | Host Header inject inject/CAPTCHABrute Forceno limit make/IDOR |
+| **Medium** | Can attack attackorforge completeInformation Disclosure | UserEnumeration/Secureask problemDisclosure/SMS Bombing/Session notInvalidate |
+| **Low** | impact response has limitorrequires condition | weakPasswordpolicy strategy/Referer Disclosure/CORS Misconfiguration |
+| **Info** | Security Recommendations | missing less rate rate limit makeLog/CAPTCHAValidity PeriodToo Long |

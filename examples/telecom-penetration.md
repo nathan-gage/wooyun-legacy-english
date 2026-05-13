@@ -1,153 +1,157 @@
-# 运营商渗透测试思路
+# Telecom Penetration Testing Approach
 
-> 基于 WooYun 22,132 个真实案例分析
+> Based on analysis of 22,132 real WooYun cases
 
-## 一、攻击面全景
+## 1. Attack Surface Overview
 
 ```
-                        运营商攻击面
-                              │
-    ┌─────────┬─────────┬─────┴─────┬─────────┬─────────┐
-    ▼         ▼         ▼           ▼         ▼         ▼
- 互联网    移动APP   增值业务    内部系统   物联网    供应链
- 门户                平台                   平台
-    │         │         │           │         │         │
- ├─网厅    ├─掌厅    ├─SP/CP    ├─OA      ├─IoT卡  ├─外包
- ├─积分    ├─H5     ├─短信网关  ├─邮件    ├─M2M    ├─设备商
- └─活动    └─SDK    └─计费接口  └─VPN     └─车联网  └─运维商
+                        Telecom Attack Surface
+                              |
+    +---------+---------+-----+-----+---------+---------+
+    v         v         v           v         v         v
+ Internet   Mobile   Value-Added  Internal    IoT     Supply
+ Portal      App       Services    Systems  Platform   Chain
+                       Platform
+    |         |         |           |         |         |
+ +-- Online  +-- Self  +-- SP/CP   +-- OA   +-- IoT   +-- Outsourcing
+ |   Hall    |   App   |           |        |   SIM   |
+ +-- Points  +-- H5    +-- SMS     +-- Mail +-- M2M   +-- Vendors
+ |           |         |   Gateway |        |         |
+ +-- Promo   +-- SDK   +-- Billing +-- VPN  +-- V2X   +-- Operations
+     Pages               APIs                          Providers
 ```
 
-## 二、常见漏洞类型
+## 2. Common Vulnerability Types
 
-### 1. 弱口令（7513案例，58.2%高危）
+### 1. Weak Passwords (7,513 cases, 58.2% high-severity)
 
-| 目标系统 | 常见弱口令 | GetShell可能性 |
-|---------|----------|----------------|
-| BOSS后台 | admin/admin, 工号/123456 | ⭐⭐⭐⭐⭐ |
-| 网管平台 | root/root, huawei/huawei | ⭐⭐⭐⭐⭐ |
-| 数据库 | sa/空, root/root | ⭐⭐⭐⭐⭐ |
-| Docker API | 无认证 | ⭐⭐⭐⭐⭐ |
+| Target System | Common Weak Passwords | GetShell Likelihood |
+|---------------|------------------------|---------------------|
+| BOSS backend | admin/admin, employee_id/123456 | High |
+| Network management platform | root/root, huawei/huawei | High |
+| Database | sa/empty, root/root | High |
+| Docker API | no authentication | High |
 
-**检测方法**：
+**Detection method:**
 ```bash
-# 批量爆破
+# Batch brute force
 hydra -L users.txt -P top1000.txt target ssh
 hydra -l admin -P passwords.txt target http-post-form
 ```
 
-### 2. 越权漏洞（1705案例，62.3%高危）
+### 2. Authorization Bypass (1,705 cases, 62.3% high-severity)
 
-**运营商特有越权点**：
+**Telecom-specific authorization bypass points:**
 
-| 功能点 | 关键参数 | 影响 |
-|-------|---------|-----|
-| 话费查询 | `phone`, `mobile` | 查看任意用户话费 |
-| 通话记录 | `cust_id`, `user_id` | 获取任意用户通话记录 |
-| 套餐变更 | `order_id` | 修改他人套餐 |
-| 实名信息 | `id_card` | 泄露身份证照片 |
+| Function | Key Parameters | Impact |
+|----------|----------------|--------|
+| Balance inquiry | `phone`, `mobile` | View any user's account balance |
+| Call records | `cust_id`, `user_id` | Obtain any user's call records |
+| Plan change | `order_id` | Modify another user's plan |
+| Real-name identity data | `id_card` | Expose ID card photos |
 
-**绕过技巧**：
+**Bypass techniques:**
 ```
-参数污染：?uid=1&uid=2（取后者）
-数组注入：uid[]=target_id
-JSON嵌套：{"user":{"id":target_id}}
-```
-
-### 3. 未授权访问（1891案例，58.2%高危）
-
-**高频暴露路径**：
-```
-/admin           → 后台管理
-/api/swagger     → 接口文档
-/console         → 控制台
-/manager         → Tomcat管理器
-/zabbix          → 监控系统
+Parameter pollution: ?uid=1&uid=2 (backend uses the latter)
+Array injection: uid[]=target_id
+Nested JSON: {"user":{"id":target_id}}
 ```
 
-## 三、不常见但高价值的攻击面
+### 3. Unauthenticated Access (1,891 cases, 58.2% high-severity)
 
-### 1. SP/CP增值业务平台
-- 第三方接入，安全要求往往较低
-- 与计费系统直接对接
-- 切入点：短信/彩信下发平台、流量加油包接口
-
-### 2. 物联网卡管理平台
-- IoT设备管理后台
-- 批量开通接口
-- M2M平台API
-
-### 3. 网络管理系统（NMS）
-- 华为U2000/M2000
-- 动环监控系统
-- 一旦突破可控制核心网络设备
-
-## 四、GetShell实现路径
-
-### 路径一：Web RCE
+**Frequently exposed paths:**
 ```
-优先级排序：
+/admin           -> backend administration
+/api/swagger     -> API documentation
+/console         -> console
+/manager         -> Tomcat manager
+/zabbix          -> monitoring system
+```
+
+## 3. Uncommon but High-Value Attack Surfaces
+
+### 1. SP/CP Value-Added Service Platforms
+- Third-party access points often have lower security requirements.
+- They connect directly to billing systems.
+- Entry points: SMS/MMS delivery platforms and data top-up package APIs.
+
+### 2. IoT SIM Card Management Platforms
+- IoT device management backends.
+- Bulk activation APIs.
+- M2M platform APIs.
+
+### 3. Network Management Systems (NMS)
+- Huawei U2000/M2000.
+- Power and environment monitoring systems.
+- A successful compromise can control core network devices.
+
+## 4. GetShell Paths
+
+### Path 1: Web RCE
+```
+Priority order:
 1. Struts2 RCE (S2-045/046/048/052)
-2. WebLogic反序列化
-3. Shiro反序列化 (rememberMe)
+2. WebLogic deserialization
+3. Shiro deserialization (rememberMe)
 4. Fastjson RCE
-5. 文件上传绕过
-6. SQL注入 → xp_cmdshell/into outfile
+5. File upload bypass
+6. SQL injection -> xp_cmdshell/into outfile
 ```
 
-### 路径二：边界设备突破
+### Path 2: Perimeter Device Compromise
 ```
-VPN设备漏洞：
-├── Pulse Secure CVE-2019-11510
-├── Fortinet CVE-2018-13379
-├── Citrix CVE-2019-19781
-└── 深信服VPN任意密码重置
+VPN device vulnerabilities:
++-- Pulse Secure CVE-2019-11510
++-- Fortinet CVE-2018-13379
++-- Citrix CVE-2019-19781
++-- Sangfor VPN arbitrary password reset
 
-网络设备：
-├── 华为设备默认密码
-├── 思科Smart Install协议滥用
-└── SNMP Community String泄露
-```
-
-### 路径三：供应链攻击
-```
-第三方外包公司 → 开发测试环境 → 正式环境
-运维人员电脑 → 内网横向移动
+Network devices:
++-- Huawei device default passwords
++-- Cisco Smart Install protocol abuse
++-- SNMP community string leakage
 ```
 
-## 五、横向移动目标
+### Path 3: Supply Chain Attack
+```
+Third-party outsourcing company -> development/test environment -> production environment
+Operations staff workstation -> internal lateral movement
+```
 
-| 目标系统 | 价值 | 难度 |
-|---------|-----|-----|
-| BOSS系统 | 用户数据、计费控制 | 高 |
-| AAA认证中心 | 全网用户凭证 | 高 |
-| 短信网关 | 短信劫持 | 高 |
-| 核心网设备 | 网络控制面 | 极高 |
-| DNS服务器 | 流量劫持 | 中 |
+## 5. Lateral Movement Targets
 
-## 六、实战Checklist
+| Target System | Value | Difficulty |
+|---------------|-------|------------|
+| BOSS system | user data, billing control | High |
+| AAA authentication center | network-wide user credentials | High |
+| SMS gateway | SMS hijacking | High |
+| Core network devices | network control plane | Very high |
+| DNS servers | traffic hijacking | Medium |
 
-### 信息收集
-- [ ] 子域名枚举（*.10086.cn等）
-- [ ] 端口扫描（非标准端口）
-- [ ] GitHub/Gitee代码泄露
-- [ ] 网络空间测绘（Shodan/Fofa）
+## 6. Practical Checklist
 
-### 漏洞发现
-- [ ] 弱口令爆破
-- [ ] 越权测试（手机号/用户ID遍历）
-- [ ] 未授权访问
-- [ ] 框架漏洞扫描
+### Information Gathering
+- [ ] Subdomain enumeration, such as `*.10086.cn`.
+- [ ] Port scanning, including non-standard ports.
+- [ ] GitHub/Gitee code leakage.
+- [ ] Internet asset mapping with Shodan/Fofa.
 
-### GetShell后
-- [ ] 权限维持
-- [ ] 内网信息收集
-- [ ] 凭证获取
-- [ ] 代理穿透
-- [ ] 横向移动
+### Vulnerability Discovery
+- [ ] Weak-password brute force.
+- [ ] Authorization bypass testing, such as phone number or user ID enumeration.
+- [ ] Unauthenticated access.
+- [ ] Framework vulnerability scanning.
+
+### After GetShell
+- [ ] Persistence.
+- [ ] Internal network information gathering.
+- [ ] Credential acquisition.
+- [ ] Proxy tunneling.
+- [ ] Lateral movement.
 
 ---
 
-**参考方法论**：
-- [弱口令.md](../categories/弱口令.md)
-- [越权.md](../categories/越权.md)
-- [未授权访问.md](../categories/未授权访问.md)
+**Reference methodologies:**
+- [Weak Passwords](../categories/weak-password.md)
+- [Authorization Bypass](../categories/unauthorized-access.md)
+- [Unauthenticated Access](../categories/unauthorized-access.md)

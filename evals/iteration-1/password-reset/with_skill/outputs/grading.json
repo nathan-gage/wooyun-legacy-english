@@ -1,34 +1,32 @@
 {
-  "expectations": [
-    {
-      "text": "wooyun-cases: 包含至少2个具体WooYun案例（需有公司名）",
-      "passed": true,
-      "evidence": "包含6个具体案例：爱卡汽车网（验证码绕过）、驴妈妈旅游网（验证码绕过→数据导出）、TCL统一身份认证平台（用户标识替换）、蜻蜓FM公众平台（任意用户密码重置）、M1905电影网（参数操纵重置官方账号）、嘟嘟牛百乐吧（跳步重置涉及279个网吧用户）"
-    },
-    {
-      "text": "statistics: 包含WooYun量化统计（案例数或占比）",
-      "passed": true,
-      "evidence": "密码重置漏洞总案例数777、高危占比88.0%、身份认证领域8,846案例（占全部40%）、验证码绕过384案例（44%高危）、全数据集22,132个案例"
-    },
-    {
-      "text": "reset-vectors: >=6种密码重置攻击向量",
-      "passed": true,
-      "evidence": "远超6种：A1验证码暴力破解、A2验证码重用/不过期、A3验证码跨用户共享、A4手机号参数篡改、A5验证码响应泄露、A6验证码可预测、A7短信轰炸、B1令牌泄露、B2令牌可预测、B4 Host头注入、D1步骤跳过、D2响应篡改、D3通道混用、D5竞态条件等共18+向量"
-    },
-    {
-      "text": "three-channels: 覆盖短信/邮箱/安全问题三种方式",
-      "passed": true,
-      "evidence": "通道A（手机短信验证码，7个子向量）、通道B（邮箱链接重置，7个子向量）、通道C（安全问题重置，5个子向量），三通道完整覆盖"
-    },
-    {
-      "text": "cross-channel: 含跨通道攻击",
-      "passed": true,
-      "evidence": "D3通道混用攻击：明确描述利用通道A验证状态跨到通道B/C执行密码修改，检查三通道设置密码接口是否隔离"
-    },
-    {
-      "text": "actionable-steps: 有具体步骤",
-      "passed": true,
-      "evidence": "每个攻击向量均包含编号步骤（如A1的4步Burp Intruder爆破流程、A4的5步参数替换流程），并指定了工具（Burp Suite/Intruder/Turbo Intruder）、参数名（phone/mobile/user_id/uid等）、Payload范围（0000-9999）"
-    }
-  ]
+ "expectations": [{
+ "text": "wooyun-cases: include includeat least2ConcreteWooYunCase(company name required)",
+ "passed": true,
+ "evidence": "include include6ConcreteCase: card cart network(CAPTCHA Bypass)/ network(CAPTCHA Bypass->DataExport)/TCLsystem one identity copyAuthenticationPlatform(Useridentifier identifyReplace)/ FMcompany Platform(Arbitrary User Password Reset)/M1905electronic impact network(Parameteroperation manipulate serious set methodAccount)/ percent (skip step serious set involving279network User)"
+ },
+ {
+ "text": "statistics: include includeWooYunQuantitative Statistics(case count or percentage)",
+ "passed": true,
+ "evidence": "Password Resetvulnerability totalCase Count777/high-risk percentage88.0%/identity copyAuthentication Domain8,846Case(shareAll40%)/CAPTCHA Bypass384Case(44%High Risk)/allDatacollect22,132Case"
+ },
+ {
+ "text": "reset-vectors: >=6typePassword ResetAttack Vector",
+ "passed": true,
+ "evidence": "remote super6type:A1CAPTCHABrute Force/A2CAPTCHAserioususe/not expired/A3CAPTCHAcrossUsershared/A4mobile numberParametertamper change/A5CAPTCHAResponseDisclosure/A6CAPTCHAPredictable/A7SMS Bombing/B1command cardDisclosure/B2command cardPredictable/B4 HostHeaderinject inject/D1Stepskip through/D2Responsetamper change/D3Channelmixuse/D5Race Conditionetc.total18+toward quantity"
+ },
+ {
+ "text": "three-channels: cover cover short information/Email/Secureask problem three type method mode",
+ "passed": true,
+ "evidence": "ChannelA(mobile machineSMS Verification Code, 7sub toward quantity)/ChannelB(Emaillink connect serious set, 7sub toward quantity)/ChannelC(Secureask problem serious set, 5sub toward quantity), threeChannelCompletecover cover"
+ },
+ {
+ "text": "cross-channel: include crossChannelattack attack",
+ "passed": true,
+ "evidence": "D3Channelmixuseattack attack:clear confirm description exploituseChannelAValidateStatuscrosstoChannelB/CExecutePasswordModify, CheckthreeChannelset setPasswordInterfacewhetherisolation"
+ },
+ {
+ "text": "actionable-steps: hasConcrete Steps",
+ "passed": true,
+ "evidence": "EachAttack Vectoraverage include includeIDStep(such asA1of4stepBurp IntruderBrute Forceflow process/A4of5stepParameterReplaceflow process), and specified set doneTool(Burp Suite/Intruder/Turbo Intruder)/Parametername(phone/mobile/user_id/uidetc.)/PayloadScope(0000-9999)"
+ }]
 }

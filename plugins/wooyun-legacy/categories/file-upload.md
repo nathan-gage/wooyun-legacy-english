@@ -1,53 +1,53 @@
-# FILE-UPLOAD 漏洞分析
+# FILE-UPLOAD Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 11
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 11
 
 
-> 总案例数: 11
+> Total case count: 11
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  Connector: 1次
-```
-
-
-### 攻击模式分布
-```
-  上传: 6次
-  getshell: 3次
-  弱口令: 1次
-  执行: 1次
-  遍历: 1次
+  Connector: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  upload: 6 occurrences
+  getshell: 3 occurrences
+  weak password: 1 occurrence
+  execution: 1 occurrence
+  traversal: 1 occurrence
+```
 
-- 上海地铁存在任意文件上传漏洞可Shell
-  漏洞类型：文件上传导致任意代码执行
-- 某单位存在安全漏洞—协同门户fck文件上传至getshell
-  漏洞类型：文件上传导致任意代码执行
-- 某电脑厂商某站配置不当导致未授权访问及后台管理（可shell）
-  漏洞类型：文件上传导致任意代码执行
-- 某单位存在安全漏洞教育云平台任意文件上传导致GETSHELL
-  漏洞类型：文件上传导致任意代码执行
-- 多玩某分站任意文件上传
-  漏洞类型：文件上传导致任意代码执行
-- 一比多上传漏洞导致网站沦陷
-  漏洞类型：文件上传导致任意代码执行
-- 融资城某分站任意命令执行漏洞
-  漏洞类型：文件上传导致任意代码执行
-- 某单位存在安全漏洞同业公会某系统Getshell/涉及近200家银行相关单位/影响内网安全
-  漏洞类型：文件上传导致任意代码执行
-- 奥鹏培训网后台弱口令可getshell
-  漏洞类型：文件上传导致任意代码执行
-- 搜房网某后台系统存遍历可getshell
-  漏洞类型：文件上传导致任意代码执行
-- 某单位存在安全漏洞就业办官网某处上传漏洞致该校多站点包括主站服务器被控
-  漏洞类型：文件上传导致任意代码执行
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Shanghai Metro has an arbitrary file upload vulnerability allowing shell access
+  Vulnerability type: file upload leading to arbitrary code execution
+- A certain organization has a security vulnerability: collaborative portal FCK file upload to getshell
+  Vulnerability type: file upload leading to arbitrary code execution
+- Misconfiguration on a computer manufacturer's site leads to unauthorized access and backend administration (shell possible)
+  Vulnerability type: file upload leading to arbitrary code execution
+- A certain organization's education cloud platform arbitrary file upload leads to GETSHELL
+  Vulnerability type: file upload leading to arbitrary code execution
+- Arbitrary file upload on a Duowan subsite
+  Vulnerability type: file upload leading to arbitrary code execution
+- Yibido upload vulnerability leads to website compromise
+  Vulnerability type: file upload leading to arbitrary code execution
+- Arbitrary command execution vulnerability on a Rongzicheng subsite
+  Vulnerability type: file upload leading to arbitrary code execution
+- Getshell in a certain organization's trade-association system / involves nearly 200 bank-related entities / affects intranet security
+  Vulnerability type: file upload leading to arbitrary code execution
+- Aopeng Training Network backend weak password allows getshell
+  Vulnerability type: file upload leading to arbitrary code execution
+- Traversal in a SouFun backend system allows getshell
+  Vulnerability type: file upload leading to arbitrary code execution
+- Upload vulnerability on the employment office's official website at a certain organization causes multiple school sites, including the main site server, to be controlled
+  Vulnerability type: file upload leading to arbitrary code execution
+
+## High-Frequency Payload Patterns
 ```
 ort="java.util.*,java.io.*"%><%out.println("Hello Wo
 ```

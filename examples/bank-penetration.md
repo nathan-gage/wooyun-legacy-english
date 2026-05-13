@@ -1,221 +1,224 @@
-# 银行渗透测试思路
+# Banking Penetration Testing Approach
 
-> 基于 WooYun 22,132 个真实案例分析
+> Based on analysis of 22,132 real WooYun cases
 
-## 一、银行攻击面分层模型
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          第一层：互联网边界                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│  网银系统 │ 手机银行 │ 微信银行 │ 直销银行 │ 信用卡中心 │ 官网/活动页   │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          第二层：接口/通道层                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│  支付接口 │ 银联通道 │ 快捷支付 │ 代扣代付 │ 聚合支付 │ 开放银行API     │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          第三层：内部系统层                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│  核心银行 │ 信贷系统 │ 风控系统 │ 反洗钱 │ 客户管理CRM │ 报表系统       │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## 二、高危漏洞类型
-
-### 第一梯队：资金类漏洞（68-88%高危）
-
-| 漏洞类型 | 高危占比 | 银行特有场景 |
-|---------|---------|-------------|
-| 密码重置 | 88.0% | 网银/手机银行登录密码、交易密码 |
-| 提现漏洞 | 83.1% | 转账限额绕过、提现校验缺陷 |
-| 金额篡改 | 83.0% | 转账金额、理财金额、还款金额 |
-| 支付漏洞 | 68.7% | 快捷支付、代扣代付、跨行转账 |
-
-### 支付漏洞检测（1056案例）
-
-**手工测试清单**：
-```
-1. 修改金额参数：amount=0.01（测试服务端校验）
-2. 修改数量为负数：quantity=-1（负数转账）
-3. 重放成功的支付请求（测试幂等性）
-4. 并发提交同一订单（条件竞争）
-5. 修改收款账户/用户ID（越权转账）
-6. 篡改回调通知（伪造支付成功）
-```
-
-**关键参数**：
-- `amount` / `price` / `total` → 金额类
-- `to_account` / `payee_id` → 收款方
-- `sign` / `signature` → 签名
-
-**绕过技巧**：
-```
-负数攻击：转账金额 = -1000
-小数溢出：amount = 0.001
-条件竞争：多线程并发转账
-状态篡改：修改status=SUCCESS
-签名绕过：删除/置空签名字段
-```
-
-### 第二梯队：认证授权类
-
-| 漏洞类型 | 案例数 | 攻击场景 |
-|---------|-------|---------|
-| 弱口令 | 7513 | 网银后台、运维系统 |
-| 越权 | 1705 | 查看他人账户信息 |
-| 验证码 | 334 | 登录、转账、密码重置 |
-
-## 三、银行特有攻击面
-
-### 1. 手机银行APP安全
+## 1. Layered Banking Attack Surface Model
 
 ```
-客户端安全
-├── 反编译保护（加固强度）
-├── 本地存储（敏感信息）
-├── 日志泄露
-└── 证书校验（SSL Pinning）
-
-通信安全
-├── 加密算法（密钥硬编码）
-├── 请求签名（算法逆向）
-└── 重放攻击
-
-业务逻辑
-├── 登录认证（密码/指纹/人脸）
-├── 交易验证
-└── 转账限额
++-------------------------------------------------------------------------+
+|                         Layer 1: Internet Edge                          |
++-------------------------------------------------------------------------+
+| Online Banking | Mobile Banking | WeChat Banking | Direct Bank | Cards  |
+| Official Site / Campaign Pages                                          |
++-------------------------------------------------------------------------+
+                                    |
+                                    v
++-------------------------------------------------------------------------+
+|                         Layer 2: Interface / Channel                    |
++-------------------------------------------------------------------------+
+| Payment APIs | UnionPay Channels | Quick Pay | Withholding/Payouts      |
+| Aggregated Payments | Open Banking APIs                                  |
++-------------------------------------------------------------------------+
+                                    |
+                                    v
++-------------------------------------------------------------------------+
+|                         Layer 3: Internal Systems                       |
++-------------------------------------------------------------------------+
+| Core Banking | Credit System | Risk Control | AML | Customer CRM        |
+| Reporting System                                                        |
++-------------------------------------------------------------------------+
 ```
 
-**APP渗透思路**：
-```
-1. 抓包突破：绕过SSL Pinning（Frida/Objection）
-2. 逆向分析：脱壳 → 签名算法逆向 → 密钥提取
-3. Hook测试：绕过人脸/指纹验证、修改限额检测
-```
+## 2. High-Risk Vulnerability Types
 
-### 2. 网银系统
+### Tier 1: Funds-Related Vulnerabilities (68-88% high-severity)
 
-```
-攻击思路：
-├── ActiveX控件漏洞
-├── 前端加密绕过（JS逆向）
-├── 密码控件绕过
-├── U盾驱动漏洞
-├── 批量转账接口越权
-└── 对账单/回单越权下载
-```
+| Vulnerability Type | High-Severity % | Banking-Specific Scenarios |
+|--------------------|-----------------|----------------------------|
+| Password reset | 88.0% | online/mobile banking login passwords, transaction passwords |
+| Withdrawal exploit | 83.1% | transfer limit bypass, withdrawal validation defects |
+| Amount tampering | 83.0% | transfer amounts, wealth-management amounts, repayment amounts |
+| Payment vulnerability | 68.7% | quick pay, withholding/payouts, interbank transfers |
 
-### 3. 第三方支付接口
+### Payment Vulnerability Detection (1,056 cases)
 
+**Manual test checklist:**
 ```
-攻击点：
-├── 商户密钥泄露（GitHub搜索）
-├── 回调验签缺陷
-├── 异步通知重放
-├── 金额校验缺失
-└── 商户号越权
+1. Modify amount parameters: amount=0.01 (test server-side validation)
+2. Modify quantity to a negative number: quantity=-1 (negative transfer)
+3. Replay a successful payment request (test idempotency)
+4. Submit the same order concurrently (race condition)
+5. Modify recipient account/user ID (unauthorized transfer)
+6. Tamper with callback notification (forge successful payment)
 ```
 
-## 四、验证绕过技巧
+**Key parameters:**
+- `amount` / `price` / `total` -> amount fields
+- `to_account` / `payee_id` -> recipient
+- `sign` / `signature` -> signature
 
-### 短信验证码
+**Bypass techniques:**
 ```
-├── 爆破（4-6位，可行）
-├── 并发（绕过次数限制）
-├── 复用（同一验证码多次使用）
-├── 回显（响应中返回）
-└── 万能验证码（0000/1234）
-```
-
-### 人脸识别
-```
-├── 照片攻击
-├── 视频攻击
-├── Hook返回值
-├── 接口重放
-└── 替换人脸数据
+Negative-number attack: transfer amount = -1000
+Decimal overflow: amount = 0.001
+Race condition: concurrent transfers from multiple threads
+State tampering: modify status=SUCCESS
+Signature bypass: delete or empty the signature field
 ```
 
-### 交易签名
-```
-├── 签名密钥硬编码
-├── 未签名关键字段
-├── 签名校验可选
-└── 签名降级攻击
-```
+### Tier 2: Authentication and Authorization
 
-## 五、渗透路径
+| Vulnerability Type | Cases | Attack Scenario |
+|--------------------|-------|-----------------|
+| Weak passwords | 7,513 | online banking backends, operations systems |
+| Authorization bypass | 1,705 | view other users' account information |
+| CAPTCHA/OTP | 334 | login, transfer, password reset |
 
-### 路径一：外部Web突破
-```
-信息收集 → 子域名/端口/指纹
-    ↓
-漏洞利用（优先级）：
-├── 1. 弱口令爆破
-├── 2. Struts2/WebLogic RCE
-├── 3. 业务逻辑漏洞
-└── 4. 文件上传/SQL注入
-```
+## 3. Banking-Specific Attack Surfaces
 
-### 路径二：移动端突破
-```
-静态分析 → 反编译、密钥搜索、API提取
-动态分析 → 绕过Pinning、抓包、Hook
-业务测试 → 登录/转账/密码重置
-```
+### 1. Mobile Banking App Security
 
-### 路径三：供应链攻击
 ```
-外包公司 → 代码/环境泄露
-设备供应商 → 预置账号
-服务提供商 → 短信/身份核验
+Client-side security
++-- Anti-decompilation protection (hardening strength)
++-- Local storage (sensitive information)
++-- Log leakage
++-- Certificate validation (SSL Pinning)
+
+Communication security
++-- Encryption algorithms (hardcoded keys)
++-- Request signatures (algorithm reversing)
++-- Replay attacks
+
+Business logic
++-- Login authentication (password/fingerprint/face)
++-- Transaction verification
++-- Transfer limits
 ```
 
-## 六、高价值目标
+**App penetration approach:**
+```
+1. Packet-capture breakthrough: bypass SSL Pinning (Frida/Objection)
+2. Reverse engineering: unpacking -> signature algorithm reversing -> key extraction
+3. Hook testing: bypass face/fingerprint verification and modify limit checks
+```
 
-| 目标系统 | 价值 | 可做什么 |
-|---------|-----|---------|
-| 核心银行 | ⭐⭐⭐⭐⭐ | 账户余额、交易记录 |
-| 信贷系统 | ⭐⭐⭐⭐ | 贷款审批、额度调整 |
-| 风控系统 | ⭐⭐⭐⭐ | 黑名单、规则配置 |
-| CRM系统 | ⭐⭐⭐ | KYC资料 |
+### 2. Online Banking Systems
 
-## 七、实战Checklist
+```
+Attack approach:
++-- ActiveX control vulnerabilities
++-- Front-end encryption bypass (JS reversing)
++-- Password control bypass
++-- USB security key driver vulnerabilities
++-- Bulk transfer API authorization bypass
++-- Unauthorized download of statements/receipts
+```
 
-### 信息收集
-- [ ] 子域名枚举
-- [ ] GitHub代码泄露
-- [ ] APP下载分析
-- [ ] 微信公众号/小程序接口
+### 3. Third-Party Payment Interfaces
 
-### 漏洞检测
-- [ ] 弱口令测试
-- [ ] 业务逻辑（支付/转账/密码重置）
-- [ ] 越权测试
-- [ ] 接口安全（签名/加密）
-- [ ] APP客户端安全
+```
+Attack points:
++-- Merchant key leakage (GitHub search)
++-- Callback signature verification defects
++-- Asynchronous notification replay
++-- Missing amount validation
++-- Merchant ID authorization bypass
+```
 
-### 深度利用
-- [ ] 支付金额篡改
-- [ ] 验证码绕过
-- [ ] 人脸识别绕过
-- [ ] 并发条件竞争
+## 4. Verification Bypass Techniques
+
+### SMS OTP
+```
++-- Brute force (4-6 digits, feasible)
++-- Concurrency (bypass attempt limits)
++-- Reuse (same OTP used multiple times)
++-- Echo (returned in response)
++-- Universal OTP (0000/1234)
+```
+
+### Facial Recognition
+```
++-- Photo attack
++-- Video attack
++-- Hook return values
++-- API replay
++-- Replace face data
+```
+
+### Transaction Signatures
+```
++-- Hardcoded signature key
++-- Critical fields left unsigned
++-- Optional signature verification
++-- Signature downgrade attack
+```
+
+## 5. Penetration Paths
+
+### Path 1: External Web Breakthrough
+```
+Information gathering -> subdomains/ports/fingerprints
+    |
+Vulnerability exploitation (priority):
++-- 1. Weak-password brute force
++-- 2. Struts2/WebLogic RCE
++-- 3. Business logic vulnerabilities
++-- 4. File upload / SQL injection
+```
+
+### Path 2: Mobile Breakthrough
+```
+Static analysis -> decompilation, key search, API extraction
+Dynamic analysis -> pinning bypass, packet capture, hooks
+Business testing -> login/transfer/password reset
+```
+
+### Path 3: Supply Chain Attack
+```
+Outsourcing company -> code/environment leakage
+Equipment vendor -> preconfigured accounts
+Service provider -> SMS/identity verification
+```
+
+## 6. High-Value Targets
+
+| Target System | Value | What Can Be Done |
+|---------------|-------|------------------|
+| Core banking | Very high | account balances, transaction records |
+| Credit system | High | loan approval, credit-limit adjustment |
+| Risk control system | High | blacklists, rule configuration |
+| CRM system | Medium | KYC data |
+
+## 7. Practical Checklist
+
+### Information Gathering
+- [ ] Subdomain enumeration.
+- [ ] GitHub code leakage.
+- [ ] App download analysis.
+- [ ] WeChat official account / mini program APIs.
+
+### Vulnerability Detection
+- [ ] Weak-password testing.
+- [ ] Business logic for payment, transfer, and password reset.
+- [ ] Authorization bypass testing.
+- [ ] API security, including signatures and encryption.
+- [ ] App client-side security.
+
+### Deep Exploitation
+- [ ] Payment amount tampering.
+- [ ] OTP bypass.
+- [ ] Facial recognition bypass.
+- [ ] Concurrent race conditions.
 
 ---
 
-**参考方法论**：
-- [支付.md](../categories/支付.md)
-- [金额.md](../categories/金额.md)
-- [密码重置.md](../categories/密码重置.md)
-- [越权.md](../categories/越权.md)
+**Reference methodologies:**
+- [Payment](../categories/logic-flaws.md)
+- [Amount](../categories/logic-flaws.md)
+- [Password Reset](../categories/logic-flaws.md)
+- [Authorization Bypass](../categories/unauthorized-access.md)
 
-**代表性案例**：
-- 中原银行系统漏洞可GetShell（影响财付通/支付宝支付）
-- 百度智能微校 → 中国青少年基金系统（可篡改捐款金额）
+**Representative cases:**
+- Zhongyuan Bank system vulnerabilities allowing GetShell, affecting Tenpay/Alipay payments.
+- Baidu Smart Micro-School to China Youth Development Foundation system, allowing donation amount tampering.
