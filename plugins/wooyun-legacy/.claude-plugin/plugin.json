@@ -9,6 +9,7 @@
   "homepage": "https://github.com/tanweai/wooyun-legacy",
   "repository": "https://github.com/tanweai/wooyun-legacy",
   "license": "CC-BY-NC-SA-4.0",
+  "skills": ["./skills/wooyun-legacy"],
   "keywords": [
     "security",
     "penetration-testing",

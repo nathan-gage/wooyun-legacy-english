@@ -1,8 +1,8 @@
+This is an English translation of the original [WooYun Legacy](https://github.com/tanweai/wooyun-legacy) repository, prepared with GPT-5.5 at x-high reasoning effort. The translation is intended to preserve the technical details, exploit context, payload meaning, and currency semantics of the source material.
+
 # WooYun Legacy
 
 [![Website](https://img.shields.io/badge/Website-wooyun.tanweagent.com-000?style=flat-square)](https://wooyun.tanweagent.com/en.html) [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
-
-[Main README](README.md) | **English**
 
 > Back your AI security reports with real-world case studies and hard data
 
