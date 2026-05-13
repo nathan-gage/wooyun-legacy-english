@@ -1,8 +1,8 @@
+> **Translation preamble:** This repository is an English translation of the original WooYun Legacy repository, produced with GPT-5.5 at x-high reasoning effort. The translation aims to preserve technical details, exploit context, payload meaning, and currency semantics faithfully.
+
 # WooYun Legacy
 
 [![Website](https://img.shields.io/badge/Website-wooyun.tanweagent.com-000?style=flat-square)](https://wooyun.tanweagent.com/en.html) [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
-
-[Main README](README.md) | **English**
 
 > Back your AI security reports with real-world case studies and hard data
 
