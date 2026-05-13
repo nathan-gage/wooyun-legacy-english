@@ -1,59 +1,59 @@
-# OTHER 漏洞分析
+# OTHER Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 13
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 13
 
 
-> 总案例数: 13
+> Total case count: 13
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  o: 1次
-  c: 1次
-  url: 1次
-  k: 1次
-  puid: 1次
-```
-
-
-### 攻击模式分布
-```
-  执行: 3次
-  getshell: 2次
-  泄露: 1次
+  o: 1 occurrence
+  c: 1 occurrence
+  url: 1 occurrence
+  k: 1 occurrence
+  puid: 1 occurrence
 ```
 
 
-## 典型案例标题
-
-- 新疆经济报系数字化报纸某系统存在多个漏洞导致远程命令执行和Getshell、内网大量的主机
-  漏洞类型：系统/服务补丁不及时
-- 某单位存在安全漏洞系统）
-  漏洞类型：成功的入侵事件
-- 某搜索引擎广告链接漏洞被钓鱼分子利用
-  漏洞类型：钓鱼欺诈信息
-- 快钱大量站点配置不当(影响大量敏感信息)
-  漏洞类型：系统/服务补丁不及时
-- 金鹰国际购物中心某服务器getshell导致可内网漫游（第二弹）
-  漏洞类型：系统/服务补丁不及时
-- 某单位存在安全漏洞部门）
-  漏洞类型：账户体系控制不严
-- 对美国某核武器研究项目站点的一次渗透测试
-  漏洞类型：成功的入侵事件
-- 华夏航空某系统漏洞导致管理账户泄露
-  漏洞类型：成功的入侵事件
-- 某单位存在安全漏洞命令执行
-  漏洞类型：系统/服务补丁不及时
-- hiall校园招聘分站发现php小马
-  漏洞类型：成功的入侵事件
-- 某单位存在安全漏洞旗下某系统命令执行已getshell
-  漏洞类型：系统/服务补丁不及时
-- 云南物流存ST2漏洞
-  漏洞类型：系统/服务补丁不及时
-- 和讯网理财客设置不当影响用户资金安全
-  漏洞类型：账户体系控制不严
-
-## 高频 Payload 模式
+### Attack Pattern Distribution
 ```
-or内网IPv4 地址 . . . . . . . . . . . . : **.**.**.**子网掩
+  execution: 3 occurrences
+  getshell: 2 occurrences
+  disclosure: 1 occurrence
+```
+
+
+## Representative Case Titles
+
+- Multiple vulnerabilities in a digital newspaper system under Xinjiang Economic Daily lead to remote command execution, getshell, and many intranet hosts
+  Vulnerability type: delayed system/service patching
+- A certain organization has a security vulnerability in a system)
+  Vulnerability type: successful intrusion event
+- Advertising-link vulnerability in a certain search engine exploited by phishing actors
+  Vulnerability type: phishing and fraud information
+- Misconfiguration across many 99Bill sites (affects large amounts of sensitive information)
+  Vulnerability type: delayed system/service patching
+- Getshell on a Golden Eagle International Shopping Center server enables intranet roaming (second round)
+  Vulnerability type: delayed system/service patching
+- A certain organization has a security vulnerability in a department)
+  Vulnerability type: insufficient account-system controls
+- A penetration test against a U.S. nuclear-weapons research project site
+  Vulnerability type: successful intrusion event
+- Vulnerability in a China Express Airlines system leads to management-account disclosure
+  Vulnerability type: successful intrusion event
+- A certain organization has a command execution vulnerability
+  Vulnerability type: delayed system/service patching
+- PHP webshell found on a hiall campus recruitment subsite
+  Vulnerability type: successful intrusion event
+- Command execution in a system under a certain organization has already achieved getshell
+  Vulnerability type: delayed system/service patching
+- Yunnan Logistics has an ST2 vulnerability
+  Vulnerability type: delayed system/service patching
+- Improper settings in Hexun Licai Ke affect user fund security
+  Vulnerability type: insufficient account-system controls
+
+## High-Frequency Payload Patterns
+```
+or internal network IPv4 Address . . . . . . . . . . . . : **.**.**.**subnet mask
 ```

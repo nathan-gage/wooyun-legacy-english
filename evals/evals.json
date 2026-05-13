@@ -1,47 +1,39 @@
 {
-  "skill_name": "wooyun-legacy",
-  "evals": [
-    {
-      "id": 1,
-      "prompt": "我在做一个电商平台的安全审计，这个平台有购物车、在线支付（支付宝/微信）、订单管理、退款流程。请帮我制定一个针对支付和订单流程的安全测试方案，要具体到每个测试点和测试步骤。",
-      "expected_output": "覆盖支付篡改、订单状态机绕过、竞态条件、退款逻辑等的详细测试方案，应包含具体测试步骤、预期结果、WooYun 案例参考",
-      "files": [],
-      "assertions": [
-        {"id": "wooyun-cases", "text": "包含至少2个具体的WooYun真实案例引用（公司名+漏洞描述）"},
-        {"id": "statistics", "text": "包含量化统计数据（案例数或高危占比百分数）"},
-        {"id": "attack-patterns", "text": "覆盖至少5种不同的支付/订单攻击模式"},
-        {"id": "actionable-steps", "text": "每个测试点包含具体可执行的测试步骤"},
-        {"id": "defense-recommendations", "text": "包含针对性的防御/修复建议"},
-        {"id": "methodology-structure", "text": "遵循结构化方法论"}
-      ]
-    },
-    {
-      "id": 2,
-      "prompt": "我们公司有一个多租户 SaaS 平台，提供 REST API 给前端和移动端。我需要你帮我设计一个针对越权访问的完整测试计划，包括水平越权（IDOR）、垂直越权（权限提升）、未授权访问。要能直接拿来用的那种。",
-      "expected_output": "系统化的授权测试计划，覆盖 IDOR 测试协议、垂直权限提升、未授权端点发现、任意操作测试，附带具体 API 测试用例",
-      "files": [],
-      "assertions": [
-        {"id": "wooyun-cases", "text": "包含至少2个具体的WooYun真实案例引用（公司名+漏洞描述）"},
-        {"id": "statistics", "text": "包含量化统计数据（案例数或高危占比百分数）"},
-        {"id": "idor-depth", "text": "IDOR测试覆盖至少4种ID操纵技术"},
-        {"id": "three-dimensions", "text": "明确区分水平越权、垂直越权、未授权访问三个维度"},
-        {"id": "arbitrary-ops", "text": "包含任意操作/任意X类别的测试"},
-        {"id": "api-specific", "text": "包含针对REST API的具体测试用例"}
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "帮我对一个手机银行 App 做全面的业务逻辑安全评估。这个 App 有转账、充值、提现、理财购买、密码重置、实名认证等功能。输出一份完整的安全测试报告模板，我好直接拿来用。",
-      "expected_output": "全面的银行 App 安全评估报告模板，跨越认证、授权、金融、信息泄露、逻辑流、配置等全部 6 个领域",
-      "files": [],
-      "assertions": [
-        {"id": "wooyun-cases", "text": "包含至少3个具体的WooYun真实案例引用（公司名+漏洞描述）"},
-        {"id": "statistics", "text": "包含量化统计数据（案例数或高危占比百分数）"},
-        {"id": "six-domains", "text": "覆盖全部6个领域（认证、授权、金融、信息泄露、逻辑流、配置）"},
-        {"id": "function-mapping", "text": "每个银行功能都有对应的测试项"},
-        {"id": "report-template", "text": "输出格式为可直接使用的报告模板"},
-        {"id": "defense-recommendations", "text": "包含架构级和代码级的防御建议"}
-      ]
-    }
-  ]
+ "skill_name": "wooyun-legacy",
+ "evals": [{
+ "id": 1,
+ "prompt": "I am conducting a security audit of an e-commerce platform with a shopping cart, online payment (Alipay/WeChat), order management, and refund flow. Help me create a security test plan for the payment and order flow, down to each test point and test step.",
+ "expected_output": "A detailed test plan covering payment tampering, order-state-machine bypass, race conditions, refund logic, and related areas; it should include concrete test steps, expected results, and WooYun case references",
+ "files": [],
+ "assertions": [{"id": "wooyun-cases", "text": "Includes at least 2 concrete real WooYun case references (company name + vulnerability description)"},
+ {"id": "statistics", "text": "Includes quantitative statistics (case count or high-risk percentage)"},
+ {"id": "attack-patterns", "text": "Covers at least 5 different payment/order attack patterns"},
+ {"id": "actionable-steps", "text": "Each test point includes concrete executable test steps"},
+ {"id": "defense-recommendations", "text": "Includes targeted defense/remediation recommendations"},
+ {"id": "methodology-structure", "text": "Follows a structured methodology"}]
+ },
+ {
+ "id": 2,
+ "prompt": "Our company has a multi-tenant SaaS platform that provides REST APIs to web and mobile clients. I need you to design a complete authorization-bypass test plan covering horizontal authorization bypass (IDOR), vertical authorization bypass (privilege escalation), and unauthorized access. It should be directly usable.",
+ "expected_output": "A systematic authorization test plan covering IDOR testing protocols, vertical privilege escalation, unauthorized endpoint discovery, arbitrary-operation testing, and concrete API test cases",
+ "files": [],
+ "assertions": [{"id": "wooyun-cases", "text": "Includes at least 2 concrete real WooYun case references (company name + vulnerability description)"},
+ {"id": "statistics", "text": "Includes quantitative statistics (case count or high-risk percentage)"},
+ {"id": "idor-depth", "text": "IDOR testing covers at least 4 ID-manipulation techniques"},
+ {"id": "three-dimensions", "text": "Clearly distinguishes the three dimensions: horizontal authorization bypass, vertical authorization bypass, and unauthorized access"},
+ {"id": "arbitrary-ops", "text": "Includes arbitrary-operation/arbitrary-X category tests"},
+ {"id": "api-specific", "text": "Includes concrete REST API test cases"}]
+ },
+ {
+ "id": 3,
+ "prompt": "Help me perform a comprehensive business-logic security assessment for a mobile banking app. The app includes transfers, top-ups, withdrawals, wealth-product purchases, password reset, real-name verification, and related features. Output a complete security test report template that I can use directly.",
+ "expected_output": "A comprehensive banking-app security assessment report template covering all six domains: authentication, authorization, financial, information disclosure, logic flow, and configuration",
+ "files": [],
+ "assertions": [{"id": "wooyun-cases", "text": "Includes at least 3 concrete real WooYun case references (company name + vulnerability description)"},
+ {"id": "statistics", "text": "Includes quantitative statistics (case count or high-risk percentage)"},
+ {"id": "six-domains", "text": "Covers all 6 domains (authentication, authorization, financial, information disclosure, logic flow, configuration)"},
+ {"id": "function-mapping", "text": "Each banking function has corresponding test items"},
+ {"id": "report-template", "text": "Output format is a directly usable report template"},
+ {"id": "defense-recommendations", "text": "Includes architecture-level and code-level defense recommendations"}]
+ }]
 }

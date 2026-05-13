@@ -1,707 +1,707 @@
-# 手机银行 App 业务逻辑安全评估报告
+# mobile machine banklines App business logic logicSecureassess assess report
 
-> 方法论：WooYun 业务逻辑漏洞方法论 v2.0
-> 数据基础：22,132 个真实漏洞案例 · 6 个领域 · 33 类漏洞
-> 目标系统：手机银行 App（转账、充值、提现、理财购买、密码重置、实名认证）
-> 评估日期：____年____月____日
-> 评估人员：________________
-> 版本：v1.0
-
----
-
-## 目录
-
-- [第一部分：业务流程映射](#第一部分业务流程映射)
-- [第二部分：安全假设矩阵](#第二部分安全假设矩阵)
-- [第三部分：分领域测试用例](#第三部分分领域测试用例)
-  - [领域一：认证安全（8,846 案例基础）](#领域一认证安全)
-  - [领域二：授权安全（6,838 案例基础）](#领域二授权安全)
-  - [领域三：金融安全（2,919 案例基础）](#领域三金融安全)
-  - [领域四：信息泄露（6,446 案例基础）](#领域四信息泄露)
-  - [领域五：逻辑流安全（1,679 案例基础）](#领域五逻辑流安全)
-  - [领域六：配置安全（1,796 案例基础）](#领域六配置安全)
-- [第四部分：发现记录模板](#第四部分发现记录模板)
-- [第五部分：风险评级标准](#第五部分风险评级标准)
-- [第六部分：评估总结](#第六部分评估总结)
-- [附录](#附录)
+> Methodcomment:WooYun Business Logic Vulnerability Methodology v2.0
+> Database foundation:22,132 real real vulnerabilityCase - 6 Domain - 33 type vulnerability
+> TargetSystem:mobile machine banklines App(Transfer/Top-Up/Withdrawal/Wealth Product Purchase/Password Reset/Real-Name Verification)
+> assess assess day period:____________day
+> assess assess person:________________
+> version version:v1.0
 
 ---
 
-## 第一部分：业务流程映射
+## directory record
 
-### 1.1 业务概述
+- [No. one part part:business flow process map map](#No. one part part business flow process map map)
+- [No. two part part:Securefalse set matrix matrix](#No. two part partSecurefalse set matrix matrix)
+- [No. three part part:partDomainTest Case](#No. three part part partDomainTest Case)
+ - [Domainone:AuthenticationSecure(8,846 Case Basis)](#DomainoneAuthenticationSecure)
+ - [Domaintwo:AuthorizationSecure(6,838 Case Basis)](#DomaintwoAuthorizationSecure)
+ - [Domainthree:FinancialSecure(2,919 Case Basis)](#DomainthreeFinancialSecure)
+ - [Domainfour:Information Disclosure(6,446 Case Basis)](#DomainfourInformation Disclosure)
+ - [Domain:logic logic flowSecure(1,679 Case Basis)](#Domain logic logic flowSecure)
+ - [Domainsix:ConfigurationSecure(1,796 Case Basis)](#DomainsixConfigurationSecure)
+- [No. four part part:DiscoverRecordmodel template](#No. four part partDiscoverRecordmodel template)
+- [No. part part:risk assess level identifier accurate](#No. part part risk assess level identifier accurate)
+- [No. six part part:assess assess total result](#No. six part part assess assess total result)
+- [Appendix](#Appendix)
 
-| 项目 | 内容 |
+---
+
+## No. one part part:business flow process map map
+
+### 1.1 business approx description
+
+| itemsdirectory | content |
 |------|------|
-| 应用类型 | 手机银行 App |
-| 主要参与者 | 匿名用户、已注册用户、银行客户（已绑卡）、VIP 客户、客户经理、管理员 |
-| 收入模式 | 手续费、理财佣金、利差收入 |
-| 敏感数据 | 银行卡号、身份证号、手机号、交易密码、余额、交易流水 |
-| 合规要求 | 《商业银行互联网银行管理暂行办法》《银行业金融机构信息安全指引》 |
+| Applicationtype | mobile machine banklines App |
+| primary need participateandperson | Anonymous User/alreadyRegistrationUser/banklinesclient account(already card)/VIP client account/client account through manage/Administrator |
+| collect inject mode | mobile continue fee/manage finance funds/exploit error collect inject |
+| sensitive sensitiveData | banklinescard number/Identity Cardnumber/mobile number/transaction easyPassword/Balance/transaction easy flow horizontal |
+| combine scale need require | "commerce business banklinesInternet banklinesmanage manage lines method""banklinesbusinessFinancialmachine structure informationSecurespecified cite" |
 
-### 1.2 核心业务流程映射
+### 1.2 audit core business flow process map map
 
-#### 流程 1：转账
-
-```
-发起转账 → 输入收款信息 → 输入金额 → 输入交易密码/验证码 → 确认 → 处理 → 完成
-  |                |              |              |                 |
-  v                v              v              v                 v
- 身份验证     收款人校验    金额校验    二次认证       服务端处理
-(Session)    (卡号/户名)  (限额/余额)  (短信/人脸)    (核心系统)
-```
-
-状态转移：草稿 → 待确认 → 待处理 → 处理中 → 成功/失败
-
-#### 流程 2：充值
+#### flow process 1:Transfer
 
 ```
-选择充值方式 → 输入金额 → 选择支付渠道 → 支付验证 → 回调确认 → 余额更新
+initiate initiateTransfer -> output inject collect payment information -> output injectAmount -> output inject transaction easyPassword/CAPTCHA -> Confirm -> handle manage -> complete
+ | | | | |
+ v v v v v
+ identity copyValidate collect payment personValidate AmountValidate twotimesAuthentication Serverhandle manage
+(Session) (card number/account name) (limit amount/Balance) (short information/person) (audit coreSystem)
 ```
 
-状态转移：待支付 → 支付中 → 支付成功 → 入账完成 / 支付失败
+Statustransfer move: -> pendingConfirm -> pending handle manage -> handle managein -> Success/Failure
 
-#### 流程 3：提现
-
-```
-发起提现 → 选择银行卡 → 输入金额 → 交易密码验证 → 风控审核 → 打款 → 完成
-```
-
-状态转移：待审核 → 审核通过 → 打款中 → 已到账 / 审核拒绝
-
-#### 流程 4：理财购买
+#### flow process 2:Top-Up
 
 ```
-浏览产品 → 查看详情 → 输入购买金额 → 风险评估确认 → 交易密码 → 扣款 → 持仓更新
+select Top-Upmethod mode -> output injectAmount -> select Paymentchannel channel -> PaymentValidate -> CallbackConfirm -> BalanceUpdate
 ```
 
-状态转移：选购 → 待确认 → 待扣款 → 扣款成功 → 持仓中
+Statustransfer move:Pending Payment -> Paymentin -> PaymentSuccess -> inject account complete / PaymentFailure
 
-#### 流程 5：密码重置
-
-```
-选择重置方式 → 身份验证(手机号+短信验证码/人脸识别) → 设置新密码 → 完成
-  |                    |                                  |
-  v                    v                                  v
- 账户定位          验证身份                           密码更新
-(手机号/身份证)  (短信/人脸/安全问题)                (强度校验)
-```
-
-状态转移：请求 → 验证中 → 已验证 → 密码已更新
-
-#### 流程 6：实名认证（KYC）
+#### flow process 3:Withdrawal
 
 ```
-填写个人信息 → 上传证件照 → OCR 识别 → 人脸活体检测 → 公安联网核查 → 绑定银行卡 → 四要素验证
+initiate initiateWithdrawal -> select banklinescard -> output injectAmount -> transaction easyPasswordValidate -> risk control audit audit -> break payment -> complete
 ```
 
-状态转移：未认证 → 信息提交 → 审核中 → 已认证 / 认证失败
+Statustransfer move:pending audit audit -> audit auditPass -> break paymentin -> alreadytoaccount / audit audit reject reject
 
-### 1.3 信任边界识别
+#### flow process 4:Wealth Product Purchase
 
-| 信任边界 | 风险点 | 关注度 |
+```
+ product -> Viewdetailed details -> output inject buy buyAmount -> risk assess assessConfirm -> transaction easyPassword -> deduct payment -> hold repositoryUpdate
+```
+
+Statustransfer move:select buy -> pendingConfirm -> pending deduct payment -> deduct paymentSuccess -> hold repositoryin
+
+#### flow process 5:Password Reset
+
+```
+select serious set method mode -> identity copyValidate(mobile number+SMS Verification Code/person Identify) -> Set New Password -> complete
+ | | |
+ v v v
+ Accountset characters Validateidentity copy PasswordUpdate
+(mobile number/Identity Card) (short information/person /Secureask problem) (strong degreeValidate)
+```
+
+Statustransfer move:Request -> Validatein -> alreadyValidate -> PasswordalreadyUpdate
+
+#### flow process 6:Real-Name Verification(KYC)
+
+```
+fill inPersonal Information -> Uploadcert item photo -> OCR Identify -> person body check test -> company connect network audit check -> Bindingbanklinescard -> four need Validate
+```
+
+Statustransfer move:notAuthentication -> informationSubmit -> audit auditin -> alreadyAuthentication / AuthenticationFailure
+
+### 1.3 Trust BoundaryIdentify
+
+| Trust Boundary | risk point | key inject degree |
 |---------|-------|-------|
-| 客户端 vs 服务端 | 金额/数量/状态等参数是否仅在客户端验证 | 极高 |
-| 普通用户 vs 管理员 | 管理接口是否做了权限隔离 | 高 |
-| 用户 A vs 用户 B | 是否可以操作他人账户/订单/资产 | 极高 |
-| App vs 核心系统 | 中间层是否有独立的安全校验 | 高 |
-| 正式环境 vs 测试环境 | 测试接口/账户是否残留在生产环境 | 高 |
+| Client vs Server | Amount/number quantity/Statusetc.ParameterwhetheronlyinClientValidate | Critical |
+| Regular User vs Administrator | manage manageInterfacewhetherdo donePermissionisolation | High |
+| User A vs User B | whetherCanas operation other personAccount/Order/resource asset | Critical |
+| App vs audit coreSystem | inbetween layerwhether hasindependent standaloneofSecureValidate | High |
+| correct mode environment environment vs Test Environment | Test Interface/Accountwhether retainingenerate asset environment environment | High |
 
-### 1.4 测试账号准备
+### 1.4 Test Accountaccurate prepare
 
-| 账号类型 | 用途 | 数量 |
+| Accounttype | Purpose | number quantity |
 |---------|------|------|
-| 普通用户 A | 水平越权测试（发起方） | 1 |
-| 普通用户 B | 水平越权测试（目标方） | 1 |
-| VIP 用户 | 权限差异测试 | 1 |
-| 未实名用户 | 实名认证流程测试 | 1 |
-| 管理员账号 | 垂直越权测试参照 | 1 |
+| Regular User A | Horizontal Authorization Bypasstest(initiate initiate method) | 1 |
+| Regular User B | Horizontal Authorization Bypasstest(Targetmethod) | 1 |
+| VIP User | Permissionerror abnormal test | 1 |
+| not real nameUser | Real-Name Verificationflow process test | 1 |
+| AdministratorAccount | Vertical Authorization Bypasstest participate photo | 1 |
 
 ---
 
-## 第二部分：安全假设矩阵
+## No. two part part:Securefalse set matrix matrix
 
-基于 WooYun 22,132 个案例的统计规律，针对手机银行 App 形成以下安全假设。按高危占比降序排列。
+based on WooYun 22,132 CaseofStatisticsscale law, for mobile machine banklines App completethe followingSecurefalse set.byhigh-risk percentage sequence rank list.
 
-| 编号 | 假设 | WooYun 模式 | 高危占比 | 影响 | 优先级 |
+| ID | false set | WooYun mode | high-risk percentage | impact response | Priority |
 |------|------|------------|---------|------|-------|
-| H-01 | 密码重置流程存在步骤跳过或验证码泄露 | 密码重置（777例，88.0%高危） | 88.0% | 任意用户账户接管 | P0 |
-| H-02 | 转账/提现金额参数可在客户端篡改为负值 | 金额篡改（176例，83.0%高危） | 83.0% | 直接资金盗窃 | P0 |
-| H-03 | 提现接口存在并发竞态条件导致双花 | 提现（59例，83.1%高危） | 83.1% | 超额提现 | P0 |
-| H-04 | 余额参数从客户端传递且服务端未重新计算 | 余额篡改（113例，77.9%高危） | 77.9% | 无限资金 | P0 |
-| H-05 | 转账/充值流程可跳过支付验证步骤 | 订单篡改（1,227例，74.2%高危） | 74.2% | 未支付完成交易 | P0 |
-| H-06 | 用户 A 可通过篡改 ID 查看/操作用户 B 的交易 | 越权（1,705例，62.3%高危） | 62.3% | 他人资产被操控 | P0 |
-| H-07 | 充值回调接口缺乏签名验证可被伪造 | 支付绕过（1,056例，68.7%高危） | 68.7% | 虚假充值到账 | P0 |
-| H-08 | 短信验证码无速率限制、无过期、可跨用户使用 | 验证码绕过（384例，44%高危） | 44.0% | 验证体系失效 | P1 |
-| H-09 | App 接口返回了超出 UI 展示的敏感字段 | 信息泄露（4,858例，64.7%高危） | 64.7% | 隐私数据批量泄露 | P1 |
-| H-10 | 实名认证流程可被绕过或状态可被篡改 | 设计缺陷（1,391例，65.3%高危） | 65.3% | 未实名用户获得全部功能 | P1 |
-| H-11 | 管理后台/调试接口暴露在公网无需认证 | 配置不当（1,796例，72.6%高危） | 72.6% | 系统完全沦陷 | P1 |
-| H-12 | 理财购买可绕过风险评估或篡改产品 ID 购买不匹配的产品 | 逻辑漏洞（266例，74.8%高危） | 74.8% | 监管风险 + 资金风险 | P1 |
+| H-01 | Password Resetflow process existinStepskip throughorCAPTCHADisclosure | Password Reset(777cases, 88.0%High Risk) | 88.0% | ArbitraryUserAccountconnect manage | P0 |
+| H-02 | Transfer/WithdrawalAmountParameterCaninClienttamper changeasnegative value | Amount Tampering(176cases, 83.0%High Risk) | 83.0% | Directresource funds | P0 |
+| H-03 | WithdrawalInterfaceexistinConcurrencyRace ConditionCausingdual flower | Withdrawal(59cases, 83.1%High Risk) | 83.1% | super amountWithdrawal | P0 |
+| H-04 | BalanceParameterfromClientpass recursive andServernot serious newCompute | Balancetamper change(113cases, 77.9%High Risk) | 77.9% | no limit resource funds | P0 |
+| H-05 | Transfer/Top-Upflow processCanskip throughPaymentValidateStep | Order Tampering(1,227cases, 74.2%High Risk) | 74.2% | notPaymentcomplete transaction easy | P0 |
+| H-06 | User A CanPasstamper change ID View/operationUser B oftransaction easy | bypass permission(1,705cases, 62.3%High Risk) | 62.3% | other person resource asset be operation control | P0 |
+| H-07 | Top-UpCallbackInterfacemissing SignatureValidateCanbe forgery | Payment Bypass(1,056cases, 68.7%High Risk) | 68.7% | falseTop-Uptoaccount | P0 |
+| H-08 | SMS Verification Codeno rate rate limit make/no expired/CancrossUseruseuse | CAPTCHA Bypass(384cases, 44%High Risk) | 44.0% | Validatebody systemInvalidate | P1 |
+| H-09 | App InterfaceReturndone super out UI showofsensitive sensitiveField | Information Disclosure(4,858cases, 64.7%High Risk) | 64.7% | Private DataBatchDisclosure | P1 |
+| H-10 | Real-Name Verificationflow processCanbeBypassorStatusCanbe tamper change | Design Flaw(1,391cases, 65.3%High Risk) | 65.3% | not real nameUser Allfunction can | P1 |
+| H-11 | manage manage backend console/debuggingInterfaceexpose exposureinPublic Internetno need toAuthentication | Misconfiguration(1,796cases, 72.6%High Risk) | 72.6% | Systemcomplete all flaw | P1 |
+| H-12 | Wealth Product PurchaseCanBypassrisk assess assessortamper change product ID buy buy not match configofproduct | logic logic vulnerability(266cases, 74.8%High Risk) | 74.8% | monitor manage risk + resource funds risk | P1 |
 
 ---
 
-## 第三部分：分领域测试用例
+## No. three part part:partDomainTest Case
 
 ---
 
-### 领域一：认证安全
+### Domainone:AuthenticationSecure
 
-> WooYun 数据基础：8,846 个案例，覆盖弱凭证、密码重置、登录绕过、验证码绕过
-> 核心原则：身份认证是一条链，每一环都必须守住
+> WooYun Database foundation:8,846 Case, cover cover weakCredential/Password Reset/LoginBypass/CAPTCHA Bypass
+> audit core principle rule:identity copyAuthenticationis one condition link, each one environment allmust
 
-#### 1.1 登录认证测试
+#### 1.1 LoginAuthenticationtest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| AUTH-01 | 弱口令/默认密码 | 使用 admin/admin、admin/123456、test/test 等常见凭证尝试登录 | 拒绝登录 | | |
-| AUTH-02 | 暴力破解防护 | 连续输入错误密码 10+ 次，观察是否有账户锁定/IP 封禁/验证码触发 | 5 次失败后触发保护机制 | | |
-| AUTH-03 | 验证码有效性 | 获取图形验证码后，用同一验证码值多次提交登录请求 | 验证码单次有效，使用后失效 | | |
-| AUTH-04 | 验证码绕过-移除参数 | 拦截登录请求，移除验证码字段，观察是否仍可登录 | 服务端拒绝无验证码的请求 | | |
-| AUTH-05 | 验证码绕过-空值 | 将验证码参数设为空字符串 | 服务端拒绝 | | |
-| AUTH-06 | 账户枚举 | 分别输入存在和不存在的用户名，对比响应差异（内容/时间/状态码） | 统一的错误提示，无法区分 | | |
-| AUTH-07 | 登录接口速率限制 | 使用 Burp Intruder 快速发送 100 次登录请求 | 触发速率限制/IP 封禁 | | |
-| AUTH-08 | 多因素认证绕过 | 完成密码验证后，不完成短信/人脸验证直接访问功能接口 | 功能接口拒绝未完成 MFA 的请求 | | |
-| AUTH-09 | 会话固定 | 登录前记录 Session ID/Token，登录后检查是否更新 | 登录后生成全新的 Session/Token | | |
-| AUTH-10 | 并发登录控制 | 同一账号在两台设备同时登录 | 根据策略：踢出前一个或拒绝后一个 | | |
-| AUTH-11 | Token 有效期 | 提取 JWT/Token，等待超时后使用 | 过期 Token 被拒绝 | | |
-| AUTH-12 | Token 伪造 | 分析 JWT 结构，尝试修改 payload（user_id 等）后使用 | 签名验证失败，请求被拒绝 | | |
+| AUTH-01 | Weak Credentials/default authPassword | useuse admin/admin/admin/123456/test/test etc.common seenCredentialAttemptLogin | reject rejectLogin | | |
+| AUTH-02 | Brute Forcedefense protect | continuous continue output inject errorPassword 10+ times, Observewhether hasAccountlock set/IP disable/CAPTCHAtrigger initiate | 5 timesFailureafter trigger initiate protect protect machine make | | |
+| AUTH-03 | CAPTCHAValidness | ObtainImage CAPTCHAafter, useSameCAPTCHAvalue manytimesSubmitLoginRequest | CAPTCHAsingletimesValid, useuseafterInvalidate | | |
+| AUTH-04 | CAPTCHA Bypass-move removeParameter | InterceptLoginRequest, move removeCAPTCHAField, ObservewhetherstillCanLogin | Serverreject reject noCAPTCHAofRequest | | |
+| AUTH-05 | CAPTCHA Bypass-Emptyvalue | willCAPTCHAParametersetasEmptycharacter symbol string | Serverreject reject | | |
+| AUTH-06 | AccountEnumeration | part level output inject existinandnot existinofUsername, for ratioResponseerror abnormal(content/time between/Statuscode) | system oneoferror provide show, no method part | | |
+| AUTH-07 | LoginInterfacerate rate limit make | useuse Burp Intruder fast rateSend 100 timesLoginRequest | trigger initiate rate rate limit make/IP disable | | |
+| AUTH-08 | many because AuthenticationBypass | completePasswordValidateafter, not complete short information/person ValidateDirectaccess ask function canInterface | function canInterfacereject reject not complete MFA ofRequest | | |
+| AUTH-09 | SessionFixed | LoginfirstRecord Session ID/Token, LoginafterCheckwhetherUpdate | Loginafter generate complete all newof Session/Token | | |
+| AUTH-10 | ConcurrencyLogincontrol make | SameAccountintwo platform set prepare same timeLogin | root according policy strategy: out first oneorreject reject after one | | |
+| AUTH-11 | Token Validity Period | provide take JWT/Token, etc.pending super time after useuse | expired Token be reject reject | | |
+| AUTH-12 | Token forgery | Analyze JWT result structure, AttemptModify payload(user_id etc.)after useuse | SignatureValidateFailure, Requestbe reject reject | | |
 
-**WooYun 参考案例：**
-- 飞特物流某系统后台登录绕过/SQL注入（千万用户/运单/银行卡/身份证照片）
-- 搜狐APP某站登录绕过+SQL注入root权限
-- 爱卡汽车网某重要系统成功绕过验证码限制
+**WooYun participate referenceCase:**
+- special item flowa systembackend consoleLoginBypass/SQLinject inject(ten-thousandUser/operate single/banklinescard/Identity Cardphoto image)
+- search APPa siteLoginBypass+SQLinject injectrootPermission
+- card cart network some serious needSystemSuccessBypassCAPTCHAlimit make
 
-#### 1.2 密码重置测试
+#### 1.2 Password Resettest
 
-> WooYun 统计：777 个案例，88.0% 高危——整个数据集中严重性最高的漏洞类别
+> WooYun Statistics:777 Case, 88.0% High Risk -- integerDatacollectinSevereness mostHighofVulnerability Category
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| RST-01 | 重置令牌泄露 | 拦截密码重置的全部 HTTP 响应，检查 token/验证码是否出现在响应体中 | Token 不在任何响应中暴露 | | |
-| RST-02 | 重置令牌可预测性 | 连续请求多次密码重置，分析 token 熵值和生成规律 | Token 为高熵随机值（>=32字节），无法预测 | | |
-| RST-03 | 步骤跳过-直接设置密码 | 跳过短信验证步骤，直接请求"设置新密码"接口（修改 step 参数或直接调用接口） | 服务端校验前置步骤完成状态，拒绝请求 | | |
-| RST-04 | 用户标识替换 | 在重置流程中，将 user_id/手机号替换为目标用户 B 的标识 | 服务端绑定当前验证会话与用户标识，拒绝替换 | | |
-| RST-05 | 短信验证码暴力破解 | 4-6 位短信验证码，用 Burp Intruder 遍历全部可能值 | 验证码错误次数限制（如 5 次后失效） | | |
-| RST-06 | 短信验证码不过期 | 获取验证码后等待 10 分钟，使用旧验证码 | 验证码有有效期（建议 <=5 分钟） | | |
-| RST-07 | 短信验证码跨用户使用 | 用 A 手机收到的验证码去重置 B 的密码 | 验证码与手机号/用户绑定，拒绝跨用户使用 | | |
-| RST-08 | 响应篡改 | 拦截服务端"验证码错误"的响应，篡改为"验证通过"，观察客户端是否放行 | 客户端+服务端双重校验，篡改响应不影响服务端状态 | | |
-| RST-09 | Host 头注入 | 在密码重置请求中修改 Host 头为攻击者域名，检查重置链接是否使用该域名 | 重置链接中的域名硬编码，不受 Host 头影响 | | |
-| RST-10 | 重置令牌重复使用 | 成功重置密码后，再次使用同一令牌/验证码 | 令牌单次有效，使用后立即失效 | | |
-| RST-11 | 并行重置竞态 | 对同一账户同时发起多个重置请求 | 系统正确处理并发，后续请求使前序令牌失效 | | |
+| RST-01 | serious set command cardDisclosure | InterceptPassword ResetofAll HTTP Response, Check token/CAPTCHAwhetherout currentinResponse Bodyin | Token notinanyResponseinexpose exposure | | |
+| RST-02 | serious set command cardPredictableness | continuous continueRequestmanytimesPassword Reset, Analyze token valueandgenerate complete scale law | Token asHigh machine value(>=32character section), no method prediction | | |
+| RST-03 | Stepskip through-Directset setPassword | skip through short informationValidateStep, DirectRequest"Set New Password"Interface(Modify step ParameterorDirect CallInterface) | ServerValidatefirst setStepcompleteStatus, reject rejectRequest | | |
+| RST-04 | Useridentifier identifyReplace | inserious set flow processin, will user_id/mobile numberReplaceasTargetUser B ofidentifier identify | ServerBindingwhen firstValidateSessionandUseridentifier identify, reject rejectReplace | | |
+| RST-05 | SMS Verification CodeBrute Force | 4-6 charactersSMS Verification Code, use Burp Intruder TraversalAllCancan value | CAPTCHAerrortimesnumber limit make(such as 5 timesafterInvalidate) | | |
+| RST-06 | SMS Verification Codenot expired | ObtainCAPTCHAafteretc.pending 10 minutes, useuseoldCAPTCHA | CAPTCHAhasValidity Period(create protocol <=5 minutes) | | |
+| RST-07 | SMS Verification CodecrossUseruseuse | use A mobile machine collecttoofCAPTCHA serious set B ofPassword | CAPTCHAandmobile number/UserBinding, reject reject crossUseruseuse | | |
+| RST-08 | Responsetamper change | InterceptServer"CAPTCHAerror"ofResponse, tamper changeas"ValidatePass", ObserveClientwhetherreleaselines | Client+Serverdual seriousValidate, tamper changeResponsenot impact responseServerStatus | | |
+| RST-09 | Host Headerinject inject | inPassword ResetRequestinModify Host Headerasattack attack personDomain Name, Checkserious set link connectwhetheruseusethisDomain Name | serious set link connectinofDomain NamehardEncoding, not affected Host Headerimpact response | | |
+| RST-10 | serious set command card serious repeat useuse | Successserious setPasswordafter, againtimesuseuseSamecommand card/CAPTCHA | command card singletimesValid, useuseafterImmediately Invalidate | | |
+| RST-11 | andlinesserious setRace | forSameAccountsame time initiate initiate many serious setRequest | Systemcorrect confirm handle manageConcurrency, after continueRequestuse first sequence command cardInvalidate | | |
 
-**WooYun 参考案例：**
-- TCL统一身份认证平台漏洞，所有用户账号密码可重置——跨 N+ 业务系统完整账户接管
-- 蜻蜓FM公众平台任意用户密码重置
-- 上海航空员工个人信息泄露/密码重置（绕过短信验证）
+**WooYun participate referenceCase:**
+- TCLsystem one identity copyAuthenticationPlatformvulnerability, AllUserAccountPasswordCanserious set -- cross N+ businessSystemCompleteAccountconnect manage
+- FMcompany PlatformArbitrary User Password Reset
+- above Empty toolPersonal InformationDisclosure/Password Reset(Bypassshort informationValidate)
 
-#### 1.3 短信验证码安全测试
+#### 1.3 SMS Verification CodeSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| SMS-01 | 短信轰炸 | 对同一手机号连续请求发送验证码 20 次 | 发送频率限制（如 60 秒 1 次，每天 10 次） | | |
-| SMS-02 | 任意手机号发送 | 修改请求中的手机号为任意号码 | 手机号与当前用户/会话绑定验证 | | |
-| SMS-03 | 国际号码绕过 | 手机号前加 +86、0086 或使用国际号码格式 | 统一格式化处理，不影响安全校验 | | |
-| SMS-04 | 验证码长度 | 观察验证码位数 | >= 6 位数字 | | |
-| SMS-05 | 验证码复杂度 | 多次获取验证码，分析是否为纯顺序/纯数字/可预测 | 随机生成，无规律 | | |
+| SMS-01 | SMS Bombing | forSamemobile numbercontinuous continueRequestSendCAPTCHA 20 times | SendRate Limit(such as 60 1 times, eachdays 10 times) | | |
+| SMS-02 | Arbitrarymobile numberSend | ModifyRequestinofmobile numberasArbitrarynumber code | mobile numberandwhen firstUser/SessionBindingValidate | | |
+| SMS-03 | national actual number codeBypass | mobile numberfirst add +86/0086 oruseusenational actual number code format mode | system one format mode ize handle manage, not impact responseSecureValidate | | |
+| SMS-04 | CAPTCHAlong degree | ObserveCAPTCHAcharacters number | >= 6 characters number character | | |
+| SMS-05 | CAPTCHArepeat degree | manytimesObtainCAPTCHA, Analyzewhether is order sequence/ number character/Predictable | machine generate complete, no scale law | | |
 
 ---
 
-### 领域二：授权安全
+### Domaintwo:AuthorizationSecure
 
-> WooYun 数据基础：6,838 个案例，覆盖水平越权(IDOR)、垂直越权、未授权访问
-> 核心原则：身份认证回答"你是谁？"，授权回答"你能做什么？"——大多数应用在第二个问题上表现糟糕
+> WooYun Database foundation:6,838 Case, cover coverHorizontal Authorization Bypass(IDOR)/Vertical Authorization Bypass/Unauthorized Access
+> audit core principle rule:identity copyAuthenticationreturn " is?", Authorizationreturn " can do?" -- large many numberApplicationinNo. two ask problem above table current
 
-#### 2.1 水平越权（IDOR）测试
+#### 2.1 Horizontal Authorization Bypass(IDOR)test
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| IDOR-01 | 查看他人交易记录 | 用 A 的 Token 访问 B 的交易列表接口（替换 user_id/account_id） | 返回 403 或仅返回 A 的数据 | | |
-| IDOR-02 | 查看他人转账详情 | 替换 transfer_id/order_id 为 B 的转账订单 ID | 返回 403 | | |
-| IDOR-03 | 查看他人银行卡信息 | 替换 card_id 为 B 的银行卡 ID | 返回 403 | | |
-| IDOR-04 | 查看他人理财持仓 | 替换 portfolio_id 或 user_id 查看 B 的理财持仓 | 返回 403 | | |
-| IDOR-05 | 修改他人收款人列表 | 用 A 的 Token 对 B 的常用收款人进行增/删/改 | 返回 403 | | |
-| IDOR-06 | ID 枚举 | 观察 user_id/order_id 是否为顺序整数，遍历 ID 范围 | 使用 UUID v4 不可预测标识符 | | |
-| IDOR-07 | 参数污染绕过 | 发送 ?user_id=A&user_id=B，观察服务器取哪个值 | 取第一个值或拒绝重复参数 | | |
-| IDOR-08 | 编码绕过 | 将 ID 进行 Base64/Hex 编码后替换 | 服务端解码后仍做所有权校验 | | |
-| IDOR-09 | JSON 嵌套注入 | 在 JSON 请求体中嵌套 user 对象修改 ID，如 `{"user":{"id":"B的ID"}}` | 服务端忽略客户端提供的用户标识 | | |
-| IDOR-10 | 批量导出越权 | 调用导出/下载接口时，修改筛选条件获取所有用户数据 | 导出范围限定于当前用户 | | |
+| IDOR-01 | Viewother person transaction easyRecord | use A of Token access ask B oftransaction easy listInterface(Replace user_id/account_id) | Return 403 oronlyReturn A ofData | | |
+| IDOR-02 | Viewother personTransferdetailed details | Replace transfer_id/order_id as B ofTransferOrder ID | Return 403 | | |
+| IDOR-03 | Viewother person banklinescard information | Replace card_id as B ofbanklinescard ID | Return 403 | | |
+| IDOR-04 | Viewother person manage finance hold repository | Replace portfolio_id or user_id View B ofmanage finance hold repository | Return 403 | | |
+| IDOR-05 | Modifyother person collect payment person list | use A of Token for B ofcommonusecollect payment person advancelinesincrease/delete/change | Return 403 | | |
+| IDOR-06 | ID Enumeration | Observe user_id/order_id whether isorder sequence integer number, Traversal ID Scope | useuse UUID v4 notPredictableidentifier identify symbol | | |
+| IDOR-07 | Parameter PollutionBypass | Send?user_id=A&user_id=B, ObserveServertake which value | takeNo. one valueorreject reject serious repeatParameter | | |
+| IDOR-08 | Encoding Bypass | will ID advancelines Base64/Hex EncodingafterReplace | Serverdecode code after still doAllpermissionValidate | | |
+| IDOR-09 | JSON Nestedinject inject | in JSON Request BodyinNested user for Modify ID, such as `{"user":{"id":"BofID"}}` | ServerignoreClientprovide provideofUseridentifier identify | | |
+| IDOR-10 | BatchExportbypass permission | CallExport/DownloadInterfacetime, Modify select conditionObtainAllUserData | ExportScopelimit set for when firstUser | | |
 
-**IDOR 高级技术（WooYun 统计：简单 ID 替换仅占案例的 30%）：**
+**IDOR Highlevel technique(WooYun Statistics:simple single ID Replaceonly shareCaseof 30%):**
 
 ```
-- 直接 ID 替换：123 → 124
-- 负数/零 ID：id=0, id=-1
-- 数组注入：uid[]=123（绕过类型检查）
-- JSON 嵌套：{"user": {"id": 456}}
-- 参数污染：?uid=123&uid=456
-- 编码绕过：Base64(456)、Hex(456)
-- 路径遍历：/users/../users/456
+- Direct ID Replace:123 -> 124
+- Negative Number/zero ID:id=0, id=-1
+- number array inject inject:uid[]=123(BypasstypeCheck)
+- JSON Nested:{"user": {"id": 456}}
+- Parameter Pollution:?uid=123&uid=456
+- Encoding Bypass:Base64(456)/Hex(456)
+- PathTraversal:/users/../users/456
 ```
 
-#### 2.2 垂直越权测试
+#### 2.2 Vertical Authorization Bypasstest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| PRIV-01 | 普通用户访问管理接口 | 用普通用户 Token 请求 /admin/* 或 /api/admin/* 接口 | 返回 403 | | |
-| PRIV-02 | 篡改角色参数 | 注册或修改个人信息时，添加 role=admin/is_admin=true 参数 | 服务端忽略客户端提供的角色参数 | | |
-| PRIV-03 | HTTP 方法篡改 | 对管理接口使用不同 HTTP 方法（GET→POST、POST→PUT） | 所有方法均需权限校验 | | |
-| PRIV-04 | 前端路由绕过 | 直接访问 App 中管理员才能看到的页面路由 | 后端接口仍做权限校验 | | |
-| PRIV-05 | 功能权限细粒度 | 普通客户是否可调用客户经理专属接口（如审批、调额） | 返回 403 | | |
+| PRIV-01 | Regular Useraccess ask manage manageInterface | useRegular User Token Request /admin/* or /api/admin/* Interface | Return 403 | | |
+| PRIV-02 | tamper changeRoleParameter | RegistrationorModifyPersonal Informationtime, Add role=admin/is_admin=true Parameter | ServerignoreClientprovide provideofRoleParameter | | |
+| PRIV-03 | HTTP Methodtamper change | for manage manageInterfaceuseuseDifferent HTTP Method(GET->POST/POST->PUT) | AllMethodaverage needPermissionValidate | | |
+| PRIV-04 | FrontendrouteBypass | Directaccess ask App inAdministrator can toofpage route | BackendInterfacestill doPermissionValidate | | |
+| PRIV-05 | function canPermissiondetail degree | wild client accountwhetherCanCallclient account through manage special attributeInterface(such asaudit batch/debug amount) | Return 403 | | |
 
-#### 2.3 未授权访问测试
+#### 2.3 Unauthorized Accesstest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| UNAUTH-01 | 无 Token 访问敏感接口 | 移除请求中的 Authorization 头/Cookie，访问所有业务接口 | 返回 401 | | |
-| UNAUTH-02 | 管理后台暴露 | 扫描 /admin、/console、/manage、/api-docs 等路径 | 不可访问或需要认证 | | |
-| UNAUTH-03 | API 文档泄露 | 访问 /swagger-ui.html、/api-docs、/openapi.json | 生产环境不暴露 API 文档 | | |
-| UNAUTH-04 | 调试端点 | 访问 /actuator、/debug、/trace、/heapdump、/env | 不可访问 | | |
-| UNAUTH-05 | 内部接口保护 | 通过添加 X-Forwarded-For: 127.0.0.1 尝试绕过 IP 限制 | 不受此头影响 | | |
+| UNAUTH-01 | no Token access ask sensitive sensitiveInterface | move removeRequestinof Authorization Header/Cookie, access askAllbusinessInterface | Return 401 | | |
+| UNAUTH-02 | manage manage backend console expose exposure | Scan /admin//console//manage//api-docs etc.Path | notCanaccess askorrequiresAuthentication | | |
+| UNAUTH-03 | API DocumentDisclosure | access ask /swagger-ui.html//api-docs//openapi.json | generate asset environment environment not expose exposure API Document | | |
+| UNAUTH-04 | debuggingEndpoint | access ask /actuator//debug//trace//heapdump//env | notCanaccess ask | | |
+| UNAUTH-05 | internal partInterfaceprotect protect | PassAdd X-Forwarded-For: 127.0.0.1 AttemptBypass IP limit make | not affected Headerimpact response | | |
 
-**WooYun 参考案例：**
-- 北京现代某平台越权遍历几百万身份证件/行驶证件——顺序文件 ID 无所有权检查
-- 挖财网权限绕过登录其他用户账号
-- 中国金融认证中心某系统未授权访问（涉及内网信息）
+**WooYun participate referenceCase:**
+- Beijing Hyundai platform allowed unauthorized traversal of millions of identity documents/vehicle registration documents -- order sequenceFile ID noOwnership Check
+- finance networkPermissionBypassLoginotherUserAccount
+- innationalFinancialAuthenticationincorea systemUnauthorized Access(involvingInternal Networkinformation)
 
 ---
 
-### 领域三：金融安全
+### Domainthree:FinancialSecure
 
-> WooYun 数据基础：2,919 个案例，68-83% 高危——与金钱直接相关的逻辑始终是最高优先级
-> 核心铁律：客户端请求中出现的任何财务数值都是一个待验证的假设
+> WooYun Database foundation:2,919 Case, 68-83% High Risk -- andfunds Directrelated keyoflogic logic initial final is mostHighPriority
+> audit core law:ClientRequestinout currentofany finance service number value all is one pendingValidateoffalse set
 
-#### 3.1 转账安全测试
+#### 3.1 TransferSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| TRF-01 | 转账金额篡改-零值 | 拦截转账请求，将 amount 改为 0 | 服务端拒绝 0 元转账 | | |
-| TRF-02 | 转账金额篡改-负值 | 将 amount 改为 -1000（可能导致收款人反向扣款） | 服务端拒绝负值 | | |
-| TRF-03 | 转账金额篡改-最小值 | 将 amount 改为 0.001（小数精度攻击） | 有最低转账金额限制 | | |
-| TRF-04 | 转账金额篡改-超大值 | 将 amount 改为 999999999999（整数溢出） | 有最高限额且服务端校验余额 | | |
-| TRF-05 | 转账金额篡改-科学计数法 | 将 amount 设为 1e10 | 服务端正确解析或拒绝 | | |
-| TRF-06 | 转出账户篡改 | 将 from_account 替换为他人账户 | 服务端校验 from_account 属于当前用户 | | |
-| TRF-07 | 转账手续费篡改 | 如果请求中包含 fee 参数，修改为 0 | 手续费由服务端计算，不接受客户端值 | | |
-| TRF-08 | 转账限额绕过 | 修改单笔/日累计限额参数（若客户端传递） | 限额在服务端校验，不可篡改 | | |
-| TRF-09 | 竞态条件-双花 | 余额 100 元，同时发起两笔 100 元转账（Burp Turbo Intruder 并发） | 仅一笔成功，余额正确 | | |
-| TRF-10 | 交易密码暴力破解 | 连续输入错误交易密码 | 交易密码错误次数限制（如 5 次锁定） | | |
-| TRF-11 | 交易密码绕过 | 移除请求中的 trade_password/pay_password 参数 | 服务端要求必须提供交易密码 | | |
-| TRF-12 | 转账订单重放 | 重放成功的转账请求 | 幂等性校验，拒绝重复交易 | | |
+| TRF-01 | TransferAmount Tampering-Zero Value | InterceptTransferRequest, will amount changeas 0 | Serverreject reject 0 yuanTransfer | | |
+| TRF-02 | TransferAmount Tampering-negative value | will amount changeas -1000(CancanCausingcollect payment person reverse toward deduct payment) | Serverreject reject negative value | | |
+| TRF-03 | TransferAmount Tampering-most small value | will amount changeas 0.001(small number precision degree attack attack) | has mostLowTransferAmountlimit make | | |
+| TRF-04 | TransferAmount Tampering-super large value | will amount changeas 999999999999(integer number out) | has mostHighlimit amount andServerValidateBalance | | |
+| TRF-05 | TransferAmount Tampering- plan number method | will amount setas 1e10 | Servercorrect confirm decode orreject reject | | |
+| TRF-06 | transfer outAccounttamper change | will from_account Replaceasother personAccount | ServerValidate from_account attribute for when firstUser | | |
+| TRF-07 | Transfermobile continue fee tamper change | such asifRequestininclude include fee Parameter, Modifyas 0 | mobile continue fee byServerCompute, not connect affectedClientvalue | | |
+| TRF-08 | Transferlimit amountBypass | Modifysingle entry/day plan limit amountParameter(Clientpass recursive) | limit amountinServerValidate, notCantamper change | | |
+| TRF-09 | Race Condition-dual flower | Balance 100 yuan, same time initiate initiate two entry 100 yuanTransfer(Burp Turbo Intruder Concurrency) | only one entrySuccess, Balancecorrect confirm | | |
+| TRF-10 | transaction easyPasswordBrute Force | continuous continue output inject error transaction easyPassword | transaction easyPassworderrortimesnumber limit make(such as 5 timeslock set) | | |
+| TRF-11 | transaction easyPasswordBypass | move removeRequestinof trade_password/pay_password Parameter | Serverneed requiremustprovide provide transaction easyPassword | | |
+| TRF-12 | TransferOrderReplay | ReplaySuccessofTransferRequest | IdempotencynessValidate, reject reject serious repeat transaction easy | | |
 
-#### 3.2 充值安全测试
+#### 3.2 Top-UpSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| RCH-01 | 充值金额篡改 | 在充值请求中修改 amount | 金额由服务端与支付网关双向确认 | | |
-| RCH-02 | 支付回调伪造 | 模拟支付网关回调接口，发送虚假的支付成功通知 | 回调验证签名，伪造请求被拒 | | |
-| RCH-03 | 回调重放攻击 | 重放真实的充值成功回调 | 幂等校验，同一 order_id 不重复入账 | | |
-| RCH-04 | 回调金额不一致 | 实际支付 1 元但回调通知金额为 1000 元 | 服务端核对订单金额与回调金额一致 | | |
-| RCH-05 | 回调订单号替换 | 用 1 元的支付成功回调匹配 1000 元的充值订单 | 订单号与支付流水号一对一绑定 | | |
-| RCH-06 | 测试支付渠道 | 检查是否残留测试环境的支付网关配置 | 生产环境无测试支付通道 | | |
-| RCH-07 | 充值状态篡改 | 修改客户端充值状态从 pending 改为 success | 充值状态由服务端根据支付回调更新 | | |
+| RCH-01 | Top-UpAmount Tampering | inTop-UpRequestinModify amount | AmountbyServerandPayment Gatewaydual towardConfirm | | |
+| RCH-02 | Payment Callback Forgery | model Payment GatewayCallbackInterface, Send falseofPaymentSuccesswild notify | CallbackValidateSignature, forgeryRequestbe reject | | |
+| RCH-03 | CallbackReplayattack attack | Replayreal realofTop-UpSuccessCallback | IdempotencyValidate, Same order_id not serious repeat inject account | | |
+| RCH-04 | CallbackAmountnot one cause | real actualPayment 1 yuanbutCallbackwild notifyAmountas 1000 yuan | Serveraudit forOrderAmountandCallbackAmountone cause | | |
+| RCH-05 | CallbackOrdernumberReplace | use 1 yuanofPaymentSuccessCallbackmatch config 1000 yuanofTop-UpOrder | OrdernumberandPaymentflow horizontal number one for oneBinding | | |
+| RCH-06 | testPaymentchannel channel | Checkwhether retainTest EnvironmentofPayment GatewayConfiguration | generate asset environment environment no testPaymentChannel | | |
+| RCH-07 | Top-UpStatustamper change | ModifyClientTop-UpStatusfrom pending changeas success | Top-UpStatusbyServerroot accordingPaymentCallbackUpdate | | |
 
-#### 3.3 提现安全测试
+#### 3.3 WithdrawalSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| WDR-01 | 提现金额-负值 | 将提现 amount 改为 -500（可能变为充值） | 服务端拒绝负值 | | |
-| WDR-02 | 提现金额-超余额 | 余额 100，提现 200 | 服务端校验余额充足性 | | |
-| WDR-03 | 提现目标账户篡改 | 修改提现到账银行卡为他人卡号 | 到账卡必须是当前用户已绑定的卡 | | |
-| WDR-04 | 竞态条件-并发提现 | 余额 1000，同时发起 5 笔 1000 元提现（并发请求） | 仅 1 笔成功，余额正确扣减 | | |
-| WDR-05 | 小数精度攻击 | 提现 0.001 元 × 10000 次（利用舍入累积差异） | 有最低提现金额限制 | | |
-| WDR-06 | 提现手续费绕过 | 修改 fee=0 或移除手续费参数 | 手续费由服务端计算 | | |
-| WDR-07 | 提现审核绕过 | 直接调用打款接口，跳过审核步骤 | 必须经过审核流程 | | |
-| WDR-08 | 提现订单状态篡改 | 将提现订单状态从 pending 篡改为 approved | 状态由服务端控制 | | |
+| WDR-01 | WithdrawalAmount-negative value | willWithdrawal amount changeas -500(Cancan changeasTop-Up) | Serverreject reject negative value | | |
+| WDR-02 | WithdrawalAmount-superBalance | Balance 100, Withdrawal 200 | ServerValidateBalancetopup ness | | |
+| WDR-03 | WithdrawalTargetAccounttamper change | ModifyWithdrawaltoaccount banklinescardasother person card number | toaccount cardmustis when firstUseralreadyBindingofcard | | |
+| WDR-04 | Race Condition-ConcurrencyWithdrawal | Balance 1000, same time initiate initiate 5 entry 1000 yuanWithdrawal(ConcurrencyRequest) | only 1 entrySuccess, Balancecorrect confirm deduct reduce | | |
+| WDR-05 | small number precision degree attack attack | Withdrawal 0.001 yuan x 10000 times(exploituse inject cumulative error abnormal) | has mostLowWithdrawalAmountlimit make | | |
+| WDR-06 | Withdrawalmobile continue feeBypass | Modify fee=0 ormove remove mobile continue feeParameter | mobile continue fee byServerCompute | | |
+| WDR-07 | Withdrawalaudit auditBypass | Direct Callbreak paymentInterface, skip through audit auditStep | mustthrough through audit audit flow process | | |
+| WDR-08 | WithdrawalOrderStatustamper change | willWithdrawalOrderStatusfrom pending tamper changeas approved | StatusbyServercontrol make | | |
 
-#### 3.4 理财购买安全测试
+#### 3.4 Wealth Product PurchaseSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| FIN-01 | 产品 ID 替换 | 将 product_id 替换为高收益/限购/非公开产品 | 服务端验证产品可购买性和用户资格 | | |
-| FIN-02 | 购买金额篡改 | 修改购买金额低于起购金额 | 有最低购买金额校验 | | |
-| FIN-03 | 风险等级绕过 | 低风险等级用户购买高风险产品（修改 risk_level 参数） | 服务端校验用户风险评估结果 | | |
-| FIN-04 | 风险评估跳过 | 未完成风险评估问卷直接调用购买接口 | 必须先完成风险评估 | | |
-| FIN-05 | 利率/收益率篡改 | 如果请求中包含 rate/yield 参数，修改为高值 | 收益率由服务端按产品配置计算 | | |
-| FIN-06 | 赎回他人理财 | 用 A 的 Token 赎回 B 的理财产品（替换 holding_id） | 所有权校验，仅允许操作自己的持仓 | | |
-| FIN-07 | 超额购买 | 购买金额超过产品剩余额度 | 服务端校验产品剩余可购额度 | | |
-| FIN-08 | 竞态条件-限购产品 | 并发购买同一限购产品 | 不超卖，正确控制额度 | | |
+| FIN-01 | product ID Replace | will product_id ReplaceasHighcollect /limit buy/Non-company open product | ServerValidateproductCanbuy buy nessandUserresource format | | |
+| FIN-02 | buy buyAmount Tampering | Modifybuy buyAmountLowfor initiate buyAmount | has mostLowbuy buyAmountValidate | | |
+| FIN-03 | Risk LevelBypass | LowRisk LevelUserbuy buyHighrisk product(Modify risk_level Parameter) | ServerValidateUserrisk assess assessResult | | |
+| FIN-04 | risk assess assess skip through | not complete risk assess assess ask Direct Callbuy buyInterface | mustfirst complete risk assess assess | | |
+| FIN-05 | exploit rate/collect rate tamper change | such asifRequestininclude include rate/yield Parameter, ModifyasHighvalue | collect rate byServerby productConfigurationCompute | | |
+| FIN-06 | return other person manage finance | use A of Token return B ofmanage finance product(Replace holding_id) | AllpermissionValidate, only allow allow operation self ownofhold repository | | |
+| FIN-07 | super amount buy buy | buy buyAmountsuper through product Balancedegree | ServerValidateproduct Canbuy amount degree | | |
+| FIN-08 | Race Condition-limit buy product | Concurrencybuy buySamelimit buy product | not super, correct confirm control make amount degree | | |
 
-**WooYun 参考案例：**
-- M1905电影网价值2588套餐只要5毛钱——通过自审批实现 5000 倍价格差异
-- 中原银行2处漏洞可getshell影响财付通/支付宝支付
-- 宁波银行直销银行看任意卡余额
-- 鱼泡泡APP任意用户登录可影响用户账户余额（sign绕过）
-- 中国铁通计费系统GetShell+可生成充值卡——任意充值卡生成
+**WooYun participate referenceCase:**
+- M1905Movie site value2588Packageonly costs5jiao -- Passself audit batch real current 5000 price format error abnormal
+- inprinciple banklines2handle vulnerabilityCangetshellimpact response finance pay wild/AlipayPayment
+- banklinesvertical banklinesArbitrarycardBalance
+- APPArbitraryUserLoginCanimpact responseUserAccountBalance(signBypass)
+- innational wild plan feeSystemGetShell+Cangenerate completeTop-Upcard -- ArbitraryTop-Upcard generate complete
 
 ---
 
-### 领域四：信息泄露
+### Domainfour:Information Disclosure
 
-> WooYun 数据基础：6,446 个案例（占全部发现的 29%），信息泄露是所有其他攻击的催化剂
-> 核心原则：应用暴露的任何超出用户需求的信息都是漏洞
+> WooYun Database foundation:6,446 Case(shareAllDiscoverof 29%), Information DisclosureisAllother attack attackof ize
+> audit core principle rule:Applicationexpose exposureofany super outUserneed requireofinformation all is vulnerability
 
-#### 4.1 API 响应数据泄露
+#### 4.1 API ResponseDataDisclosure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| INFO-01 | API 过度返回 | 对比 API 响应中的字段与 UI 展示的字段（用户详情、交易详情等） | 响应字段 = UI 需要字段，无多余敏感信息 | | |
-| INFO-02 | 银行卡号泄露 | 检查各接口返回的卡号是否脱敏（应仅显示后 4 位） | 卡号脱敏展示 **** **** **** 1234 | | |
-| INFO-03 | 身份证号泄露 | 检查各接口返回的身份证号是否脱敏 | 身份证号脱敏 110***********1234 | | |
-| INFO-04 | 手机号泄露 | 检查各接口返回的手机号是否脱敏 | 手机号脱敏 138****1234 | | |
-| INFO-05 | 交易密码哈希泄露 | 检查用户信息接口是否返回密码相关字段 | 不返回任何密码相关字段 | | |
-| INFO-06 | 他人信息泄露 | 转账时输入收款卡号，检查返回的户名信息详细程度 | 仅返回脱敏的户名（如 王*伟） | | |
-| INFO-07 | 错误信息过度暴露 | 提交非法参数触发服务端错误，检查是否返回堆栈跟踪/SQL 语句/内部路径 | 返回统一的错误信息，无技术细节 | | |
-| INFO-08 | 客户端存储检查 | 检查 App 本地存储（SharedPreferences/Keychain/SQLite）中是否存有明文敏感数据 | 敏感数据加密存储或不本地存储 | | |
+| INFO-01 | API through degreeReturn | for ratio API ResponseinofFieldand UI showofField(Userdetailed details/transaction detailsetc.) | ResponseField = UI requiresField, no many Sensitive Information | | |
+| INFO-02 | banklinescard numberDisclosure | CheckeachInterfaceReturnofcard numberwhetherleak sensitive(shouldonly display after 4 characters) | card number leak sensitive show **** **** **** 1234 | | |
+| INFO-03 | Identity CardnumberDisclosure | CheckeachInterfaceReturnofIdentity Cardnumberwhetherleak sensitive | Identity Cardnumber leak sensitive 110***********1234 | | |
+| INFO-04 | mobile numberDisclosure | CheckeachInterfaceReturnofmobile numberwhetherleak sensitive | mobile numberleak sensitive 138****1234 | | |
+| INFO-05 | transaction easyPasswordhash hashDisclosure | CheckUserinformationInterfacewhetherReturnPasswordrelated keyField | notReturnanyPasswordrelated keyField | | |
+| INFO-06 | other personInformation Disclosure | Transfertime output inject collect payment card number, CheckReturnofaccount name informationDetailedprocess degree | onlyReturnleak sensitiveofaccount name(such as *) | | |
+| INFO-07 | error information through degree expose exposure | SubmitNon-methodParametertrigger initiateServererror, CheckwhetherReturnstack stack /SQL /internal partPath | Returnsystem oneoferror information, no technique detail section | | |
+| INFO-08 | ClientStorageCheck | Check App version Storage(SharedPreferences/Keychain/SQLite)inwhetherexist has clear text sensitive sensitiveData | sensitive sensitiveDataadd secretStorageornot version Storage | | |
 
-#### 4.2 敏感路径与配置文件泄露
+#### 4.2 sensitive sensitivePathandConfigurationFileDisclosure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| LEAK-01 | 版本控制文件 | 访问 /.git/config、/.svn/entries | 返回 404，不可访问 | | |
-| LEAK-02 | 备份文件 | 访问 /backup.zip、/db.sql、/*.bak | 返回 404 | | |
-| LEAK-03 | 环境配置文件 | 访问 /.env、/config.yml、/application.properties | 返回 404 | | |
-| LEAK-04 | 日志文件 | 访问 /logs/、/log/、/access.log | 返回 404 | | |
-| LEAK-05 | API 文档 | 访问 /swagger-ui.html、/api-docs、/redoc | 生产环境不暴露 | | |
-| LEAK-06 | 监控面板 | 访问 /grafana、/prometheus、/kibana | 需要认证或不可从公网访问 | | |
-| LEAK-07 | 调试端点 | 访问 /actuator/env、/actuator/heapdump、/debug/pprof | 不可访问 | | |
-| LEAK-08 | 测试页面 | 访问 /test、/demo、/phpinfo.php | 生产环境无测试页面 | | |
+| LEAK-01 | version version control makeFile | access ask /.git/config//.svn/entries | Return 404, notCanaccess ask | | |
+| LEAK-02 | prepare copyFile | access ask /backup.zip//db.sql//*.bak | Return 404 | | |
+| LEAK-03 | environment environmentConfigurationFile | access ask /.env//config.yml//application.properties | Return 404 | | |
+| LEAK-04 | LogFile | access ask /logs///log///access.log | Return 404 | | |
+| LEAK-05 | API Document | access ask /swagger-ui.html//api-docs//redoc | generate asset environment environment not expose exposure | | |
+| LEAK-06 | monitor control page template | access ask /grafana//prometheus//kibana | requiresAuthenticationornotCanfromPublic Internetaccess ask | | |
+| LEAK-07 | debuggingEndpoint | access ask /actuator/env//actuator/heapdump//debug/pprof | notCanaccess ask | | |
+| LEAK-08 | test page | access ask /test//demo//phpinfo.php | generate asset environment environment no test page | | |
 
-#### 4.3 通信安全
+#### 4.3 wild informationSecure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| COMM-01 | HTTPS 强制 | 检查是否有 HTTP 端口开放，HTTP 请求是否 301 到 HTTPS | 全站强制 HTTPS | | |
-| COMM-02 | SSL 证书 | 检查证书有效性、过期时间、证书链 | 有效且未过期 | | |
-| COMM-03 | SSL Pinning | 尝试用 mitmproxy/Burp 代理抓包 | App 启用 SSL Pinning（需绕过才能抓包） | | |
-| COMM-04 | 响应头安全 | 检查 Server、X-Powered-By 等头是否暴露技术栈 | 无技术栈版本信息泄露 | | |
-| COMM-05 | 敏感数据明文传输 | 检查密码、卡号等是否在请求体中明文传输 | 敏感字段加密传输 | | |
+| COMM-01 | HTTPS strong make | check whether there is HTTP Portopen release, HTTP Requestwhether 301 to HTTPS | all strong make HTTPS | | |
+| COMM-02 | SSL cert certificate | Checkcert certificateValidness/expired time between/cert certificate link | Validand not expired | | |
+| COMM-03 | SSL Pinning | Attemptuse mitmproxy/Burp code manage packet capture | App enableuse SSL Pinning(needBypass can packet capture) | | |
+| COMM-04 | ResponseHeaderSecure | Check Server/X-Powered-By etc.Headerwhetherexpose exposure technique stack | no technique stack version versionInformation Disclosure | | |
+| COMM-05 | sensitive sensitiveDataclear text pass output | CheckPassword/card numberetc.whetherinRequest Bodyinclear text pass output | sensitive sensitiveFieldadd secret pass output | | |
 
-**WooYun 参考案例：**
-- TCL某系统配置不当导致600万顾客姓名/手机/家庭住址泄露
-- 百姓大药房漏洞危及2000W个人详细信息（姓名/身份证/手机号/住址）
-- 阳光保险敏感信息泄露导致成功进入内网系统
+**WooYun participate referenceCase:**
+- TCLa systemMisconfiguration Leading To600ten-thousand clientName/mobile machine/ Disclosure
+- percent large vulnerability risk involving2000WpersonDetailedinformation(Name/Identity Card/mobile number/)
+- Sunshine InsuranceSensitive InformationDisclosureCausingSuccessadvance injectInternal NetworkSystem
 
 ---
 
-### 领域五：逻辑流安全
+### Domain:logic logic flowSecure
 
-> WooYun 数据基础：1,679 个案例，覆盖状态机绕过、竞态条件、业务规则绕过
-> 核心原则：每个多步骤业务流程都是一个状态机，如果能跳过前置条件到达某个状态，则状态机被破坏
+> WooYun Database foundation:1,679 Case, cover coverState-Machine Bypass/Race Condition/Business Rule Bypass
+> audit core principle rule:EachmanyStepbusiness flow process all is oneStatusmachine, such asif can skip throughPrerequisitestoreach someStatus, ruleStatusmachine be
 
-#### 5.1 状态机绕过测试
+#### 5.1 State-Machine Bypasstest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| FLOW-01 | 转账步骤跳过 | 不发送"输入交易密码"的请求，直接调用"确认转账"接口 | 必须完成交易密码验证 | | |
-| FLOW-02 | 充值步骤跳过 | 不经过支付网关，直接调用充值完成回调 | 回调需要有效的支付网关签名 | | |
-| FLOW-03 | 实名认证步骤跳过 | 不完成活体检测，直接调用"认证完成"接口 | 必须完成所有认证步骤 | | |
-| FLOW-04 | 理财购买步骤跳过 | 不完成风险评估，直接调用购买接口 | 必须先通过风险评估 | | |
-| FLOW-05 | 反向状态转移 | 已完成的转账尝试改回"待支付"状态 | 不允许反向状态转移 | | |
-| FLOW-06 | 无效状态转移 | 尝试将订单从"待审核"直接改为"已完成" | 仅允许合法的状态转移路径 | | |
-| FLOW-07 | 状态参数客户端篡改 | 修改请求中的 status/step/stage 参数 | 状态由服务端维护，不接受客户端状态参数 | | |
+| FLOW-01 | TransferStepskip through | notSend"output inject transaction easyPassword"ofRequest, Direct Call"ConfirmTransfer"Interface | mustcomplete transaction easyPasswordValidate | | |
+| FLOW-02 | Top-UpStepskip through | without going throughPayment Gateway, Direct CallTop-UpcompleteCallback | CallbackrequiresValidofPayment GatewaySignature | | |
+| FLOW-03 | Real-Name VerificationStepskip through | not complete body check test, Direct Call"Authenticationcomplete"Interface | mustcompleteAllAuthenticationStep | | |
+| FLOW-04 | Wealth Product PurchaseStepskip through | not complete risk assess assess, Direct Callbuy buyInterface | mustfirstPassrisk assess assess | | |
+| FLOW-05 | reverse towardStatustransfer move | CompletedofTransferAttemptchange return"Pending Payment"Status | not allow allow reverse towardStatustransfer move | | |
+| FLOW-06 | no validStatustransfer move | AttemptwillOrderfrom"pending audit audit"Directchangeas"Completed" | only allow allow combine methodofStatustransfer movePath | | |
+| FLOW-07 | StatusParameterClienttamper change | ModifyRequestinof status/step/stage Parameter | StatusbyServermaintain protect, not connect affectedClientStatusParameter | | |
 
-#### 5.2 竞态条件测试
+#### 5.2 Race Conditiontest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| RACE-01 | 余额双花-转账 | 余额 X，用 Turbo Intruder 并发发送 N 笔 X 元转账 | 仅 1 笔成功 | | |
-| RACE-02 | 余额双花-提现 | 余额 X，并发发送 N 笔 X 元提现 | 仅 1 笔成功 | | |
-| RACE-03 | 优惠券/红包竞态 | 单次使用的优惠券/红包，并发发送 N 次使用请求 | 仅消耗 1 次 | | |
-| RACE-04 | 签到/积分竞态 | 每日签到奖励，并发发送 N 次签到 | 仅获得 1 次奖励 | | |
-| RACE-05 | 限购产品竞态 | 限购 1 份的理财产品，并发购买 N 次 | 仅成功 1 次 | | |
-| RACE-06 | 新人礼包竞态 | 新用户首次登录礼包，并发领取 N 次 | 仅领取 1 次 | | |
+| RACE-01 | Balancedual flower-Transfer | Balance X, use Turbo Intruder ConcurrencySend N entry X yuanTransfer | only 1 entrySuccess | | |
+| RACE-02 | Balancedual flower-Withdrawal | Balance X, ConcurrencySend N entry X yuanWithdrawal | only 1 entrySuccess | | |
+| RACE-03 | Coupon/ includeRace | singletimesuseuseofCoupon/ include, ConcurrencySend N timesuseuseRequest | only message 1 times | | |
+| RACE-04 | to/ partRace | each day to, ConcurrencySend N timesto | only 1 times | | |
+| RACE-05 | limit buy productRace | limit buy 1 copyofmanage finance product, Concurrencybuy buy N times | onlySuccess 1 times | | |
+| RACE-06 | new person includeRace | newUsertimesLogin include, Concurrencydomain take N times | only domain take 1 times | | |
 
-**竞态条件测试技术要点：**
+**Race Conditiontest technique need point:**
 
 ```
-工具选择：
-- Burp Suite Turbo Intruder（推荐，支持 HTTP/2 单次连接多请求）
-- Python threading/asyncio 脚本
-- curl 后台并发 (&)
+Toolselect:
+- Burp Suite Turbo Intruder(infer, support hold HTTP/2 singletimescontinuous connect manyRequest)
+- Python threading/asyncio Script
+- curl backend consoleConcurrency (&)
 
-并发数：5-20 个同时请求
-关键验证：检查最终余额/状态是否与预期一致
-漏洞判定：多个请求成功 = 存在竞态条件
+Concurrencynumber:5-20 same timeRequest
+keyValidate:Checkmost finalBalance/Statuswhetherandexpected period one cause
+vulnerability determine set:manyRequestSuccess = existinRace Condition
 ```
 
-#### 5.3 业务规则绕过测试
+#### 5.3 Business Rule Bypasstest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| BIZ-01 | 未实名用户转账 | 未完成实名认证的用户尝试调用转账接口 | 被拒绝，提示需先实名 | | |
-| BIZ-02 | 未绑卡用户提现 | 未绑定银行卡的用户尝试提现 | 被拒绝 | | |
-| BIZ-03 | 转账给自己 | 收款人设为自己的账户 | 根据业务规则允许或拒绝（需验证无异常） | | |
-| BIZ-04 | 推荐/邀请自推荐 | 自己的邀请码给自己使用 | 被拒绝 | | |
-| BIZ-05 | 营销活动刷单 | 通过批量注册/登录领取新人奖励 | 有设备指纹/IP/手机号等维度的风控 | | |
-| BIZ-06 | 多渠道不一致 | 同一操作分别通过 App、H5、Web 端执行，对比校验差异 | 各渠道安全校验一致 | | |
-| BIZ-07 | 时间窗口利用 | 在系统维护/日切时间窗口执行转账 | 正确拒绝或排队处理 | | |
-| BIZ-08 | 类型混淆 | 金额字段发送字符串 "0"、布尔值 false、空对象 {} | 服务端做类型校验 | | |
+| BIZ-01 | not real nameUserTransfer | not completeReal-Name VerificationofUserAttemptCallTransferInterface | be reject reject, provide show need first real name | | |
+| BIZ-02 | not cardUserWithdrawal | Not BoundbanklinescardofUserAttemptWithdrawal | be reject reject | | |
+| BIZ-03 | Transferto self own | collect payment person setasself ownofAccount | root according business scale rule allow alloworreject reject(needValidateno abnormal common) | | |
+| BIZ-04 | infer / please self infer | self ownof please code to self own useuse | be reject reject | | |
+| BIZ-05 | dynamic single | PassBatchRegistration/Logindomain take new person | has set prepare specified pattern/IP/mobile numberetc.Dimensionofrisk control | | |
+| BIZ-06 | many channel channel not one cause | Sameoperation part levelPass App/H5/Web endExecute, for ratioValidateerror abnormal | each channel channelSecureValidateone cause | | |
+| BIZ-07 | Time Windowexploituse | inSystemmaintain protect/day switchTime WindowExecuteTransfer | correct confirm reject rejectorrank handle manage | | |
+| BIZ-08 | type mix | AmountFieldSendcharacter symbol string "0"/deploy value false/Emptyfor {} | Serverdo typeValidate | | |
 
-#### 5.4 实名认证（KYC）逻辑测试
+#### 5.4 Real-Name Verification(KYC)logic logic test
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| KYC-01 | 认证状态篡改 | 修改本地缓存/请求中的认证状态为"已认证" | 服务端独立校验认证状态 | | |
-| KYC-02 | 他人证件认证 | 用 B 的身份证信息为 A 完成实名认证 | 姓名+身份证+手机号+银行卡四要素一致性校验 | | |
-| KYC-03 | 活体检测绕过 | 使用照片/视频替代真人进行活体检测 | 活体检测拒绝静态图片/预录视频 | | |
-| KYC-04 | OCR 结果篡改 | 拦截 OCR 识别结果的请求，修改身份信息 | OCR 结果在服务端与公安系统核验 | | |
-| KYC-05 | 认证信息修改 | 已认证用户尝试修改实名信息 | 需要更严格的验证流程或不允许修改 | | |
-| KYC-06 | 重复认证 | 同一身份信息认证多个账户 | 根据业务规则限制 | | |
+| KYC-01 | AuthenticationStatustamper change | Modifyversion exist/RequestinofAuthenticationStatusas"alreadyAuthentication" | Serverindependent standaloneValidateAuthenticationStatus | | |
+| KYC-02 | other person cert itemAuthentication | use B ofIdentity Cardinformationas A completeReal-Name Verification | Name+Identity Card+mobile number+banklinescard four need one cause nessValidate | | |
+| KYC-03 | body check testBypass | useusephoto image/ frequency replace code real person advancelines body check test | body check test reject reject state image image/expected record frequency | | |
+| KYC-04 | OCR Resulttamper change | Intercept OCR IdentifyResultofRequest, Modifyidentity copy information | OCR ResultinServerandcompany Systemaudit validate | | |
+| KYC-05 | AuthenticationinformationModify | alreadyAuthenticationUserAttemptModifyreal name information | requiresupdate severe formatofValidateflow processornot allow allowModify | | |
+| KYC-06 | serious repeatAuthentication | Sameidentity copy informationAuthenticationmanyAccount | root according business scale rule limit make | | |
 
-**WooYun 参考案例：**
-- 百合网某APP设计缺陷影响100W+妹子手机号——设计缺陷导致批量信息泄露
-- 114票务网某站逻辑漏洞利用支付超时导致上万用户敏感信息泄漏
-- 大特宝官网业务逻辑漏洞可免费甚至低款买保险
+**WooYun participate referenceCase:**
+- percent combine network someAPPDesign Flawimpact response100W+ submobile number -- Design FlawCausingBatchInformation Disclosure
+- 114Ticketing site logic flaw used payment timeout to leak sensitive information for tens of thousands of users
+- Datebao official site business-logic vulnerability allowed buying insurance for free or at an extremely low price
 
 ---
 
-### 领域六：配置安全
+### Domainsix:ConfigurationSecure
 
-> WooYun 数据基础：1,796 个案例，72.6% 高危——最具破坏力的入侵来自默认配置
-> 核心原则：每个服务的默认配置都是为便利而非安全设计的
+> WooYun Database foundation:1,796 Case, 72.6% High Risk -- most tool powerofinject come selfDefault Configuration
+> audit core principle rule:EachserviceofDefault Configurationall isas exploit whileNon-Secureset planof
 
-#### 6.1 服务端配置检查
+#### 6.1 ServerConfigurationCheck
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| CONF-01 | 默认凭证-中间件 | 测试 Tomcat Manager (tomcat/tomcat)、Jenkins（无认证）、JBoss (admin/admin) 等 | 无默认凭证可用 | | |
-| CONF-02 | 默认凭证-数据库 | 测试 Redis（无认证）、MongoDB（无认证）、MySQL (root/空) 等端口 | 数据库不暴露在公网或需要强认证 | | |
-| CONF-03 | 默认凭证-监控工具 | 测试 Grafana (admin/admin)、Zabbix (Admin/zabbix)、Nacos (nacos/nacos) | 无默认凭证可用 | | |
-| CONF-04 | Spring Boot Actuator | 访问 /actuator/env、/actuator/heapdump、/actuator/configprops | 不可访问或需要认证 | | |
-| CONF-05 | Druid 监控 | 访问 /druid/index.html | 不可访问或需要认证 | | |
-| CONF-06 | 目录列表 | 访问无 index 文件的目录 | 目录列表已禁用 | | |
-| CONF-07 | HTTP 方法 | OPTIONS 请求检查允许的 HTTP 方法 | 仅允许必要的方法，禁用 PUT/DELETE/TRACE | | |
-| CONF-08 | CORS 配置 | 检查 Access-Control-Allow-Origin 头 | 不为通配符 *，限定可信域名 | | |
-| CONF-09 | 安全响应头 | 检查 X-Frame-Options、X-Content-Type-Options、CSP、HSTS 头 | 所有安全头已正确设置 | | |
-| CONF-10 | 文件上传限制 | 尝试上传 .jsp/.php/.aspx 等可执行文件 | 白名单限制文件类型 | | |
-| CONF-11 | 开放重定向 | 修改 redirect_url/return_url/callback_url 为外部域名 | 重定向目标白名单校验 | | |
-| CONF-12 | SSRF 检测 | 在 Webhook URL/头像URL 等参数中输入内网 IP (127.0.0.1, 10.0.0.0/8) | 服务端阻止对内网地址的请求 | | |
+| CONF-01 | Default Credentials-inbetween item | test Tomcat Manager (tomcat/tomcat)/Jenkins(No Authentication)/JBoss (admin/admin) etc. | noDefault CredentialsCanuse | | |
+| CONF-02 | Default Credentials-Database | test Redis(No Authentication)/MongoDB(No Authentication)/MySQL (root/Empty) etc.Port | Databasenot expose exposureinPublic InternetorrequiresstrongAuthentication | | |
+| CONF-03 | Default Credentials-monitor controlTool | test Grafana (admin/admin)/Zabbix (Admin/zabbix)/Nacos (nacos/nacos) | noDefault CredentialsCanuse | | |
+| CONF-04 | Spring Boot Actuator | access ask /actuator/env//actuator/heapdump//actuator/configprops | notCanaccess askorrequiresAuthentication | | |
+| CONF-05 | Druid monitor control | access ask /druid/index.html | notCanaccess askorrequiresAuthentication | | |
+| CONF-06 | directory record list | access ask no index Fileofdirectory record | directory record list already disableuse | | |
+| CONF-07 | HTTP Method | OPTIONS RequestCheckallow allowof HTTP Method | only allow allow must needofMethod, disableuse PUT/DELETE/TRACE | | |
+| CONF-08 | CORS Configuration | Check Access-Control-Allow-Origin Header | notaswild config symbol *, limit setCaninformationDomain Name | | |
+| CONF-09 | SecureResponseHeader | Check X-Frame-Options/X-Content-Type-Options/CSP/HSTS Header | AllSecureHeaderalready correct confirm set set | | |
+| CONF-10 | FileUploadlimit make | AttemptUpload.jsp/.php/.aspx etc.CanExecuteFile | Whitelistlimit makeFiletype | | |
+| CONF-11 | open release serious set toward | Modify redirect_url/return_url/callback_url asexternal partDomain Name | serious set towardTargetWhitelistValidate | | |
+| CONF-12 | SSRF check test | in Webhook URL/HeaderURL etc.Parameterinoutput injectInternal Network IP (127.0.0.1, 10.0.0.0/8) | Server stop forInternal NetworkAddressofRequest | | |
 
-#### 6.2 移动端安全配置
+#### 6.2 Mobile ClientSecurity Configuration
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 状态 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Status |
 |------|-------|---------|---------|---------|------|
-| MOB-01 | App 加固/混淆 | 反编译 APK/IPA，检查代码是否混淆 | 代码已混淆，关键逻辑不可直接读取 | | |
-| MOB-02 | Root/越狱检测 | 在 Root/越狱设备上运行 App | App 检测到 Root/越狱并限制功能或拒绝运行 | | |
-| MOB-03 | 调试模式 | 检查 APK 的 android:debuggable 属性 | 设为 false | | |
-| MOB-04 | 日志输出 | 运行 logcat/Console，检查是否有敏感信息输出 | 无敏感信息在日志中输出 | | |
-| MOB-05 | 剪贴板安全 | 复制银行卡号/密码后检查剪贴板 | 敏感字段禁止复制或自动清除 | | |
-| MOB-06 | 截图保护 | 在密码输入/余额展示页面截图 | 敏感页面禁止截图 | | |
-| MOB-07 | 键盘安全 | 密码输入时使用的键盘类型 | 使用安全键盘（自定义键盘，防录屏/录音） | | |
-| MOB-08 | 本地数据加密 | 检查 SQLite/SharedPreferences/Keychain 中的数据 | 敏感数据加密存储 | | |
-| MOB-09 | 网络安全配置 | 检查 network_security_config.xml (Android) / ATS (iOS) | 禁止明文 HTTP，配置 SSL Pinning | | |
+| MOB-01 | App Hardening/mix | reverse engineering APK/IPA, CheckCodewhethermix | Codealready mix, key logic logic notdirectly usableRead | | |
+| MOB-02 | Root/bypass check test | in Root/bypass set prepare above operatelines App | App check testto Root/bypass and limit make function canorreject reject operatelines | | |
+| MOB-03 | debugging mode | Check APK of android:debuggable attributes | setas false | | |
+| MOB-04 | Logoutput out | operatelines logcat/Console, check whether there isSensitive Informationoutput out | noSensitive InformationinLoginoutput out | | |
+| MOB-05 | templateSecure | repeat make banklinescard number/PasswordafterCheck template | sensitive sensitiveFielddisable stop repeat makeorself dynamic clear remove | | |
+| MOB-06 | intercept image protect protect | inPasswordoutput inject/Balance show page intercept image | sensitive sensitive page disable stop intercept image | | |
+| MOB-07 | key Secure | Passwordoutput inject time useuseofkey type | useuseSecurekey (self set define key, defense record /record) | | |
+| MOB-08 | version Dataadd secret | Check SQLite/SharedPreferences/Keychain inofData | sensitive sensitiveDataadd secretStorage | | |
+| MOB-09 | NetworkSecurity Configuration | Check network_security_config.xml (Android) / ATS (iOS) | disable stop clear text HTTP, Configuration SSL Pinning | | |
 
-**WooYun 参考案例：**
-- 云南农村信用社智慧农信微信管理平台——银行平台默认凭证
-- DaoCloud弱口令+docker remote API未授权访问
-- 同程旅游某系统配置不当任意文件上传getshell
+**WooYun participate referenceCase:**
+- cloud informationusesocial informationWeChatmanage managePlatform -- banklinesPlatformDefault Credentials
+- DaoCloudWeak Credentials+docker remote APIUnauthorized Access
+- Tongcheng Travel system misconfiguration allowed arbitrary file uploadgetshell
 
 ---
 
-## 第四部分：发现记录模板
+## No. four part part:DiscoverRecordmodel template
 
-每发现一个漏洞，使用以下模板记录：
+eachDiscoverone vulnerability, useusethe followingmodel templateRecord:
 
 ```
-## 发现 #[编号]：[漏洞标题]
+## Discover #[ID]:[vulnerability identifier problem]
 
-### 基本信息
-- **严重级别：** [严重 / 高 / 中 / 低 / 信息]
-- **领域：** [认证 / 授权 / 金融 / 信息泄露 / 逻辑流 / 配置]
-- **WooYun 模式：** [匹配的历史模式名称及案例数/高危占比]
-- **CVSS 评分：** [0.0 - 10.0]
-- **影响功能：** [转账 / 充值 / 提现 / 理财 / 密码重置 / 实名认证 / 其他]
-- **对应测试编号：** [如 TRF-09, RACE-01]
+### basic information
+- **Severity:** [Severe / High / in / Low / information]
+- **Domain:** [Authentication / Authorization / Financial / Information Disclosure / logic logic flow / Configuration]
+- **WooYun mode:** [match configofhistory history mode name name involvingCase Count/high-risk percentage]
+- **CVSS assess part:** [0.0 - 10.0]
+- **impact response function can:** [Transfer / Top-Up / Withdrawal / manage finance / Password Reset / Real-Name Verification / other]
+- **forshouldTest ID:** [such as TRF-09, RACE-01]
 
-### 业务影响
-[具体描述对银行业务的影响——资金损失金额、受影响用户范围、合规风险等]
+### Business Impact
+[Concrete description for banklinesbusinessofimpact response -- resource funds loss lossAmount/affected impact responseUserScope/combine scale risketc.]
 
-### 重现步骤
-1. [精确的操作步骤]
-2. [包含请求/响应截图或文本]
+### Reproduction Steps
+1. [precision confirmofOperation Steps]
+2. [include includeRequest/Responseintercept imageortext]
 3. [...]
 
-### 请求详情
+### Requestdetailed details
 ```
-[HTTP 请求原文]
-```
-
-### 响应详情
-```
-[HTTP 响应原文]
+[HTTP Requestprinciple text]
 ```
 
-### 截图/证据
-[截图路径或描述]
+### Responsedetailed details
+```
+[HTTP Responseprinciple text]
+```
 
-### 补救建议
-**服务端修复（必须）：**
-- [具体的代码/架构修复建议]
+### intercept image/Evidence
+[intercept imagePathor description]
 
-**架构层加固（建议）：**
-- [架构级别的改进建议]
+### supplement create protocol
+**Serverfix repeat(must):**
+- [ConcreteofCode/architecture structureRemediation Recommendation]
 
-**监控增强（建议）：**
-- [需要增加的监控指标]
+**architecture structure layerHardening(create protocol):**
+- [architecture structure level levelofchange advance create protocol]
 
-### 参考
-- WooYun 类似案例：[案例名称及影响]
-- 修复参考：[行业最佳实践]
+**monitor control increase strong(create protocol):**
+- [requiresincrease addofmonitor control specified identifier]
+
+### participate reference
+- WooYun type Case:[Casename name involving impact response]
+- fix repeat participate reference:[linesbusiness most real]
 ```
 
 ---
 
-## 第五部分：风险评级标准
+## No. part part:risk assess level identifier accurate
 
-### 5.1 严重级别定义（金融行业专用）
+### 5.1 Severityset define(Financiallinesbusiness specialuse)
 
-| 级别 | 定义 | 典型场景 | CVSS 范围 |
+| level level | set define | type scenario scene | CVSS Scope |
 |------|------|---------|----------|
-| **严重** | 可直接导致资金损失或大规模数据泄露，无需用户交互 | 任意用户转账、余额篡改、并发双花、支付回调伪造、任意密码重置 | 9.0 - 10.0 |
-| **高** | 可导致单一用户账户接管或敏感数据批量泄露 | 越权查看交易记录、IDOR 遍历用户数据、提现绕过审核、管理后台暴露 | 7.0 - 8.9 |
-| **中** | 可影响用户隐私或业务流程完整性，需一定条件 | 短信轰炸、验证码可重用、过度信息返回、弱密码策略 | 4.0 - 6.9 |
-| **低** | 信息泄露或配置不当，不直接影响业务安全 | 技术栈版本暴露、缺失安全响应头、详细错误信息 | 0.1 - 3.9 |
-| **信息** | 可供改进但无直接安全风险 | 未启用 HSTS、Cookie 缺少 SameSite 属性 | 0.0 |
+| **Severe** | directly usableCausingresource funds loss lossorlarge scale modelDataDisclosure, no need toUsertransaction | ArbitraryUserTransfer/Balancetamper change/Concurrencydual flower/Payment Callback Forgery/ArbitraryPassword Reset | 9.0 - 10.0 |
+| **High** | CanCausingsingle oneUserAccountconnect manageorsensitive sensitiveDataBatchDisclosure | bypass permissionViewtransaction easyRecord/IDOR TraversalUserData/WithdrawalBypassaudit audit/manage manage backend console expose exposure | 7.0 - 8.9 |
+| **in** | Canimpact responseUserhidden privateorbusiness flow processCompleteness, need one set condition | SMS Bombing/CAPTCHACanserioususe/through degree informationReturn/weakPasswordpolicy strategy | 4.0 - 6.9 |
+| **Low** | Information DisclosureorMisconfiguration, notDirectimpact response businessSecure | technique stack version version expose exposure/MissingSecureResponseHeader/Detailederror information | 0.1 - 3.9 |
+| **information** | Canprovide change advance but noDirectSecurerisk | not enableuse HSTS/Cookie missing less SameSite attributes | 0.0 |
 
-### 5.2 WooYun 数据验证——高危占比分布
+### 5.2 WooYun DataValidate -- high-risk percentagepart deploy
 
-| 领域 | WooYun 案例数 | 高危占比 | 银行 App 对应功能 |
+| Domain | WooYun Case Count | high-risk percentage | banklines App forshouldfunction can |
 |------|-------------|---------|-----------------|
-| 密码重置 | 777 | **88.0%** | 密码重置、交易密码重置 |
-| 提现 | 59 | **83.1%** | 提现到银行卡 |
-| 金额篡改 | 176 | **83.0%** | 转账金额、充值金额 |
-| 余额篡改 | 113 | **77.9%** | 账户余额、理财持仓 |
-| 逻辑漏洞 | 266 | **74.8%** | 竞态条件、流程绕过 |
-| 订单篡改 | 1,227 | **74.2%** | 交易订单状态 |
-| 配置不当 | 1,796 | **72.6%** | 服务端配置、中间件 |
-| 支付绕过 | 1,056 | **68.7%** | 充值回调、支付验证 |
-| 信息泄露 | 4,858 | **64.7%** | API 数据泄露、配置泄露 |
-| 越权 | 1,705 | **62.3%** | IDOR、垂直越权 |
-| 弱口令 | 7,513 | **58.2%** | 管理后台、服务组件 |
+| Password Reset | 777 | **88.0%** | Password Reset/transaction easyPassword Reset |
+| Withdrawal | 59 | **83.1%** | Withdrawaltobanklinescard |
+| Amount Tampering | 176 | **83.0%** | TransferAmount/Top-UpAmount |
+| Balancetamper change | 113 | **77.9%** | AccountBalance/manage finance hold repository |
+| logic logic vulnerability | 266 | **74.8%** | Race Condition/Flow Bypass |
+| Order Tampering | 1,227 | **74.2%** | transaction easyOrderStatus |
+| Misconfiguration | 1,796 | **72.6%** | ServerConfiguration/inbetween item |
+| Payment Bypass | 1,056 | **68.7%** | Top-UpCallback/PaymentValidate |
+| Information Disclosure | 4,858 | **64.7%** | API DataDisclosure/Configuration Disclosure |
+| bypass permission | 1,705 | **62.3%** | IDOR/Vertical Authorization Bypass |
+| Weak Credentials | 7,513 | **58.2%** | manage manage backend console/service array item |
 
 ---
 
-## 第六部分：评估总结
+## No. six part part:assess assess total result
 
-### 6.1 发现统计
+### 6.1 DiscoverStatistics
 
-| 严重级别 | 数量 | 百分比 |
+| Severity | number quantity | percent part ratio |
 |---------|------|-------|
-| 严重 | | |
-| 高 | | |
-| 中 | | |
-| 低 | | |
-| 信息 | | |
-| **合计** | | **100%** |
+| Severe | | |
+| High | | |
+| in | | |
+| Low | | |
+| information | | |
+| **combine plan** | | **100%** |
 
-### 6.2 按领域分布
+### 6.2 byDomainpart deploy
 
-| 领域 | 严重 | 高 | 中 | 低 | 信息 | 合计 |
+| Domain | Severe | High | in | Low | information | combine plan |
 |------|------|---|---|---|------|------|
-| 认证安全 | | | | | | |
-| 授权安全 | | | | | | |
-| 金融安全 | | | | | | |
-| 信息泄露 | | | | | | |
-| 逻辑流安全 | | | | | | |
-| 配置安全 | | | | | | |
-| **合计** | | | | | | |
+| AuthenticationSecure | | | | | | |
+| AuthorizationSecure | | | | | | |
+| FinancialSecure | | | | | | |
+| Information Disclosure | | | | | | |
+| logic logic flowSecure | | | | | | |
+| ConfigurationSecure | | | | | | |
+| **combine plan** | | | | | | |
 
-### 6.3 按功能分布
+### 6.3 by function can part deploy
 
-| 功能 | 严重 | 高 | 中 | 低 | 信息 | 合计 |
+| function can | Severe | High | in | Low | information | combine plan |
 |------|------|---|---|---|------|------|
-| 转账 | | | | | | |
-| 充值 | | | | | | |
-| 提现 | | | | | | |
-| 理财购买 | | | | | | |
-| 密码重置 | | | | | | |
-| 实名认证 | | | | | | |
-| 通用/基础设施 | | | | | | |
-| **合计** | | | | | | |
+| Transfer | | | | | | |
+| Top-Up | | | | | | |
+| Withdrawal | | | | | | |
+| Wealth Product Purchase | | | | | | |
+| Password Reset | | | | | | |
+| Real-Name Verification | | | | | | |
+| wilduse/base foundation set | | | | | | |
+| **combine plan** | | | | | | |
 
-### 6.4 整体风险评价
+### 6.4 integer body risk assess price
 
-**风险等级：** [极高 / 高 / 中 / 低]
+**Risk Level:** [Critical / High / in / Low]
 
-**核心发现摘要：**
+**audit coreDiscover need:**
 
 1. ________________
 2. ________________
 3. ________________
 
-**优先修复建议（按紧急程度排序）：**
+**priority firstRemediation Recommendation(by process degree rank sequence):**
 
-| 优先级 | 发现编号 | 漏洞描述 | 建议修复期限 |
+| Priority | DiscoverID | Vulnerability Description | create protocol fix repeat period limit |
 |-------|---------|---------|------------|
-| P0 紧急 | | | 24 小时内 |
-| P1 高 | | | 7 天内 |
-| P2 中 | | | 30 天内 |
-| P3 低 | | | 下一版本 |
+| P0 | | | 24 hoursinternal |
+| P1 High | | | 7 daysinternal |
+| P2 in | | | 30 daysinternal |
+| P3 Low | | | under one version version |
 
-### 6.5 合规映射
+### 6.5 combine scale map map
 
-| 发现 | 相关法规/标准 | 合规风险 |
+| Discover | related key method scale/identifier accurate | combine scale risk |
 |------|-------------|---------|
-| | 《网络安全法》第二十一条 | |
-| | 《个人信息保护法》 | |
-| | 《商业银行互联网银行管理暂行办法》 | |
+| | "NetworkSecuremethod"No. two ten one condition | |
+| | "Personal Informationprotect protect method" | |
+| | "commerce business banklinesInternet banklinesmanage manage lines method" | |
 | | PCI DSS | |
-| | 等保 2.0 三级 | |
+| | etc.protect 2.0 three level | |
 
 ---
 
-## 附录
+## Appendix
 
-### 附录 A：测试工具清单
+### Appendix A:testToolclear single
 
-| 工具 | 用途 | 备注 |
+| Tool | Purpose | Notes |
 |------|------|------|
-| Burp Suite Professional | HTTP 请求拦截、修改、重放 | 核心工具 |
-| Burp Turbo Intruder | 竞态条件并发测试 | 金融领域必备 |
-| mitmproxy | 移动端 HTTPS 流量拦截 | 配合 SSL Pinning 绕过 |
-| Frida | App 运行时 Hook（绕过 Root 检测/SSL Pinning） | 移动端测试必备 |
-| objection | 基于 Frida 的移动端安全测试框架 | |
-| JADX / Hopper | APK/IPA 反编译分析 | |
-| Python + aiohttp/threading | 自定义竞态条件测试脚本 | |
-| Nmap | 端口扫描，发现暴露的管理端口 | |
-| curl | 快速 API 测试 | |
-| jq | JSON 响应分析 | |
+| Burp Suite Professional | HTTP Request Interception/Modify/Replay | audit coreTool |
+| Burp Turbo Intruder | Race ConditionConcurrencytest | Financial Domainmust prepare |
+| mitmproxy | Mobile Client HTTPS flow quantityIntercept | config combine SSL Pinning Bypass |
+| Frida | App operatelinestime Hook(Bypass Root check test/SSL Pinning) | Mobile Clienttest must prepare |
+| objection | based on Frida ofMobile ClientSecuretest framework architecture | |
+| JADX / Hopper | APK/IPA reverse engineeringAnalyze | |
+| Python + aiohttp/threading | self set defineRace ConditiontestScript | |
+| Nmap | PortScan, Discoverexpose exposureofmanage managePort | |
+| curl | fast rate API test | |
+| jq | JSON ResponseAnalyze | |
 
-### 附录 B：测试环境信息
+### Appendix B:Test Environmentinformation
 
-| 项目 | 内容 |
+| itemsdirectory | content |
 |------|------|
-| App 版本 | |
-| 操作系统 | Android ____ / iOS ____ |
-| 测试设备 | |
-| 代理工具 | |
-| 测试网络 | |
-| 服务器域名/IP | |
-| API 基础路径 | |
+| App version version | |
+| operationSystem | Android ____ / iOS ____ |
+| test set prepare | |
+| code manageTool | |
+| testNetwork | |
+| ServerDomain Name/IP | |
+| API base foundationPath | |
 
-### 附录 C：WooYun 方法论核心原则回顾
+### Appendix C:WooYun Methodcomment audit core principle rule return
 
-**需要避免的思维陷阱（来自 22,132 个案例的教训）：**
+**requiresavoidof maintain flaw (come self 22,132 Caseoflesson lesson):**
 
-| 陷阱 | 现实 |
+| flaw | current real |
 |------|------|
-| "扫描器可以覆盖业务逻辑" | 扫描器找到的是特征，不是逻辑漏洞。没有扫描器能发现"订单状态可以跳过支付"。 |
-| "我测试了主流程，它是安全的" | 22,132 个案例证明：逻辑漏洞存在于边界情况。 |
-| "只需改价格为 0.01" | 那只是一个测试。WooYun 数据显示 17+ 种支付攻击模式。 |
-| "IDOR 很简单，只需改 ID" | IDOR 有编码绕过、参数污染、JSON 嵌套。简单改 ID 只占案例的 30%。 |
-| "前端验证了，就没问题" | 68.7% 的支付漏洞存在是因为验证仅在客户端。 |
-| "管理员面板需要不同的凭证" | 58.2% 的未授权访问 = 完全没有身份验证的管理后台。 |
+| "ScandeviceCanas cover cover business logic logic" | Scandevice toofis special, not is logic logic vulnerability.no hasScandevice canDiscover"OrderStatusCanas skip throughPayment". |
+| "I test done primary flow process, isSecureof" | 22,132 Casecert clear:logic logic vulnerability existinfor boundary boundary details. |
+| "only need change price formatas 0.01" | that only is one test.WooYun Datadisplay 17+ typePaymentAttack Pattern. |
+| "IDOR simple single, only need change ID" | IDOR hasEncoding Bypass/Parameter Pollution/JSON Nested.simple single change ID only shareCaseof 30%. |
+| "FrontendValidatedone, no ask problem" | 68.7% ofPaymentvulnerability existinis becauseasValidateonlyinClient. |
+| "Administratorpage templaterequiresDifferentofCredential" | 58.2% ofUnauthorized Access = complete all no has identity copyValidateofmanage manage backend console. |
 
-**四阶段方法检查：**
+**fourPhaseMethodCheck:**
 
-- [ ] 第一阶段（映射）：所有业务流程、状态机、信任边界已完整记录
-- [ ] 第二阶段（假设）：>= 12 个按影响排序的安全假设已形成
-- [ ] 第三阶段（测试）：每个假设有证据支持或反驳，测试用例已执行
-- [ ] 第四阶段（报告）：所有发现已按模板记录，含业务影响和修复建议
+- [] No. onePhase(map map):Allbusiness flow process/Statusmachine/Trust BoundaryalreadyCompleteRecord
+- [] No. twoPhase(false set):>= 12 by impact response rank sequenceofSecurefalse set already complete
+- [] No. threePhase(test):Eachfalse set hasEvidencesupport holdorreverse, Test CasealreadyExecute
+- [] No. fourPhase(report):AllDiscoveralready by model templateRecord, includeBusiness ImpactandRemediation Recommendation
 
 ---
 
-*报告基于 WooYun 业务逻辑漏洞方法论 v2.0，数据源：WooYun 漏洞数据库（2016年7月）22,132 个真实案例*
+*report based on WooYun Business Logic Vulnerability Methodology v2.0, Datasource:WooYun vulnerabilityDatabase(20167)22,132 real realCase*
 
-*评估人签字：________________  日期：________________*
+*assess assess person character:________________ day period:________________*
 
-*审核人签字：________________  日期：________________*
+*audit audit person character:________________ day period:________________*

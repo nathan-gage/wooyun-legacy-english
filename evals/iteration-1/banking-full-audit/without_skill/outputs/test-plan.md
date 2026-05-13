@@ -1,412 +1,412 @@
-# 手机银行 App 业务逻辑安全评估报告
+# mobile machine banklines App business logic logicSecureassess assess report
 
-## 文档信息
+## Documentinformation
 
-| 项目 | 内容 |
+| itemsdirectory | content |
 |------|------|
-| 项目名称 | XXX 手机银行 App 业务逻辑安全评估 |
-| 版本号 | v1.0 |
-| 测试日期 | 2026-XX-XX 至 2026-XX-XX |
-| 测试人员 | |
-| App 版本 | |
-| 测试平台 | Android / iOS |
-| 报告密级 | 机密 |
+| itemsdirectory name name | XXX mobile machine banklines App business logic logicSecureassess assess |
+| version version number | v1.0 |
+| test day period | 2026-XX-XX 2026-XX-XX |
+| tester | |
+| App version version | |
+| testPlatform | Android / iOS |
+| report secret level | machine secret |
 
 ---
 
-## 一、评估概述
+## 1. assess assess approx description
 
-### 1.1 评估范围
+### 1.1 assess assessScope
 
-本次评估覆盖手机银行 App 以下核心业务模块：
+versiontimesassess assess cover cover mobile machine banklines App the followingaudit core business model block:
 
-| 模块 | 功能范围 |
+| model block | function canScope |
 |------|----------|
-| 转账 | 行内转账、跨行转账、批量转账、预约转账、收款人管理 |
-| 充值 | 话费充值、流量充值、水电煤缴费、信用卡还款 |
-| 提现 | 银行卡提现、快速到账、普通到账、大额提现 |
-| 理财购买 | 理财产品浏览、风险评估、购买、赎回、收益查询 |
-| 密码重置 | 登录密码重置、交易密码重置、手势密码/指纹重置 |
-| 实名认证 | 身份证认证、银行卡绑定、人脸识别、活体检测 |
+| Transfer | linesinternalTransfer/crosslinesTransfer/BatchTransfer/expected constraintTransfer/collect payment person manage manage |
+| Top-Up | feeTop-Up/flow quantityTop-Up/horizontal electronic fee/informationusecard payment |
+| Withdrawal | banklinescardWithdrawal/fast ratetoaccount/ wildtoaccount/large amountWithdrawal |
+| Wealth Product Purchase | manage finance product /risk assess assess/buy buy/ return/collect check query |
+| Password Reset | LoginPassword Reset/transaction easyPassword Reset/mobile Password/specified pattern serious set |
+| Real-Name Verification | Identity CardAuthentication/banklinescardBinding/person Identify/ body check test |
 
-### 1.2 评估方法
+### 1.2 assess assessMethod
 
-- 黑盒测试：模拟攻击者视角，不依赖源代码
-- 灰盒测试：结合抓包分析接口逻辑
-- 工具辅助：Burp Suite / mitmproxy / Frida / Objection / jadx
+- test:model attack attack person, not depend relySource Code
+- test:result combine packet captureAnalyzeInterfacelogic logic
+- Tool:Burp Suite / mitmproxy / Frida / Objection / jadx
 
-### 1.3 风险等级定义
+### 1.3 Risk Levelset define
 
-| 等级 | 定义 | CVSS 参考 |
+| etc.level | set define | CVSS participate reference |
 |------|------|-----------|
-| 严重 | 可直接造成资金损失或大规模数据泄露 | 9.0-10.0 |
-| 高危 | 可绕过核心认证/授权机制 | 7.0-8.9 |
-| 中危 | 可获取敏感信息或绕过非核心安全控制 | 4.0-6.9 |
-| 低危 | 信息泄露或配置不当，利用条件苛刻 | 0.1-3.9 |
-| 信息 | 安全建议，不构成直接威胁 | N/A |
+| Severe | directly usableforge complete resource funds loss lossorlarge scale modelDataDisclosure | 9.0-10.0 |
+| High Risk | CanBypassaudit coreAuthentication/Authorizationmachine make | 7.0-8.9 |
+| Medium Risk | CanObtainSensitive InformationorBypassNon-audit coreSecurecontrol make | 4.0-6.9 |
+| Low Risk | Information DisclosureorMisconfiguration, exploitusecondition | 0.1-3.9 |
+| information | Security Recommendations, not structure completeDirect | N/A |
 
 ---
 
-## 二、通用安全基线测试
+## 2. wilduseSecurebase line test
 
-### 2.1 通信安全
+### 2.1 wild informationSecure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| COM-01 | HTTPS 强制使用 | 抓包检查所有请求是否走 HTTPS | 全部请求使用 TLS 1.2+ | | |
-| COM-02 | 证书校验（Certificate Pinning） | 使用自签证书代理抓包，观察是否拒绝连接 | App 拒绝非预期证书 | | |
-| COM-03 | 证书锁定绕过难度 | Frida/Objection hook SSL Pinning | 评估绕过复杂度 | | |
-| COM-04 | 敏感数据明文传输 | 抓包检查密码、身份证号、银行卡号等是否加密 | 敏感字段加密传输 | | |
-| COM-05 | 请求签名机制 | 篡改请求参数，观察服务端是否拒绝 | 存在有效签名校验 | | |
-| COM-06 | 时间戳/Nonce 防重放 | 重放历史请求，观察是否被拒绝 | 请求不可重放 | | |
-| COM-07 | SSL/TLS 版本与密码套件 | 使用 testssl.sh 或 sslyze 扫描 | 不支持 SSL3/TLS1.0/弱密码套件 | | |
+| COM-01 | HTTPS strong make useuse | packet captureCheckAllRequestwhether HTTPS | AllRequestuseuse TLS 1.2+ | | |
+| COM-02 | cert certificateValidate(Certificate Pinning) | useuseself cert certificate code manage packet capture, Observewhetherreject reject continuous connect | App reject rejectNon-expected period cert certificate | | |
+| COM-03 | cert certificate lock setBypass degree | Frida/Objection hook SSL Pinning | assess assessBypassrepeat degree | | |
+| COM-04 | sensitive sensitiveDataclear text pass output | packet captureCheckPassword/Identity Cardnumber/banklinescard numberetc.whetheradd secret | sensitive sensitiveFieldadd secret pass output | | |
+| COM-05 | RequestSignaturemachine make | tamper changeRequestParameter, ObserveServerwhetherreject reject | existinValidSignatureValidate | | |
+| COM-06 | timestamp/Nonce defenseReplay | Replayhistory historyRequest, Observewhetherbe reject reject | RequestnotCanReplay | | |
+| COM-07 | SSL/TLS version versionandPassword item | useuse testssl.sh or sslyze Scan | not support hold SSL3/TLS1.0/weakPassword item | | |
 
-### 2.2 客户端安全
+### 2.2 ClientSecure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| CLI-01 | 反编译保护 | jadx/apktool 反编译，检查代码混淆程度 | 关键逻辑充分混淆 | | |
-| CLI-02 | Root/越狱检测 | 在 Root/越狱设备上运行 App | App 检测到并限制核心功能 | | |
-| CLI-03 | 调试器检测 | 附加 Frida/lldb/gdb 调试 | App 检测到调试并退出 | | |
-| CLI-04 | 本地数据存储 | 检查 SharedPreferences/Keychain/SQLite | 无明文存储敏感信息 | | |
-| CLI-05 | 日志信息泄露 | logcat/Console 查看运行时日志 | 不输出敏感信息 | | |
-| CLI-06 | 截屏/录屏防护 | 在交易页面尝试截屏 | 关键页面禁止截屏 | | |
-| CLI-07 | 键盘安全 | 检查密码输入是否使用安全键盘 | 使用自定义安全键盘，非系统键盘 | | |
-| CLI-08 | 二次打包检测 | 重新签名 APK 后安装运行 | App 检测到签名不一致并拒绝运行 | | |
-| CLI-09 | 动态库保护 | 检查 SO 文件是否加壳/做完整性校验 | 核心逻辑 SO 有保护 | | |
-| CLI-10 | WebView 安全 | 检查 JavaScript 接口暴露、file:// 协议 | 无高危 JS Bridge 暴露 | | |
-| CLI-11 | 剪贴板安全 | 复制敏感信息后检查系统剪贴板 | 不允许复制或自动清除 | | |
-| CLI-12 | 后台快照保护 | 将 App 切到后台，查看任务管理器预览 | 显示遮罩或模糊图 | | |
+| CLI-01 | reverse engineering protect protect | jadx/apktool reverse engineering, CheckCodemix process degree | key logic logic topup part mix | | |
+| CLI-02 | Root/bypass check test | in Root/bypass set prepare above operatelines App | App check testtoand limit make audit core function can | | |
+| CLI-03 | debugging device check test | attach add Frida/lldb/gdb debugging | App check testtodebugging and refund out | | |
+| CLI-04 | version DataStorage | Check SharedPreferences/Keychain/SQLite | no clear textStorageSensitive Information | | |
+| CLI-05 | LogInformation Disclosure | logcat/Console ViewoperatelinestimeLog | not output outSensitive Information | | |
+| CLI-06 | intercept /record defense protect | intransaction easy pageAttemptintercept | key page disable stop intercept | | |
+| CLI-07 | key Secure | CheckPasswordoutput injectwhetheruseuseSecurekey | useuseself set defineSecurekey, Non-Systemkey | | |
+| CLI-08 | twotimesbreak include check test | serious newSignature APK after operatelines | App check testtoSignaturenot one cause and reject reject operatelines | | |
+| CLI-09 | dynamic state library protect protect | Check SO Filewhetheradd /doCompletenessValidate | audit core logic logic SO has protect protect | | |
+| CLI-10 | WebView Secure | Check JavaScript Interfaceexpose exposure/file:// protocol protocol | noHigh Risk JS Bridge expose exposure | | |
+| CLI-11 | templateSecure | repeat makeSensitive InformationafterCheckSystem template | not allow allow repeat makeorself dynamic clear remove | | |
+| CLI-12 | backend console fast photo protect protect | will App switchtobackend console, Viewany service manage manage device expected | display ormodel image | | |
 
-### 2.3 认证与会话管理
+### 2.3 AuthenticationandSessionmanage manage
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| AUTH-01 | 登录暴力破解 | 连续输入错误密码，观察锁定策略 | 5次错误后锁定账号，锁定时间递增 | | |
-| AUTH-02 | 验证码安全 | 检查短信/图形验证码的生成、校验、有效期 | 验证码 >= 6位，5分钟过期，服务端校验 | | |
-| AUTH-03 | Session 管理 | 分析 Token 生成规则、有效期、续期机制 | Token 不可预测，合理有效期，安全存储 | | |
-| AUTH-04 | 会话固定 | 登录前后观察 Token 是否更换 | 登录后生成新 Token | | |
-| AUTH-05 | 并发会话控制 | 多设备同时登录同一账号 | 踢出旧会话或提示用户 | | |
-| AUTH-06 | Token 泄露利用 | 使用泄露的 Token 在其他设备调用接口 | 有设备绑定或 IP 校验 | | |
-| AUTH-07 | 退出登录 | 退出后使用旧 Token 请求 | Token 立即失效 | | |
-| AUTH-08 | 生物识别安全 | 检查指纹/Face ID 的实现和降级策略 | 不可绕过，降级需密码验证 | | |
+| AUTH-01 | LoginBrute Force | continuous continue output inject errorPassword, Observelock set policy strategy | 5timeserror after lock setAccount, lock set time between recursive increase | | |
+| AUTH-02 | CAPTCHASecure | Checkshort information/Image CAPTCHAofgenerate complete/Validate/Validity Period | CAPTCHA >= 6characters, 5minutesexpired, ServerValidate | | |
+| AUTH-03 | Session manage manage | Analyze Token generate complete scale rule/Validity Period/continue period machine make | Token notPredictable, combine manageValidity Period, SecureStorage | | |
+| AUTH-04 | SessionFixed | Loginfirst afterObserve Token whetherupdate change | Loginafter generate complete new Token | | |
+| AUTH-05 | ConcurrencySessioncontrol make | many set prepare same timeLoginSameAccount | out oldSessionorprovide showUser | | |
+| AUTH-06 | Token Disclosureexploituse | useuseDisclosureof Token inother set prepareCallInterface | has set prepareBindingor IP Validate | | |
+| AUTH-07 | refund outLogin | refund out after useuseold Token Request | Token Immediately Invalidate | | |
+| AUTH-08 | generate itemIdentifySecure | Checkspecified pattern/Face ID ofreal currentand level policy strategy | notCanBypass, level needPasswordValidate | | |
 
 ---
 
-## 三、转账模块安全测试
+## 3. Transfermodel blockSecuretest
 
-### 3.1 业务逻辑漏洞
+### 3.1 Business Logic Vulnerability
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| TRF-01 | 金额篡改 | 拦截转账请求，修改金额参数（如改为负数、0、超大数、小数精度攻击 0.001→0.009） | 服务端校验金额合法性，拒绝异常值 | | |
-| TRF-02 | 收款账号篡改 | 拦截请求修改收款方账号/姓名 | 服务端校验收款信息一致性 | | |
-| TRF-03 | 转账限额绕过 | 修改单笔/日累计限额参数；分多笔小额规避 | 限额在服务端强制执行，不可客户端控制 | | |
-| TRF-04 | 手续费篡改 | 修改手续费字段为 0 或负数 | 手续费服务端计算，不接受客户端传值 | | |
-| TRF-05 | 转账目标账号遍历 | 尝试向不同账号转小额，观察返回信息差异 | 不暴露目标账号是否存在的差异信息 | | |
-| TRF-06 | 交易密码绕过 | 删除或修改交易密码参数 | 服务端强制校验交易密码 | | |
-| TRF-07 | 短信验证码绕过 | 不发送验证码字段或发送空值/历史验证码 | 服务端强制校验当次有效验证码 | | |
-| TRF-08 | 转账订单重放 | 重放成功的转账请求 | 幂等性设计，不重复扣款 | | |
-| TRF-09 | 并发转账（条件竞争） | 同一时刻并发提交多笔转账，总额超出余额 | 余额校验原子化，不可超额转出 | | |
-| TRF-10 | 预约转账篡改 | 修改预约时间为过去时间 | 服务端校验时间合法性 | | |
-| TRF-11 | 转账流程跳步 | 跳过确认步骤，直接调用最终提交接口 | 服务端校验完整流程状态 | | |
-| TRF-12 | 跨币种汇率篡改 | 修改汇率参数 | 汇率由服务端实时获取，不接受客户端值 | | |
+| TRF-01 | Amount Tampering | InterceptTransferRequest, ModifyAmountParameter(such aschangeasNegative Number/0/super large number/small number precision degree attack attack 0.001->0.009) | ServerValidateAmountcombine method ness, reject reject abnormal common value | | |
+| TRF-02 | collect paymentAccounttamper change | InterceptRequestModifycollect payment methodAccount/Name | ServerValidatecollect payment information one cause ness | | |
+| TRF-03 | Transferlimit amountBypass | Modifysingle entry/day plan limit amountParameter;part many entry small amount scale | limit amountinServerstrong makeExecute, notCanClientcontrol make | | |
+| TRF-04 | mobile continue fee tamper change | Modifymobile continue feeFieldas 0 orNegative Number | mobile continue feeServerCompute, not connect affectedClientpass value | | |
+| TRF-05 | TransferTargetAccountTraversal | AttempttowardDifferentAccounttransfer small amount, ObserveReturninformation error abnormal | not expose exposureTargetAccountwhether existsoferror abnormal information | | |
+| TRF-06 | transaction easyPasswordBypass | DeleteorModifytransaction easyPasswordParameter | Serverstrong makeValidatetransaction easyPassword | | |
+| TRF-07 | SMS Verification CodeBypass | notSendCAPTCHAFieldorSendEmptyvalue/history historyCAPTCHA | Serverstrong makeValidatewhentimesValidCAPTCHA | | |
+| TRF-08 | TransferOrderReplay | ReplaySuccessofTransferRequest | Idempotencyness set plan, not serious repeat deduct payment | | |
+| TRF-09 | ConcurrencyTransfer(condition) | Sametime ConcurrencySubmitmany entryTransfer, total amount super outBalance | BalanceValidateAtomic, notCansuper amount transfer out | | |
+| TRF-10 | expected constraintTransfertamper change | Modifyexpected constraint time betweenasthrough time between | ServerValidatetime between combine method ness | | |
+| TRF-11 | Transferflow process skip step | skip throughConfirmStep, Direct Callmost finalSubmitInterface | ServerValidateCompleteflow processStatus | | |
+| TRF-12 | cross type remit rate tamper change | Modifyremit rateParameter | remit rate byServerreal timeObtain, not connect affectedClientvalue | | |
 
-### 3.2 越权测试
+### 3.2 bypass permission test
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| TRF-H01 | 水平越权 — 查询他人转账记录 | 替换请求中的用户 ID/账号 | 仅能查看本人记录 | | |
-| TRF-H02 | 水平越权 — 使用他人账户转账 | 替换付款账号为他人账号 | 服务端校验账号归属 | | |
-| TRF-V01 | 垂直越权 — 普通用户调用批量转账 | 普通用户直接调用企业批量转账接口 | 权限校验拒绝 | | |
+| TRF-H01 | Horizontal Authorization Bypass - check query other personTransferRecord | ReplaceRequestinofUser ID/Account | only canViewversion personRecord | | |
+| TRF-H02 | Horizontal Authorization Bypass - useuseother personAccountTransfer | Replacepay paymentAccountasother personAccount | ServerValidateAccountreturn attribute | | |
+| TRF-V01 | Vertical Authorization Bypass - Regular UserCallBatchTransfer | Regular UserDirect Call businessBatchTransferInterface | PermissionValidatereject reject | | |
 
 ---
 
-## 四、充值模块安全测试
+## 4. Top-Upmodel blockSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| RCH-01 | 充值金额篡改 | 修改充值金额为负数/0/极大值 | 服务端校验金额范围 | | |
-| RCH-02 | 充值目标号码篡改 | 修改手机号/缴费户号 | 金额与目标号码服务端绑定校验 | | |
-| RCH-03 | 优惠/折扣篡改 | 修改优惠金额或折扣比例 | 优惠由服务端计算，不接受客户端传值 | | |
-| RCH-04 | 重复充值（重放） | 重放成功充值请求 | 幂等校验，不重复扣款 | | |
-| RCH-05 | 并发充值（条件竞争） | 并发提交多笔充值请求 | 余额扣减原子化 | | |
-| RCH-06 | 充值渠道篡改 | 修改支付渠道/银行卡 ID | 服务端校验渠道与用户绑定关系 | | |
-| RCH-07 | 充值订单状态篡改 | 修改回调中的支付状态字段 | 服务端以银行/支付渠道实际回调为准 | | |
-| RCH-08 | 充值面额与实付不一致 | 选择 100 元面额但修改实付为 1 元 | 服务端校验面额与实付一致性 | | |
+| RCH-01 | Top-UpAmount Tampering | ModifyTop-UpAmountasNegative Number/0/extreme large value | ServerValidateAmountScope | | |
+| RCH-02 | Top-UpTargetnumber code tamper change | Modifymobile number/ fee account number | AmountandTargetnumber codeServerBindingValidate | | |
+| RCH-03 | priority /discount deduct tamper change | Modifypriority Amountordiscount deduct ratiocases | priority byServerCompute, not connect affectedClientpass value | | |
+| RCH-04 | serious repeatTop-Up(Replay) | ReplaySuccessTop-UpRequest | IdempotencyValidate, not serious repeat deduct payment | | |
+| RCH-05 | ConcurrencyTop-Up(condition) | ConcurrencySubmitmany entryTop-UpRequest | Balancededuct reduceAtomic | | |
+| RCH-06 | Top-Upchannel channel tamper change | ModifyPaymentchannel channel/banklinescard ID | ServerValidatechannel channelandUserBindingkey system | | |
+| RCH-07 | Top-UpOrderStatustamper change | ModifyCallbackinofPaymentStatusField | Serveras banklines/Paymentchannel channel real actualCallbackasaccurate | | |
+| RCH-08 | Top-Uppage amountandreal pay not one cause | select 100 yuanpage amount butModifyreal payas 1 yuan | ServerValidatepage amountandreal pay one cause ness | | |
 
 ---
 
-## 五、提现模块安全测试
+## 5. Withdrawalmodel blockSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| WDR-01 | 提现金额篡改 | 修改金额为负数、0、超出余额的值 | 服务端校验金额合法性及余额充足 | | |
-| WDR-02 | 提现银行卡篡改 | 替换提现目标银行卡为他人卡号 | 服务端校验银行卡归属当前用户 | | |
-| WDR-03 | 提现手续费绕过 | 修改手续费字段为 0 | 手续费服务端计算 | | |
-| WDR-04 | 提现限额绕过 | 修改单笔/日累计限额参数 | 限额服务端强制执行 | | |
-| WDR-05 | 并发提现（条件竞争） | 同时发起多笔提现，总额超余额 | 余额扣减原子操作，拒绝超额 | | |
-| WDR-06 | 提现订单重放 | 重放成功提现请求 | 幂等校验，不重复出款 | | |
-| WDR-07 | 提现到账时间篡改 | 修改到账类型（普通改快速）但不改手续费 | 到账类型与费用服务端绑定 | | |
-| WDR-08 | 提现取消后资金回退 | 取消提现后检查余额是否正确回退 | 资金正确返还，无多退少退 | | |
-| WDR-09 | 大额提现审核绕过 | 大额提现请求中删除/修改审核标识 | 服务端根据金额强制触发审核流程 | | |
+| WDR-01 | WithdrawalAmount Tampering | ModifyAmountasNegative Number/0/super outBalanceofvalue | ServerValidateAmountcombine method ness involvingBalancetopup | | |
+| WDR-02 | Withdrawalbanklinescard tamper change | ReplaceWithdrawalTargetbanklinescardasother person card number | ServerValidatebanklinescard return attribute when firstUser | | |
+| WDR-03 | Withdrawalmobile continue feeBypass | Modifymobile continue feeFieldas 0 | mobile continue feeServerCompute | | |
+| WDR-04 | Withdrawallimit amountBypass | Modifysingle entry/day plan limit amountParameter | limit amountServerstrong makeExecute | | |
+| WDR-05 | ConcurrencyWithdrawal(condition) | same time initiate initiate many entryWithdrawal, total amount superBalance | Balancededuct reduce principle sub operation, reject reject super amount | | |
+| WDR-06 | WithdrawalOrderReplay | ReplaySuccessWithdrawalRequest | IdempotencyValidate, not serious repeat out payment | | |
+| WDR-07 | Withdrawaltoaccount time between tamper change | Modifytoaccount type(wild change fast rate)but not change mobile continue fee | toaccount typeandfeeuseServerBinding | | |
+| WDR-08 | WithdrawalCancelafter resource funds return refund | CancelWithdrawalafterCheckBalancewhethercorrect confirm return refund | resource funds correct confirm return, no over-refund under-refund | | |
+| WDR-09 | large amountWithdrawalaudit auditBypass | large amountWithdrawalRequestinDelete/Modifyaudit audit identifier identify | Serverroot accordingAmountstrong make trigger initiate audit audit flow process | | |
 
 ---
 
-## 六、理财购买模块安全测试
+## 6. Wealth Product Purchasemodel blockSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| FIN-01 | 购买金额篡改 | 修改购买金额低于起购金额或非递增单位 | 服务端校验起购金额和递增单位 | | |
-| FIN-02 | 产品信息篡改 | 修改产品 ID 购买已下架/未上线产品 | 服务端校验产品状态 | | |
-| FIN-03 | 收益率篡改 | 修改预期收益率参数 | 收益率由服务端计算，不接受客户端值 | | |
-| FIN-04 | 风险等级绕过 | 低风险等级用户购买高风险产品（修改风险等级参数） | 服务端校验用户实际风险评估等级 | | |
-| FIN-05 | 购买额度绕过 | 超限额购买；修改限额参数 | 服务端强制执行额度限制 | | |
-| FIN-06 | 并发购买（条件竞争） | 并发抢购限额产品，超出产品总额度 | 产品余额扣减原子化 | | |
-| FIN-07 | 赎回金额篡改 | 修改赎回份额/金额超出持有量 | 服务端校验实际持有份额 | | |
-| FIN-08 | 封闭期赎回绕过 | 封闭期内直接调用赎回接口 | 服务端校验封闭期限制 | | |
-| FIN-09 | 理财订单重放 | 重放购买成功请求 | 幂等校验，不重复扣款 | | |
-| FIN-10 | 收益查询越权 | 替换用户 ID 查询他人收益 | 仅返回当前用户数据 | | |
-| FIN-11 | 撤单时间窗口篡改 | 超过撤单时间后调用撤单接口 | 服务端校验撤单时间窗口 | | |
-| FIN-12 | 风险评估问卷篡改 | 直接修改风险评估结果而不做问卷 | 服务端记录问卷流程完整性 | | |
+| FIN-01 | buy buyAmount Tampering | Modifybuy buyAmountLowfor initiate buyAmountorNon-recursive increase single characters | ServerValidateinitiate buyAmountandrecursive increase single characters | | |
+| FIN-02 | product information tamper change | Modifyproduct ID buy buy already under architecture/not above line product | ServerValidateproductStatus | | |
+| FIN-03 | collect rate tamper change | Modifyexpected period collect rateParameter | collect rate byServerCompute, not connect affectedClientvalue | | |
+| FIN-04 | Risk LevelBypass | LowRisk LevelUserbuy buyHighrisk product(ModifyRisk LevelParameter) | ServerValidateUserreal actual risk assess assessetc.level | | |
+| FIN-05 | buy buy amount degreeBypass | super limit amount buy buy;Modifylimit amountParameter | Serverstrong makeExecuteamount degree limit make | | |
+| FIN-06 | Concurrencybuy buy(condition) | Concurrency buy limit amount product, super out product total amount degree | productBalancededuct reduceAtomic | | |
+| FIN-07 | returnAmount Tampering | Modify return copy amount/Amountsuper out hold has quantity | ServerValidatereal actual hold has copy amount | | |
+| FIN-08 | close period returnBypass | close period internalDirect Call returnInterface | ServerValidate close period limit make | | |
+| FIN-09 | manage financeOrderReplay | Replaybuy buySuccessRequest | IdempotencyValidate, not serious repeat deduct payment | | |
+| FIN-10 | collect check query bypass permission | ReplaceUser ID check query other person collect | onlyReturnwhen firstUserData | | |
+| FIN-11 | singleTime Windowtamper change | super through single time between afterCall singleInterface | ServerValidate singleTime Window | | |
+| FIN-12 | risk assess assess ask tamper change | DirectModifyrisk assess assessResultwhile not do ask | ServerRecordask flow processCompleteness | | |
 
 ---
 
-## 七、密码重置模块安全测试
+## 7. Password Resetmodel blockSecuretest
 
-### 7.1 登录密码重置
+### 7.1 LoginPassword Reset
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| PWD-01 | 短信验证码暴力破解 | 枚举 4/6 位验证码 | 限制尝试次数（如 5 次锁定），验证码有效期短 | | |
-| PWD-02 | 验证码回显 | 检查发送验证码的响应中是否包含验证码 | 验证码不在任何响应中返回 | | |
-| PWD-03 | 验证码可预测性 | 连续获取多个验证码分析规律 | 验证码随机生成，无规律 | | |
-| PWD-04 | 验证码与手机号绑定 | 用 A 手机号的验证码验证 B 手机号 | 验证码与请求手机号绑定 | | |
-| PWD-05 | 重置流程跳步 | 跳过身份验证步骤，直接调用设置新密码接口 | 服务端校验完整重置流程 | | |
-| PWD-06 | 重置 Token 安全 | 分析重置链接/Token 的可预测性、有效期 | Token 一次性、短有效期、不可预测 | | |
-| PWD-07 | 密码复杂度校验 | 设置弱密码（纯数字、123456 等） | 服务端强制密码复杂度 | | |
-| PWD-08 | 旧密码失效 | 重置密码后使用旧密码登录 | 旧密码立即失效 | | |
-| PWD-09 | 重置频率限制 | 短时间内多次请求发送验证码 | 限制发送频率（如 60 秒间隔） | | |
-| PWD-10 | 用户枚举 | 对存在/不存在的用户重置密码，对比响应差异 | 统一返回信息，不暴露用户是否存在 | | |
+| PWD-01 | SMS Verification CodeBrute Force | Enumeration 4/6 charactersCAPTCHA | limit makeAttempttimesnumber(such as 5 timeslock set), CAPTCHAValidity Periodshort | | |
+| PWD-02 | CAPTCHAreturn display | CheckSendCAPTCHAofResponseinwhetherinclude includeCAPTCHA | CAPTCHAnotinanyResponseinReturn | | |
+| PWD-03 | CAPTCHAPredictableness | continuous continueObtainmanyCAPTCHAAnalyzescale law | CAPTCHA machine generate complete, no scale law | | |
+| PWD-04 | CAPTCHAandmobile numberBinding | use A mobile numberofCAPTCHAValidate B mobile number | CAPTCHAandRequestmobile numberBinding | | |
+| PWD-05 | serious set flow process skip step | skip through identity copyValidateStep, Direct CallSet New PasswordInterface | ServerValidateCompleteserious set flow process | | |
+| PWD-06 | serious set Token Secure | Analyzeserious set link connect/Token ofPredictableness/Validity Period | Token onetimesness/shortValidity Period/notPredictable | | |
+| PWD-07 | Passwordrepeat degreeValidate | set set weakPassword(number character/123456 etc.) | Serverstrong makePasswordrepeat degree | | |
+| PWD-08 | oldPasswordInvalidate | serious setPasswordafter useuseoldPasswordLogin | oldPasswordImmediately Invalidate | | |
+| PWD-09 | serious setRate Limit | short time between internal manytimesRequestSendCAPTCHA | limit makeSendfrequency rate(such as 60 between isolate) | | |
+| PWD-10 | UserEnumeration | for existin/not existinofUserserious setPassword, for ratioResponseerror abnormal | system oneReturninformation, not expose exposureUserwhether exists | | |
 
-### 7.2 交易密码重置
+### 7.2 transaction easyPassword Reset
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| TPW-01 | 交易密码与登录密码独立性 | 检查两类密码是否完全独立 | 相互独立，不可相同 | | |
-| TPW-02 | 交易密码重置需多因素认证 | 观察重置流程 | 需登录密码 + 短信 + 身份信息 多重验证 | | |
-| TPW-03 | 交易密码错误锁定 | 连续输入错误交易密码 | 限次锁定，需线下解锁 | | |
-| TPW-04 | 重置后历史交易密码失效 | 使用旧交易密码发起交易 | 旧密码立即失效 | | |
+| TPW-01 | transaction easyPasswordandLoginPasswordindependent standalone ness | Checktwo typePasswordwhethercomplete all independent standalone | related independent standalone, notCanrelated same | | |
+| TPW-02 | transaction easyPassword Resetneed many because Authentication | Observeserious set flow process | needLoginPassword + short information + identity copy information many seriousValidate | | |
+| TPW-03 | transaction easyPassworderror lock set | continuous continue output inject error transaction easyPassword | limittimeslock set, need line under decode lock | | |
+| TPW-04 | serious set after history history transaction easyPasswordInvalidate | useuseold transaction easyPasswordinitiate initiate transaction easy | oldPasswordImmediately Invalidate | | |
 
 ---
 
-## 八、实名认证模块安全测试
+## 8. Real-Name Verificationmodel blockSecuretest
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| KYC-01 | 身份证信息伪造 | 提交虚假身份证号码/姓名 | 调用权威数据源校验姓名+身份证号一致性 | | |
-| KYC-02 | 身份证照片伪造 | 使用 PS/AI 生成的身份证图片 | OCR+防伪检测识别伪造证件 | | |
-| KYC-03 | 人脸识别绕过 — 照片攻击 | 使用目标人照片对准摄像头 | 活体检测拒绝照片 | | |
-| KYC-04 | 人脸识别绕过 — 视频攻击 | 使用目标人视频播放 | 活体检测拒绝视频回放 | | |
-| KYC-05 | 人脸识别绕过 — 3D 面具 | 使用 3D 打印面具（如条件允许） | 深度检测拒绝面具 | | |
-| KYC-06 | 人脸识别绕过 — 注入攻击 | Hook 相机 API，注入预录制视频流 | 检测环境完整性（非虚拟摄像头） | | |
-| KYC-07 | 认证结果篡改 | 修改认证回调中的结果参数 | 认证结果由服务端通道确认，不信任客户端 | | |
-| KYC-08 | 重复认证 | 同一身份信息绑定多个账号 | 限制一人一户或做风控提示 | | |
-| KYC-09 | 认证信息泄露 | 检查认证流程中身份证号、照片的存储和传输 | 加密传输、不在客户端持久化存储明文 | | |
-| KYC-10 | 银行卡四要素校验绕过 | 篡改银行卡号/姓名/身份证/手机号的任一要素 | 四要素一致性服务端校验 | | |
-| KYC-11 | 认证流程跳步 | 跳过人脸识别步骤直接提交认证 | 服务端校验流程完整性 | | |
-| KYC-12 | OCR 结果篡改 | 修改客户端 OCR 识别的身份证信息 | 服务端重新 OCR 或以服务端结果为准 | | |
+| KYC-01 | Identity Cardinformation forgery | Submit falseIdentity Cardnumber code/Name | Callpermission DatasourceValidateName+Identity Cardnumber one cause ness | | |
+| KYC-02 | Identity Cardphoto image forgery | useuse PS/AI generate completeofIdentity Cardimage image | OCR+defense check testIdentifyforgery cert item | | |
+| KYC-03 | person IdentifyBypass - photo image attack attack | useuseTargetperson photo image for accurate Header | body check test reject reject photo image | | |
+| KYC-04 | person IdentifyBypass - frequency attack attack | useuseTargetperson frequency release | body check test reject reject frequency return release | | |
+| KYC-05 | person IdentifyBypass - 3D page tool | useuse 3D break page tool(such ascondition allow allow) | deep degree check test reject reject page tool | | |
+| KYC-06 | person IdentifyBypass - inject inject attack attack | Hook related machine API, inject inject expected record make frequency flow | check test environment environmentCompleteness(Non- Header) | | |
+| KYC-07 | AuthenticationResulttamper change | ModifyAuthenticationCallbackinofResultParameter | AuthenticationResultbyServerChannelConfirm, not information anyClient | | |
+| KYC-08 | serious repeatAuthentication | Sameidentity copy informationBindingmanyAccount | limit make one person one accountordo risk control provide show | | |
+| KYC-09 | AuthenticationInformation Disclosure | CheckAuthenticationflow processinIdentity Cardnumber/photo imageofStorageandpass output | add secret pass output/notinClienthold izeStorageclear text | | |
+| KYC-10 | banklinescard four need ValidateBypass | tamper change banklinescard number/Name/Identity Card/mobile numberofany one need | four need one cause nessServerValidate | | |
+| KYC-11 | Authenticationflow process skip step | skip through person IdentifyStepDirectSubmitAuthentication | ServerValidateflow processCompleteness | | |
+| KYC-12 | OCR Resulttamper change | ModifyClient OCR IdentifyofIdentity Cardinformation | Serverserious new OCR orasServerResultasaccurate | | |
 
 ---
 
-## 九、通用业务逻辑测试（跨模块）
+## 9. wildusebusiness logic logic test(cross model block)
 
-### 9.1 接口安全
+### 9.1 InterfaceSecure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| API-01 | 未授权访问 | 不带 Token 直接调用各业务接口 | 返回 401，不暴露任何数据 | | |
-| API-02 | 接口参数注入 | 在各参数中注入 SQL/NoSQL/XSS/SSTI payload | 参数化查询，输入过滤，无注入 | | |
-| API-03 | 批量操作接口滥用 | 通过脚本批量调用接口 | 频率限制 + 行为分析 + 人机验证 | | |
-| API-04 | 隐藏接口发现 | 反编译 App 提取未在前端暴露的 API 路径 | 所有接口均有权限校验 | | |
-| API-05 | 接口版本降级 | 将 v2 接口降级为 v1（可能缺少安全校验） | 旧版接口已下线或同等安全策略 | | |
-| API-06 | 错误信息泄露 | 触发各类错误，检查响应中的堆栈/SQL/路径信息 | 统一错误格式，不暴露内部实现 | | |
-| API-07 | 请求参数污染（HPP） | 同一参数传递多个值 | 服务端正确处理，不产生歧义 | | |
-| API-08 | Content-Type 绕过 | 修改请求 Content-Type（如 JSON 改 XML） | 服务端严格校验 Content-Type | | |
+| API-01 | Unauthorized Access | not with Token Direct Calleach businessInterface | Return 401, not expose exposure anyData | | |
+| API-02 | InterfaceParameterinject inject | ineachParameterininject inject SQL/NoSQL/XSS/SSTI payload | Parameterize check query, output inject through filter, no inject inject | | |
+| API-03 | BatchoperationInterfaceabuseuse | PassScriptBatchCallInterface | Rate Limit + linesasAnalyze + person machineValidate | | |
+| API-04 | hidden hiddenInterfaceDiscover | reverse engineering App provide take notinFrontendexpose exposureof API Path | AllInterfaceaverage hasPermissionValidate | | |
+| API-05 | Interfaceversion version level | will v2 Interface levelas v1(Cancan missing lessSecureValidate) | old versionInterfacealready under lineorsameetc.Securepolicy strategy | | |
+| API-06 | errorInformation Disclosure | trigger initiate each type error, CheckResponseinofstack stack/SQL/Pathinformation | system one error format mode, not expose exposure internal part real current | | |
+| API-07 | RequestParameter Pollution(HPP) | SameParameterpass recursive many value | Servercorrect confirm handle manage, not asset generate define | | |
+| API-08 | Content-Type Bypass | ModifyRequest Content-Type(such as JSON change XML) | Serversevere formatValidate Content-Type | | |
 
-### 9.2 业务流程安全
+### 9.2 business flow processSecure
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| BIZ-01 | 流程状态机完整性 | 各业务流程跳步、乱序调用 | 服务端维护状态机，拒绝非法跳转 | | |
-| BIZ-02 | 幂等性设计 | 重复提交同一笔交易 | 同一请求只处理一次 | | |
-| BIZ-03 | 并发条件竞争 | 对余额操作的并发请求 | 数据库级别锁/原子操作保证一致性 | | |
-| BIZ-04 | 负值/边界值测试 | 各金额字段传入 -1, 0, 0.001, MAX_INT, NaN | 服务端严格校验，拒绝非法值 | | |
-| BIZ-05 | 时区/时间操控 | 修改客户端时间，影响限时优惠/锁定期 | 服务端使用自身时间，不信任客户端 | | |
-| BIZ-06 | 交易流水号可预测 | 分析连续交易的流水号生成规则 | 流水号不可预测、不可遍历 | | |
+| BIZ-01 | flow processStatusmachineCompleteness | each business flow process skip step/ sequenceCall | Servermaintain protectStatusmachine, reject rejectNon-method skip transfer | | |
+| BIZ-02 | Idempotencyness set plan | serious repeatSubmitSameentry transaction easy | SameRequestonly handle manage onetimes | | |
+| BIZ-03 | Concurrencycondition | forBalanceoperationofConcurrencyRequest | Databaselevel level lock/principle sub operation protect cert one cause ness | | |
+| BIZ-04 | negative value/boundary boundary value test | eachAmountFieldpass inject -1, 0, 0.001, MAX_INT, NaN | Serversevere formatValidate, reject rejectNon-method value | | |
+| BIZ-05 | time /time between operation control | ModifyClienttime between, impact response limit time priority /lock set period | Serveruseuseself identity time between, not information anyClient | | |
+| BIZ-06 | transaction easy flow horizontal numberPredictable | Analyzecontinuous continue transaction easyofflow horizontal number generate complete scale rule | flow horizontal number notPredictable/notCanTraversal | | |
 
-### 9.3 越权测试矩阵
+### 9.3 bypass permission test matrix matrix
 
-| 编号 | 越权类型 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | bypass permission type | Test Method | Expected Result | Actual Result | Risk Level |
 |------|----------|----------|----------|----------|----------|
-| IDOR-01 | 水平越权 — 查看他人账户信息 | 替换 accountId/userId | 拒绝访问，仅返回自身数据 | | |
-| IDOR-02 | 水平越权 — 操作他人订单 | 替换 orderId | 校验订单归属 | | |
-| IDOR-03 | 水平越权 — 查看他人交易记录 | 替换 transactionId | 校验记录归属 | | |
-| IDOR-04 | 垂直越权 — 普通用户调用管理接口 | 调用 admin/internal 路径接口 | 返回 403 | | |
-| IDOR-05 | 垂直越权 — 低权限调用高权限功能 | 未完成实名认证的用户尝试转账 | 强制完成前置流程 | | |
+| IDOR-01 | Horizontal Authorization Bypass - Viewother personAccountinformation | Replace accountId/userId | reject reject access ask, onlyReturnself identityData | | |
+| IDOR-02 | Horizontal Authorization Bypass - operation other personOrder | Replace orderId | ValidateOrderreturn attribute | | |
+| IDOR-03 | Horizontal Authorization Bypass - Viewother person transaction easyRecord | Replace transactionId | ValidateRecordreturn attribute | | |
+| IDOR-04 | Vertical Authorization Bypass - Regular UserCallmanage manageInterface | Call admin/internal PathInterface | Return 403 | | |
+| IDOR-05 | Vertical Authorization Bypass - LowPermissionCallHighPermissionfunction can | not completeReal-Name VerificationofUserAttemptTransfer | strong make complete first set flow process | | |
 
 ---
 
-## 十、风控与反欺诈测试
+## 10. risk controlandreverse test
 
-| 编号 | 测试项 | 测试方法 | 预期结果 | 实际结果 | 风险等级 |
+| ID | Test Item | Test Method | Expected Result | Actual Result | Risk Level |
 |------|--------|----------|----------|----------|----------|
-| RISK-01 | 异地登录检测 | 从不同 IP/地理位置登录 | 触发风控验证（短信/人脸） | | |
-| RISK-02 | 设备指纹更换 | 更换设备或修改设备指纹信息 | 触发额外验证 | | |
-| RISK-03 | 大额交易风控 | 发起超常规金额交易 | 触发人工审核/额外验证 | | |
-| RISK-04 | 高频交易检测 | 短时间内发起大量交易 | 触发频率限制或临时冻结 | | |
-| RISK-05 | 夜间交易风控 | 在异常时段（凌晨 2-5 点）发起交易 | 触发额外验证或限制 | | |
-| RISK-06 | 关联账户检测 | 多账户间频繁互转 | 触发洗钱风控规则 | | |
-| RISK-07 | 模拟器/虚拟机检测 | 在模拟器/虚拟机中运行 App | 检测到并限制或额外验证 | | |
-| RISK-08 | 代理/VPN 检测 | 通过代理/VPN 访问 | 检测到并记录风控日志 | | |
+| RISK-01 | abnormal Logincheck test | fromDifferent IP/ manage characters setLogin | trigger risk controlValidate(short information/person) | | |
+| RISK-02 | set prepare specified pattern update change | update change set prepareorModifyset prepare specified pattern information | trigger initiate amount externalValidate | | |
+| RISK-03 | large amount transaction easy risk control | initiate initiate super common scaleAmounttransaction easy | trigger initiate person tool audit audit/amount externalValidate | | |
+| RISK-04 | Highfrequency transaction easy check test | short time between internal initiate initiate large quantity transaction easy | trigger initiateRate Limitor time result | | |
+| RISK-05 | between transaction easy risk control | inabnormal common time (2-5 point)initiate initiate transaction easy | trigger initiate amount externalValidateorlimit make | | |
+| RISK-06 | key connectAccountcheck test | manyAccountbetween frequency transfer | trigger initiate risk control scale rule | | |
+| RISK-07 | model device/ machine check test | inmodel device/ machineinoperatelines App | check testtoand limit makeoramount externalValidate | | |
+| RISK-08 | code manage/VPN check test | Passcode manage/VPN access ask | check testtoandRecordrisk controlLog | | |
 
 ---
 
-## 十一、发现问题汇总
+## ten1. Discoverask problem remit total
 
-### 11.1 问题统计
+### 11.1 ask problemStatistics
 
-| 风险等级 | 数量 |
+| Risk Level | number quantity |
 |----------|------|
-| 严重 | |
-| 高危 | |
-| 中危 | |
-| 低危 | |
-| 信息 | |
-| **合计** | |
+| Severe | |
+| High Risk | |
+| Medium Risk | |
+| Low Risk | |
+| information | |
+| **combine plan** | |
 
-### 11.2 问题详情
+### 11.2 ask problem detailed details
 
-#### 问题 [编号]：[问题标题]
+#### ask problem [ID]:[ask problem identifier problem]
 
-| 项目 | 内容 |
+| itemsdirectory | content |
 |------|------|
-| 风险等级 | |
-| 所属模块 | |
-| 测试项编号 | |
-| 影响范围 | |
-| 复现步骤 | |
-| 请求/响应截图 | |
-| 风险描述 | |
-| 修复建议 | |
-| 修复优先级 | |
-| 修复验证状态 | 未修复 / 已修复待验证 / 已验证通过 |
+| Risk Level | |
+| attribute model block | |
+| Test ItemID | |
+| Impact Scope | |
+| Reproduction Steps | |
+| Request/Responseintercept image | |
+| risk description | |
+| Remediation Recommendation | |
+| fix repeatPriority | |
+| fix repeatValidateStatus | not fix repeat / already fix repeat pendingValidate / alreadyValidatePass |
 
-（按此模板逐一列出所有发现的问题）
+(by model template one by one list outAllDiscoverofask problem)
 
 ---
 
-## 十二、测试工具清单
+## ten2. testToolclear single
 
-| 工具 | 版本 | 用途 |
+| Tool | version version | Purpose |
 |------|------|------|
-| Burp Suite Professional | | 流量拦截、篡改、重放 |
-| mitmproxy | | 流量分析、自动化脚本 |
-| Frida | | 动态 Hook、绕过客户端检测 |
-| Objection | | 运行时分析、SSL Pinning 绕过 |
-| jadx | | Android APK 反编译 |
-| apktool | | APK 解包/重打包 |
-| adb | | Android 调试桥 |
-| ipatool / Clutch | | iOS 应用砸壳 |
-| class-dump / Hopper | | iOS 二进制分析 |
-| sqlitebrowser | | 本地数据库分析 |
-| Python / requests | | 自动化测试脚本 |
-| testssl.sh / sslyze | | TLS 配置扫描 |
-| nmap | | 端口/服务发现 |
+| Burp Suite Professional | | flow quantityIntercept/tamper change/Replay |
+| mitmproxy | | flow quantityAnalyze/self dynamic izeScript |
+| Frida | | dynamic state Hook/BypassClientcheck test |
+| Objection | | operatelinestimeAnalyze/SSL Pinning Bypass |
+| jadx | | Android APK reverse engineering |
+| apktool | | APK decode include/serious break include |
+| adb | | Android debugging |
+| ipatool / Clutch | | iOS Application |
+| class-dump / Hopper | | iOS two advance makeAnalyze |
+| sqlitebrowser | | version DatabaseAnalyze |
+| Python / requests | | self dynamic ize testScript |
+| testssl.sh / sslyze | | TLS ConfigurationScan |
+| nmap | | Port/serviceDiscover |
 
 ---
 
-## 十三、修复建议优先级矩阵
+## ten3. Remediation RecommendationPrioritymatrix matrix
 
-| 优先级 | 修复时限 | 对应风险 | 说明 |
+| Priority | fix repeat time limit | forshouldrisk | Description |
 |--------|----------|----------|------|
-| P0 | 24 小时内 | 严重 | 可直接造成资金损失，立即修复 |
-| P1 | 3 个工作日 | 高危 | 核心认证/授权绕过，尽快修复 |
-| P2 | 2 周内 | 中危 | 信息泄露/非核心逻辑缺陷 |
-| P3 | 下个版本 | 低危/信息 | 安全加固建议 |
+| P0 | 24 hoursinternal | Severe | directly usableforge complete resource funds loss loss, standalone that is fix repeat |
+| P1 | 3 tool operation day | High Risk | audit coreAuthentication/AuthorizationBypass, fast fix repeat |
+| P2 | 2 cycle internal | Medium Risk | Information Disclosure/Non-audit core logic logic missing flaw |
+| P3 | under version version | Low Risk/information | SecureHardeningcreate protocol |
 
 ---
 
-## 十四、安全加固建议（通用）
+## ten4. SecureHardeningcreate protocol(wilduse)
 
-### 14.1 服务端
+### 14.1 Server
 
-1. **输入校验**：所有业务参数（金额、账号、产品 ID 等）必须在服务端严格校验，不信任客户端任何输入
-2. **幂等设计**：所有资金操作接口必须实现幂等性，防止重放造成重复扣款/出款
-3. **并发控制**：资金操作使用数据库行锁/乐观锁/分布式锁，防止条件竞争
-4. **状态机**：多步骤业务流程维护服务端状态机，拒绝跳步/乱序操作
-5. **权限校验**：每个接口独立校验用户身份和资源归属，不依赖前端控制
-6. **频率限制**：对验证码发送、登录尝试、交易操作实施分层频率限制
-7. **日志审计**：记录所有敏感操作的完整审计日志，含 IP、设备、时间、操作详情
+1. **output injectValidate**:AllBusiness Parameter(Amount/Account/product ID etc.)mustinServersevere formatValidate, not information anyClientany output inject
+2. **Idempotencyset plan**:Allresource funds operationInterfacemustreal currentIdempotencyness, defense stopReplayforge complete serious repeat deduct payment/out payment
+3. **Concurrencycontrol make**:resource funds operation useuseDatabaselineslock/optimistic lock/Distributed Lock, defense stop condition
+4. **Statusmachine**:manyStepbusiness flow process maintain protectServerStatusmachine, reject reject skip step/ sequence operation
+5. **PermissionValidate**:EachInterfaceindependent standaloneValidateUseridentity copyandresource source return attribute, not depend relyFrontendcontrol make
+6. **Rate Limit**:forCAPTCHASend/LoginAttempt/transaction easy operation real part layerRate Limit
+7. **Logaudit plan**:RecordAllsensitive sensitive operationofCompleteaudit planLog, include IP/set prepare/time between/operation detailed details
 
-### 14.2 客户端
+### 14.2 Client
 
-1. **代码保护**：核心逻辑使用 C/C++ 编写（SO/dylib），并做加壳和完整性校验
-2. **环境检测**：多维度检测 Root/越狱/模拟器/调试器/Hook 框架
-3. **安全存储**：密钥和 Token 使用 Android Keystore / iOS Keychain 存储
-4. **通信安全**：实施证书锁定（Certificate Pinning），使用请求签名
-5. **界面保护**：交易页面禁止截屏，后台切换显示遮罩
+1. **Codeprotect protect**:audit core logic logic useuse C/C++ compile write(SO/dylib), and do add andCompletenessValidate
+2. **environment environment check test**:manyDimensioncheck test Root/bypass /model device/debugging device/Hook framework architecture
+3. **SecureStorage**:Keyand Token useuse Android Keystore / iOS Keychain Storage
+4. **wild informationSecure**:real cert certificate lock set(Certificate Pinning), useuseRequestSignature
+5. **boundary page protect protect**:transaction easy page disable stop intercept, backend console switch change display
 
-### 14.3 风控体系
+### 14.3 risk control body system
 
-1. **设备指纹**：建立设备指纹体系，识别异常设备/环境
-2. **行为分析**：基于用户行为基线识别异常操作（时间、频率、金额、地理位置）
-3. **分级验证**：根据风险等级动态调整验证强度（短信→人脸→人工）
-4. **实时监控**：大额交易、高频操作、异地登录实时告警
+1. **set prepare specified pattern**:create standalone set prepare specified pattern body system, Identifyabnormal common set prepare/environment environment
+2. **linesasAnalyze**:based onUserlinesasbase lineIdentifyabnormal common operation(time between/frequency rate/Amount/ manage characters set)
+3. **part levelValidate**:root accordingRisk Leveldynamic state debug integerValidatestrong degree(short information->person ->person tool)
+4. **real time monitor control**:large amount transaction easy/Highfrequency operation/abnormal Loginreal time report alert
 
 ---
 
-## 十五、合规性检查
+## ten5. combine scale nessCheck
 
-| 编号 | 检查项 | 对标规范 | 结果 | 备注 |
+| ID | Check Item | for identifier scale scope | Result | Notes |
 |------|--------|----------|------|------|
-| CMP-01 | 个人金融信息保护 | JR/T 0171-2020《个人金融信息保护技术规范》 | | |
-| CMP-02 | 移动金融安全 | JR/T 0092-2019《移动金融客户端应用软件安全管理规范》 | | |
-| CMP-03 | 网上银行安全 | 银监发〔2011〕22号《电子银行安全评估指引》 | | |
-| CMP-04 | 数据安全 | GB/T 35273-2020《个人信息安全规范》 | | |
-| CMP-05 | 密码应用 | GM/T 0028-2014《密码模块安全技术要求》 | | |
-| CMP-06 | App 安全 | 工信部《App 个人信息保护管理暂行规定》 | | |
-| CMP-07 | 反洗钱 | 《中华人民共和国反洗钱法》客户身份识别要求 | | |
+| CMP-01 | personFinancialinformation protect protect | JR/T 0171-2020"personFinancialinformation protect protect technique scale scope" | | |
+| CMP-02 | move dynamicFinancialSecure | JR/T 0092-2019"move dynamicFinancialClientApplication itemSecuremanage manage scale scope" | | |
+| CMP-03 | network above banklinesSecure | bank monitor initiate[2011]22number"electronic sub banklinesSecureassess assess specified cite" | | |
+| CMP-04 | DataSecure | GB/T 35273-2020"Personal InformationSecurescale scope" | | |
+| CMP-05 | PasswordApplication | GM/T 0028-2014"Passwordmodel blockSecuretechnique need require" | | |
+| CMP-06 | App Secure | tool information part"App Personal Informationprotect protect manage manage linesscale set" | | |
+| CMP-07 | reverse | "in person totalandnational reverse method"client account identity copyIdentifyneed require | | |
 
 ---
 
-## 附录 A：测试用例执行记录表
+## Appendix A:Test CaseExecuteRecordtable
 
-| 用例编号 | 模块 | 测试项 | 执行人 | 执行日期 | 通过/失败 | 备注 |
+| usecasesID | model block | Test Item | Executeperson | Executeday period | Pass/Failure | Notes |
 |----------|------|--------|--------|----------|-----------|------|
 | | | | | | | |
 
-## 附录 B：复测记录表
+## Appendix B:repeat testRecordtable
 
-| 问题编号 | 问题标题 | 原始等级 | 修复方案 | 复测日期 | 复测结果 | 复测人 |
+| ask problemID | ask problem identifier problem | principle initialetc.level | fix repeat method plan | repeat test day period | repeat testResult | repeat test person |
 |----------|----------|----------|----------|----------|----------|--------|
 | | | | | | | |
 
-## 附录 C：测试环境信息
+## Appendix C:Test Environmentinformation
 
-| 项目 | 详情 |
+| itemsdirectory | detailed details |
 |------|------|
-| 测试手机型号（Android） | |
-| Android 版本 | |
-| 测试手机型号（iOS） | |
-| iOS 版本 | |
-| App 版本号 | |
-| 测试服务器环境 | 生产 / 预发布 / 测试 |
-| 网络环境 | |
-| 代理工具及配置 | |
+| test mobile machine type number(Android) | |
+| Android version version | |
+| test mobile machine type number(iOS) | |
+| iOS version version | |
+| App version version number | |
+| testServerenvironment environment | generate asset / expected initiate deploy / test |
+| Networkenvironment environment | |
+| code manageToolinvolvingConfiguration | |
 
 ---
 
-*报告编写完成日期：*
-*审核人签字：*
-*项目负责人签字：*
+*report compile write complete day period:*
+*audit audit person character:*
+*itemsdirectory negative person character:*

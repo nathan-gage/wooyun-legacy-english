@@ -1,188 +1,188 @@
-# 授权域
+# Authorization Domain
 
-## 概述
+## Overview
 
-授权漏洞允许已认证用户访问他们不应该访问的资源。6,269 个 WooYun 案例证明：开发者构建了身份认证但忽视了授权控制。
+Authorization vulnerabilities allow authenticated users to access resources they should not be able to access. 6,269 WooYun cases prove that developers often build authentication but neglect authorization controls.
 
-**核心原则：** 身份认证回答"你是谁？"授权回答"你能做什么？"大多数应用在第一个问题上表现不错，但在第二个问题上表现糟糕。
+**Core principle:** Authentication answers "who are you?" Authorization answers "what are you allowed to do?" Most applications handle the first question reasonably well and the second question poorly.
 
-## 攻击模式分类
+## Attack Pattern Taxonomy
 
 ```dot
 digraph authz_taxonomy {
-    "授权漏洞" [shape=box style=filled fillcolor=lightyellow];
-    "水平越权" [shape=box label="水平越权\n(同级权限)"];
-    "垂直越权" [shape=box label="垂直越权\n(低级→高级权限)"];
-    "缺失认证" [shape=box label="缺失认证\n(完全无认证检查)"];
+    "Authorization vulnerabilities" [shape=box style=filled fillcolor=lightyellow];
+    "Horizontal authorization bypass" [shape=box label="Horizontal authorization bypass\n(same privilege level)"];
+    "Vertical authorization bypass" [shape=box label="Vertical authorization bypass\n(low -> high privilege)"];
+    "Missing authentication" [shape=box label="Missing authentication\n(no authentication check at all)"];
 
-    "授权漏洞" -> "水平越权" [label="IDOR\n越权"];
-    "授权漏洞" -> "垂直越权" [label="权限提升"];
-    "授权漏洞" -> "缺失认证" [label="未授权访问"];
+    "Authorization vulnerabilities" -> "Horizontal authorization bypass" [label="IDOR\nauthorization bypass"];
+    "Authorization vulnerabilities" -> "Vertical authorization bypass" [label="privilege escalation"];
+    "Authorization vulnerabilities" -> "Missing authentication" [label="unauthenticated access"];
 }
 ```
 
-### 水平权限绕过 / IDOR（1,705+230 个案例）
+### Horizontal Authorization Bypass / IDOR (1,705+230 cases)
 
-**最容易被忽视的漏洞类型。扫描器无法发现。**
+**The easiest vulnerability class to overlook. Scanners cannot find it.**
 
-**系统化测试协议：**
-
-```
-对于每个返回用户特定数据的 API 端点：
-
-1. 识别资源标识符
-   - URL 路径：/api/users/{id}/orders
-   - 查询参数：/api/orders?user_id=123
-   - POST 请求体：{"user_id": 123, "action": "view"}
-   - Cookie/头：X-User-Id: 123
-
-2. 准备两个测试账号（账号 A，账号 B）
-   - 以 A 身份登录，记录所有标识符
-   - 以 B 身份登录，记录所有标识符
-
-3. 测试每项 CRUD 操作
-   - [ ] 创建：A 能否创建 B 拥有的资源？
-   - [ ] 读取：A 能否查看 B 的资源？（最常见）
-   - [ ] 更新：A 能否修改 B 的资源？
-   - [ ] 删除：A 能否删除 B 的资源？
-
-4. 测试标识符操纵
-   - [ ] 直接 ID 替换：123 → 124
-   - [ ] ID 枚举：遍历 ID 范围
-   - [ ] 参数污染：?uid=123&uid=456（服务器取最后一个）
-   - [ ] 数组注入：uid[]=123（绕过类型检查）
-   - [ ] JSON 嵌套：{"user": {"id": 456}}
-   - [ ] 编码 ID：base64(456)、hex(456)
-   - [ ] 负数/零 ID：id=0、id=-1
-   - [ ] UUID 预测（如果使用了顺序 UUID）
-```
-
-**关键参数：** `user_id`, `uid`, `id`, `order_id`, `file_id`, `account_id`, `tenant_id`, `doc_id`, `msg_id`
-
-**WooYun 案例模式：** "北京现代某平台可越权遍历所有用户上传证件（几百万身份证件/行驶证件/发票/驾驶证）" — 顺序文件 ID 且无所有权检查。
-
-### 垂直权限 / 权限提升（255+86 个案例）
-
-**测试协议：**
+**Systematic testing protocol:**
 
 ```
-1. 识别权限级别
-   - 匿名 → 已注册用户 → 管理员 → 超级管理员
-   - 用户角色：买家、卖家、代理人、经理
+For every API endpoint that returns user-specific data:
 
-2. 映射仅限管理员的端点
+1. Identify resource identifiers
+   - URL path: /api/users/{id}/orders
+   - Query parameter: /api/orders?user_id=123
+   - POST body: {"user_id": 123, "action": "view"}
+   - Cookie/header: X-User-Id: 123
+
+2. Prepare two test accounts (account A, account B)
+   - Log in as A and record all identifiers
+   - Log in as B and record all identifiers
+
+3. Test every CRUD operation
+   - [ ] Create: Can A create a resource owned by B?
+   - [ ] Read: Can A view B's resource? (most common)
+   - [ ] Update: Can A modify B's resource?
+   - [ ] Delete: Can A delete B's resource?
+
+4. Test identifier manipulation
+   - [ ] Direct ID replacement: 123 -> 124
+   - [ ] ID enumeration: iterate across an ID range
+   - [ ] Parameter pollution: ?uid=123&uid=456 (server uses last value)
+   - [ ] Array injection: uid[]=123 (bypass type checks)
+   - [ ] Nested JSON: {"user": {"id": 456}}
+   - [ ] Encoded IDs: base64(456), hex(456)
+   - [ ] Negative/zero IDs: id=0, id=-1
+   - [ ] UUID prediction (if sequential UUIDs are used)
+```
+
+**Key parameters:** `user_id`, `uid`, `id`, `order_id`, `file_id`, `account_id`, `tenant_id`, `doc_id`, `msg_id`
+
+**WooYun case pattern:** "A Beijing Hyundai platform allowed authorization-bypass enumeration of all user-uploaded documents, including millions of identity documents, vehicle licenses, invoices, and driver's licenses" - sequential file IDs with no ownership check.
+
+### Vertical Authorization / Privilege Escalation (255+86 cases)
+
+**Testing protocol:**
+
+```
+1. Identify privilege levels
+   - Anonymous -> registered user -> administrator -> super administrator
+   - User roles: buyer, seller, agent, manager
+
+2. Map admin-only endpoints
    - /admin/*, /api/admin/*, /manage/*
-   - 用户管理、配置、报告
-   - 识别来源：JavaScript 文件、API 文档、网站地图、robots.txt
+   - User management, configuration, reports
+   - Discovery sources: JavaScript files, API docs, sitemaps, robots.txt
 
-3. 用低权限会话测试
-   - [ ] 用用户令牌访问管理员端点
-   - [ ] 添加管理员参数：role=admin, is_admin=true, level=9
-   - [ ] 在注册时修改角色：{"role": "admin"}
-   - [ ] 完全不带令牌访问管理员 API
-   - [ ] 改变 HTTP 方法：GET→POST、POST→PUT
+3. Test with a low-privilege session
+   - [ ] Access admin endpoints with a user token
+   - [ ] Add admin parameters: role=admin, is_admin=true, level=9
+   - [ ] Modify role during registration: {"role": "admin"}
+   - [ ] Access admin API with no token at all
+   - [ ] Change HTTP method: GET -> POST, POST -> PUT
 ```
 
-### 未授权访问 / 缺失身份认证（2,102+1,891 个案例）
+### Unauthenticated Access / Missing Authentication (2,102+1,891 cases)
 
-**最基本的漏洞：完全没有身份认证的端点。**
+**The most basic vulnerability: endpoints with no authentication at all.**
 
-**系统化端点发现：**
+**Systematic endpoint discovery:**
 
-| 发现方法 | 目标 |
-|---------|------|
-| 直接 URL 猜测 | /admin, /console, /debug, /status, /api/docs |
-| robots.txt / sitemap.xml | 已披露的"禁止访问"路径 |
-| JavaScript 源代码分析 | 前端中硬编码的 API 端点 |
-| 错误页面信息 | 暴露内部路径的堆栈跟踪 |
-| HTTP 方法探测 | OPTIONS 请求可能暴露端点 |
-| 路径遍历变体 | /..;/admin, /%2e%2e/admin |
+| Discovery method | Target |
+|------------------|--------|
+| Direct URL guessing | /admin, /console, /debug, /status, /api/docs |
+| robots.txt / sitemap.xml | Disclosed "forbidden" paths |
+| JavaScript source analysis | API endpoints hardcoded in frontend code |
+| Error-page information | Stack traces exposing internal paths |
+| HTTP method probing | OPTIONS requests may expose endpoints |
+| Path traversal variants | /..;/admin, /%2e%2e/admin |
 
-**测试：**
-
-```
-对于每个发现的端点：
-1. 不带任何身份认证头/Cookie 访问
-2. 如果重定向到登录 → 尝试添加 X-Forwarded-For: 127.0.0.1
-3. 如果 403 → 尝试替代 HTTP 方法（GET/POST/PUT/DELETE/PATCH）
-4. 如果 403 → 尝试路径规范化：/admin/ vs /admin vs /Admin
-5. 如果 403 → 尝试 URL 编码：/%61dmin
-6. 记录：哪些端点完全没有身份认证？
-```
-
-**WooYun 模式：** 58.2% 的未授权访问发现 = 管理后台完全暴露在互联网上。
-
-### 任意操作 / 任意X（529 个案例，51-86% 高危）
-
-**"权限维度"— 攻击者在任何对象上都不应该执行的操作。**
-
-此类别不同于 IDOR。IDOR 是关于访问"他人的"资源。任意操作是关于执行"你不应该有的操作"——无论资源属于谁。
-
-| 子类别 | 案例数 | 高危占比 | 攻击模式 |
-|-------|-------|---------|---------|
-| 任意账号访问 | 220 | 86.4% | 不需凭证以任何用户身份登录/操作 |
-| 任意修改 | 159 | 63.5% | 修改任何记录（个人资料、配置、内容） |
-| 任意用户注册 | 24 | 75.0% | 绕过注册控制（仅邀请、仅管理员） |
-| 任意查看 | 45 | 55.6% | 查看超出 IDOR 范围的任何记录（批量导出、管理员视图） |
-| 任意删除 | 41 | 51.2% | 删除任何记录无需所有权/权限 |
-| 任意操作 | 40 | 72.5% | 执行特权操作（批准、发布、执行） |
-
-**测试协议：**
+**Testing:**
 
 ```
-对于每个写入/删除/管理员操作：
-
-1. 识别权限模型
-   - 谁应该被允许执行此操作？
-   - 检查是在用户级别、角色级别还是对象级别？
-
-2. 测试权限绕过
-   - [ ] 以无特权用户身份执行操作
-   - [ ] 对非当前用户拥有的对象执行操作
-   - [ ] 执行批量操作（通过 API 枚举修改/删除全部）
-   - [ ] 以普通用户身份执行仅限管理员的操作（批准、发布）
-   - [ ] 自我批准：创建请求 + 批准自己的请求
-
-3. 测试注册控制
-   - [ ] 当注册"关闭"或"仅邀请"时注册
-   - [ ] 以管理员/提升的角色注册
-   - [ ] 绕过电子邮件域名限制
-   - [ ] 绕过注册的电话验证
+For every discovered endpoint:
+1. Access without any authentication headers/cookies
+2. If redirected to login -> try adding X-Forwarded-For: 127.0.0.1
+3. If 403 -> try alternate HTTP methods (GET/POST/PUT/DELETE/PATCH)
+4. If 403 -> try path canonicalization: /admin/ vs /admin vs /Admin
+5. If 403 -> try URL encoding: /%61dmin
+6. Record: which endpoints have no authentication at all?
 ```
 
-## 真实案例
+**WooYun pattern:** 58.2% of unauthenticated access findings involved management backends fully exposed to the internet.
 
-| 案例 | 子域 | 影响 |
-|------|------|------|
-| 北京现代某平台越权遍历几百万身份证件/行驶证件/发票/驾驶证 | IDOR | 通过顺序文件 ID 暴露数百万身份证件 |
-| 花礼网某处平行权限漏洞（影响所有使用用户） | 水平越权 | 所有用户数据可访问 |
-| EMS某站点平行权限漏洞涉及大量用户信息 | 水平越权 | 大量用户个人信息暴露 |
-| 美国东航网站严重订单信息泄漏及权限绕过 | 垂直越权 | 订单数据 + 权限提升 |
-| 挖财网权限绕过登录其他用户账号 | 垂直越权 | 账号接管 |
-| 暴风墨镜某站SQL注入/59张表/权限控制数据库 | 垂直越权 | 通过注入实现完整数据库访问 |
-| 新浪乐居多处zookeeper未配置权限控制涉及敏感信息 | 缺失认证 | 内部服务暴露 |
-| 中国金融认证中心某系统未授权访问（涉及内网信息） | 缺失认证 | 内网访问 |
-| 奥鹏教育某处未授权访问可影响大量学生信息 | 缺失认证 | 学生个人信息暴露 |
+### Arbitrary Operation / Arbitrary-X (529 cases, 51-86% high severity)
 
-## 防御模式
+**The "permission dimension": operations attackers should not be able to perform on any object.**
 
-### 代码层面
-- **默认拒绝：** 将公开端点加入白名单，其他一切都需要身份认证
-- **所有权验证：** 在每个查询上验证 `resource.owner_id == current_user.id`
-- **ORM 级别过滤：** `Model.where(user_id: current_user.id)` — 永不使用原始 ID
-- **不可预测的 ID：** UUID v4，而非顺序整数
-- **RBAC/ABAC：** 基于角色或属性的访问控制框架
-- **职能分离：** 创建者不能批准自己的请求
+This category is different from IDOR. IDOR is about accessing "someone else's" resource. Arbitrary operation is about performing "an operation you should not have," regardless of who owns the resource.
 
-### 架构层面
-- **API 网关：** 集中式授权执行点
-- **零信任：** 验证每个请求，无论其网络来源
-- **多租户隔离：** 数据库级别的 tenant_id 过滤
-- **URL 模式保护：** 框架级别的路由授权（Spring Security、Django 权限）
+| Subcategory | Case count | High-severity share | Attack pattern |
+|-------------|------------|---------------------|----------------|
+| Arbitrary account access | 220 | 86.4% | Log in or act as any user without credentials |
+| Arbitrary modification | 159 | 63.5% | Modify any record (profile, configuration, content) |
+| Arbitrary user registration | 24 | 75.0% | Bypass registration controls (invite-only, admin-only) |
+| Arbitrary viewing | 45 | 55.6% | View any record beyond IDOR scope (bulk export, admin view) |
+| Arbitrary deletion | 41 | 51.2% | Delete any record without ownership/permission |
+| Arbitrary operation | 40 | 72.5% | Execute privileged operations (approve, publish, execute) |
 
-### 监控
-- **跨用户访问模式：** 用户 A 访问许多其他用户的资源
-- **管理员端点访问：** 非管理员 IP 访问 /admin/*
-- **ID 枚举检测：** 来自单个会话的顺序 ID 请求
-- **权限变更审计：** 所有角色/权限修改已记录
-- **批量操作检测：** 单个用户修改/删除异常数量的记录
+**Testing protocol:**
+
+```
+For every write/delete/admin operation:
+
+1. Identify the permission model
+   - Who should be allowed to perform this operation?
+   - Is the check at the user, role, or object level?
+
+2. Test authorization bypass
+   - [ ] Execute the operation as an unprivileged user
+   - [ ] Execute the operation on an object not owned by the current user
+   - [ ] Execute bulk operations (modify/delete all by API enumeration)
+   - [ ] Execute admin-only operations as a normal user (approve, publish)
+   - [ ] Self-approval: create a request + approve your own request
+
+3. Test registration controls
+   - [ ] Register when registration is "closed" or "invite only"
+   - [ ] Register as an admin/elevated role
+   - [ ] Bypass email-domain restrictions
+   - [ ] Bypass phone verification for registration
+```
+
+## Real Cases
+
+| Case | Subdomain | Impact |
+|------|-----------|--------|
+| Beijing Hyundai platform allowed authorization-bypass enumeration of millions of identity documents, vehicle licenses, invoices, and driver's licenses | IDOR | Millions of identity documents exposed through sequential file IDs |
+| FlowerPlus site horizontal authorization flaw affected all users | Horizontal authorization bypass | All user data accessible |
+| EMS site horizontal authorization flaw exposed large volumes of user information | Horizontal authorization bypass | Large-scale personal information exposure |
+| China Eastern Airlines US website leaked severe order information and had authorization bypass | Vertical authorization bypass | Order data + privilege escalation |
+| Wacai authorization bypass allowed login to other user accounts | Vertical authorization bypass | Account takeover |
+| Baofeng Mojing site SQL injection exposed 59 tables and the authorization-control database | Vertical authorization bypass | Full database access through injection |
+| Sina Leju had multiple ZooKeeper instances without authorization controls, exposing sensitive information | Missing authentication | Internal service exposure |
+| China Financial Certification Authority system had unauthenticated access involving intranet information | Missing authentication | Intranet access |
+| Open Education site unauthenticated access affected large amounts of student information | Missing authentication | Student personal information exposure |
+
+## Defense Patterns
+
+### Code Level
+- **Deny by default:** whitelist public endpoints; everything else requires authentication
+- **Ownership validation:** verify `resource.owner_id == current_user.id` on every query
+- **ORM-level filtering:** `Model.where(user_id: current_user.id)` - never trust raw IDs
+- **Unpredictable IDs:** UUID v4 instead of sequential integers
+- **RBAC/ABAC:** role-based or attribute-based access-control framework
+- **Separation of duties:** creators cannot approve their own requests
+
+### Architecture Level
+- **API gateway:** centralized authorization enforcement point
+- **Zero trust:** verify every request regardless of network source
+- **Multi-tenant isolation:** database-level `tenant_id` filtering
+- **URL pattern protection:** framework-level route authorization (Spring Security, Django permissions)
+
+### Monitoring
+- **Cross-user access patterns:** user A accesses many other users' resources
+- **Admin endpoint access:** non-admin IP accesses /admin/*
+- **ID enumeration detection:** sequential ID requests from a single session
+- **Permission-change audit:** all role/permission changes logged
+- **Bulk operation detection:** one user modifies/deletes an abnormal number of records

@@ -1,543 +1,543 @@
-# 社交平台密码重置功能 — 全攻击向量与测试计划
+# social transactionPlatformPassword Resetfunction can - allAttack VectorandTest Plan
 
-> 方法论基础：WooYun 业务逻辑漏洞方法论（22,132 个真实案例）
-> 聚焦领域：身份认证 — 密码重置（777 个案例，88.0% 高危，WooYun 全数据集中严重性排名第一）
+> Methodcomment base foundation:WooYun Business Logic Vulnerability Methodology(22,132 real realCase)
+> Domain:identity copyAuthentication - Password Reset(777 Case, 88.0% High Risk, WooYun allDatacollectinSevereness rank nameNo. one)
 
 ---
 
-## 一、业务流程映射
+## 1. business flow process map map
 
-### 1.1 密码重置三通道状态机
+### 1.1 Password ResetthreeChannelStatusmachine
 
 ```
-用户请求重置
-  ├─ 通道A：手机短信验证码
-  │   → 输入手机号 → 发送验证码 → 输入验证码 → 验证通过 → 设置新密码 → 完成
-  │
-  ├─ 通道B：邮箱链接重置
-  │   → 输入邮箱 → 发送重置链接 → 点击链接 → 验证令牌 → 设置新密码 → 完成
-  │
-  └─ 通道C：安全问题重置
-      → 输入账号 → 展示安全问题 → 回答问题 → 验证通过 → 设置新密码 → 完成
+UserRequestserious set
+ +- ChannelA:mobile machineSMS Verification Code
+ | -> output injectmobile number -> SendCAPTCHA -> output injectCAPTCHA -> ValidatePass -> Set New Password -> complete
+ |
+ +- ChannelB:Emaillink connect serious set
+ | -> output injectEmail -> Sendserious set link connect -> point attack link connect -> Validatecommand card -> Set New Password -> complete
+ |
+ +- ChannelC:Secureask problem serious set
+ -> output injectAccount -> showSecureask problem -> return ask problem -> ValidatePass -> Set New Password -> complete
 ```
 
-### 1.2 关键信任边界
+### 1.2 keyTrust Boundary
 
-| 边界 | 风险点 |
+| boundary boundary | risk point |
 |------|--------|
-| 客户端 vs 服务端 | 验证逻辑是否仅在前端？响应是否可篡改？ |
-| 用户A vs 用户B | 重置流程中的身份标识是否与验证凭证绑定？ |
-| 步骤间状态 | 各步骤之间是否存在服务端状态校验？能否跳步？ |
-| 通道间隔离 | 三种重置方式之间是否共享状态？能否混用？ |
+| Client vs Server | Validatelogic logicwhetheronlyinFrontend?ResponsewhetherCantamper change? |
+| UserA vs UserB | serious set flow processinofidentity copy identifier identifywhetherandValidateCredentialBinding? |
+| StepbetweenStatus | eachStepbetweenwhether existsServerStatusValidate?whether canskip step? |
+| Channelbetween isolation | three type serious set method mode betweenwhethersharedStatus?whether canmixuse? |
 
 ---
 
-## 二、攻击向量全景图
+## 2. Attack Vectorall scene image
 
-基于 WooYun 777 个密码重置案例提炼的攻击模式矩阵，按三个重置通道逐一展开。
-
----
-
-### 通道A：手机短信验证码重置
-
-#### A1 — 验证码暴力破解
-
-**WooYun 模式：** 短信验证码无速率限制（验证码绕过子域，384 案例中高频出现）
-
-**攻击原理：** 4-6 位纯数字验证码，总空间仅 10,000-1,000,000。若无速率限制或锁定机制，可在数分钟内穷举。
-
-**测试步骤：**
-1. 为自己的手机号请求一个验证码
-2. 使用 Burp Intruder 对验证码验证接口发起爆破：
-   - 4 位验证码：Payload 范围 `0000-9999`
-   - 6 位验证码：Payload 范围 `000000-999999`
-3. 观察服务器响应：
-   - 是否存在速率限制？（观察是否出现 429/403 状态码）
-   - 多次错误后账号/IP 是否被锁定？
-   - 验证码是否在 N 次错误后失效？
-4. 若无限制 → 对目标账号手机号请求验证码后直接爆破
-
-**WooYun 案例参考：**
-- 爱卡汽车网某重要系统设计逻辑缺陷成功绕过验证码限制 — 暴力破解得手
-- 驴妈妈旅游网从验证码绕过再到任意酒店数据导出
+based on WooYun 777 Password ResetCaseprovide ofAttack Patternmatrix matrix, by three serious setChannelone by one open.
 
 ---
 
-#### A2 — 验证码重用/不过期
+### ChannelA:mobile machineSMS Verification Codeserious set
 
-**WooYun 模式：** 短信验证码无过期机制（验证码绕过矩阵）
+#### A1 - CAPTCHABrute Force
 
-**攻击原理：** 验证码发送后，旧验证码未失效；或验证码有效期过长（>30分钟），给攻击者充足的爆破窗口。
+**WooYun mode:** SMS Verification Codeno rate rate limit make(CAPTCHA Bypasssub domain, 384 CaseinHighfrequency out current)
 
-**测试步骤：**
-1. 为自己账号请求验证码，记录为 Code1
-2. 再次请求验证码，记录为 Code2
-3. 使用 Code1（旧验证码）提交验证 → 是否仍然有效？
-4. 等待 5 分钟、15 分钟、30 分钟后分别用 Code2 提交 → 确定过期时间
-5. 如果旧验证码不失效 → 攻击者可以在任意时间窗口内使用截获的验证码
+**Attack Principle:** 4-6 characters number characterCAPTCHA, totalEmptybetween only 10,000-1,000,000. no rate rate limit makeorlock set machine make, CaninnumberminutesinternalExhaustive Guessing.
 
----
+**Test Steps:**
+1. asself ownofmobile numberRequestoneCAPTCHA
+2. useuse Burp Intruder forCAPTCHAValidateInterfaceinitiate initiateBrute Force:
+ - 4 charactersCAPTCHA:Payload Scope `0000-9999`
+ - 6 charactersCAPTCHA:Payload Scope `000000-999999`
+3. ObserveServerResponse:
+ - whether existsrate rate limit make?(Observewhetherout current 429/403 Statuscode)
+ - manytimeserror afterAccount/IP whetherbe lock set?
+ - CAPTCHAwhetherin N timeserror afterInvalidate?
+4. no limit make -> forTargetAccountmobile numberRequestCAPTCHAafterDirectBrute Force
 
-#### A3 — 验证码跨用户共享
-
-**WooYun 模式：** 验证码重用 — 在不同用户间使用相同的短信验证码（WooYun 普遍性：中等）
-
-**攻击原理：** 验证码未绑定到特定手机号/用户会话，攻击者用自己手机号获取验证码后，将其用于目标用户的重置流程。
-
-**测试步骤：**
-1. 准备账号 A（攻击者）和账号 B（目标）
-2. 为账号 A 的手机号请求重置验证码，记录为 CodeA
-3. 为账号 B 的手机号请求重置验证码
-4. 在账号 B 的验证步骤中提交 CodeA → 是否验证通过？
-5. 变体测试：在验证请求中将手机号从 B 替换为 A，但保持其他会话参数不变
+**WooYun Case References:**
+- card cart network some serious needSystemset plan logic logic missing flawSuccessBypassCAPTCHAlimit make - Brute Force mobile
+- networkfromCAPTCHA BypassagaintoArbitrary DataExport
 
 ---
 
-#### A4 — 手机号参数篡改（用户ID操纵）
+#### A2 - CAPTCHAserioususe/not expired
 
-**WooYun 模式：** 用户 ID 操纵 — 在重置请求中更改 user_id/email/phone（WooYun 普遍性：极高）
+**WooYun mode:** SMS Verification Codeno expired machine make(CAPTCHA Bypassmatrix matrix)
 
-**攻击原理：** 验证步骤通过后，设置新密码时服务端依赖客户端传来的手机号/用户ID，而非服务端会话中绑定的身份标识。
+**Attack Principle:** CAPTCHASendafter, oldCAPTCHAnotInvalidate;orCAPTCHAValidity PeriodToo Long(>30minutes), to attack attack person topup ofBrute Forcewindow interface.
 
-**测试步骤：**
-1. 用攻击者手机号走完验证码验证步骤
-2. 在最后「设置新密码」的请求中，拦截流量（Burp Suite）
-3. 将请求中的手机号/user_id/account 参数替换为目标用户的标识
-4. 提交请求 → 观察目标用户的密码是否被修改
-5. 重点关注的参数名：`phone`, `mobile`, `user_id`, `uid`, `account`, `username`, `cellphone`
-
-**WooYun 案例参考：**
-- TCL统一身份认证平台漏洞，所有用户账号密码可重置 — 通过替换用户标识实现任意账号重置
-- 蜻蜓FM公众平台任意用户密码重置
+**Test Steps:**
+1. asself ownAccountRequestCAPTCHA, Recordas Code1
+2. againtimesRequestCAPTCHA, Recordas Code2
+3. useuse Code1(oldCAPTCHA)SubmitValidate -> whetherstill Valid?
+4. etc.pending 5 minutes/15 minutes/30 minutesafter part leveluse Code2 Submit -> confirm set expired time between
+5. such asif oldCAPTCHAnotInvalidate -> attack attack personCanasinArbitraryTime Windowinternal useuseintercept ofCAPTCHA
 
 ---
 
-#### A5 — 短信验证码在响应中泄露
+#### A3 - CAPTCHAcrossUsershared
 
-**WooYun 模式：** 令牌在 URL/响应中泄露（WooYun 普遍性：极高）
+**WooYun mode:** CAPTCHAserioususe - inDifferentUserbetween useuserelated sameofSMS Verification Code(WooYun Prevalence:Medium)
 
-**攻击原理：** 开发者为了调试方便，将验证码直接返回在 HTTP 响应体、响应头或 Cookie 中。
+**Attack Principle:** CAPTCHANot Boundtospecial setmobile number/UserSession, attack attack personuseself ownmobile numberObtainCAPTCHAafter, willotheruseforTargetUserofserious set flow process.
 
-**测试步骤：**
-1. 请求发送短信验证码，拦截完整的 HTTP 响应
-2. 检查响应体 JSON 中是否包含验证码字段（如 `code`, `smsCode`, `verifyCode`, `captcha`）
-3. 检查响应头中的自定义头（如 `X-Verify-Code`, `X-SMS-Code`）
-4. 检查 Set-Cookie 中是否包含验证码
-5. 检查前端 JavaScript 源码中是否有验证码逻辑泄露
-6. 如果是 APP → 检查返回的 JSON 完整结构（APP 常比 Web 多返回字段）
-
----
-
-#### A6 — 短信验证码可预测
-
-**WooYun 模式：** 可预测令牌（WooYun 普遍性：高）
-
-**测试步骤：**
-1. 连续为同一手机号请求 10+ 次验证码
-2. 分析验证码模式：
-   - 是否为纯顺序递增？
-   - 是否基于时间戳？
-   - 是否有固定前缀/后缀？
-   - 熵值分析：是否存在可预测的生成算法？
-3. 如果可预测 → 可直接计算出目标用户的验证码
+**Test Steps:**
+1. accurate prepareAccount A(attack attack person)andAccount B(Target)
+2. asAccount A ofmobile numberRequestserious setCAPTCHA, Recordas CodeA
+3. asAccount B ofmobile numberRequestserious setCAPTCHA
+4. inAccount B ofValidateStepinSubmit CodeA -> whetherValidatePass?
+5. variant test:inValidateRequestinwillmobile numberfrom B Replaceas A, but protect hold otherSessionParameternot change
 
 ---
 
-#### A7 — 短信轰炸 / 验证码发送无频率限制
+#### A4 - mobile numberParametertamper change(UserIDoperation manipulate)
 
-**攻击原理：** 验证码发送接口无频率限制，可被滥用进行短信轰炸，或为爆破创造大量有效验证码。
+**WooYun mode:** User ID operation manipulate - inserious setRequestinupdate change user_id/email/phone(WooYun Prevalence:Critical)
 
-**测试步骤：**
-1. 对发送验证码接口连续请求 10 次，观察是否有频率限制
-2. 测试绕过方式：
-   - 添加空格/前缀：`+8613800138000` vs `13800138000` vs ` 13800138000`
-   - 添加国际区号变体：`0086-138...`, `86138...`
-   - 修改 `X-Forwarded-For` 头绕过 IP 限制
-3. 评估是否可利用此漏洞为爆破制造多个有效验证码窗口
+**Attack Principle:** ValidateStepPassafter, Set New PasswordtimeServerdepend relyClientpass comeofmobile number/UserID, whileNon-ServerSessioninBindingofidentity copy identifier identify.
 
----
+**Test Steps:**
+1. useattack attack personmobile number completeCAPTCHAValidateStep
+2. inmost after"Set New Password"ofRequestin, Interceptflow quantity(Burp Suite)
+3. willRequestinofmobile number/user_id/account ParameterReplaceasTargetUserofidentifier identify
+4. SubmitRequest -> ObserveTargetUserofPasswordwhetherbeModify
+5. serious point key injectofParametername:`phone`, `mobile`, `user_id`, `uid`, `account`, `username`, `cellphone`
 
-### 通道B：邮箱链接重置
-
-#### B1 — 重置令牌在响应中泄露
-
-**WooYun 模式：** 令牌在 URL/响应中泄露（WooYun 普遍性：极高）
-
-**测试步骤：**
-1. 请求邮箱重置，拦截 HTTP 响应
-2. 检查响应体中是否直接包含重置链接或令牌
-3. 检查响应头中是否有泄露（`Location`, `X-Reset-Token` 等自定义头）
-4. 检查页面源码中隐藏的 `<input type="hidden">` 是否包含令牌
-5. 如果令牌在响应中 → 无需访问邮箱即可直接重置任意用户密码
+**WooYun Case References:**
+- TCLsystem one identity copyAuthenticationPlatformvulnerability, AllUserAccountPasswordCanserious set - PassReplaceUseridentifier identify real currentArbitrary Accountserious set
+- FMcompany PlatformArbitrary User Password Reset
 
 ---
 
-#### B2 — 重置令牌可预测/低熵
+#### A5 - SMS Verification CodeinResponseinDisclosure
 
-**WooYun 模式：** 可预测令牌（WooYun 普遍性：高）
+**WooYun mode:** command cardin URL/ResponseinDisclosure(WooYun Prevalence:Critical)
 
-**攻击原理：** 令牌基于可预测的因子生成（时间戳、用户ID、MD5(email)、顺序数字等）。
+**Attack Principle:** open initiate personasdone debugging method, willCAPTCHADirectReturnin HTTP Response Body/ResponseHeaderor Cookie in.
 
-**测试步骤：**
-1. 为同一邮箱连续请求 5 次重置，收集 5 个令牌
-2. 为不同邮箱各请求 1 次重置，收集 N 个令牌
-3. 分析令牌结构：
-   - 长度是否一致？字符集是什么？
-   - 是否为 Base64 编码？解码后是否可读？
-   - 是否包含时间戳成分？（对比请求时间与令牌值）
-   - 是否为 MD5/SHA1(email + salt)？（尝试已知信息组合）
-   - 连续令牌之间的差值是否固定？
-4. 常见弱令牌模式：
-   - `MD5(email)` → 可直接计算
-   - `Base64(user_id + timestamp)` → 可预测
-   - `sequential_number` → 可遍历
-   - `timestamp` → 精确到秒可爆破
-5. 如果可预测 → 为目标邮箱生成对应令牌直接重置
+**Test Steps:**
+1. RequestSendSMS Verification Code, InterceptCompleteof HTTP Response
+2. CheckResponse Body JSON inwhetherinclude includeCAPTCHAField(such as `code`, `smsCode`, `verifyCode`, `captcha`)
+3. CheckResponseHeaderinofself set defineHeader(such as `X-Verify-Code`, `X-SMS-Code`)
+4. Check Set-Cookie inwhetherinclude includeCAPTCHA
+5. CheckFrontend JavaScript source codeinwhether hasCAPTCHAlogic logicDisclosure
+6. such asif is APP -> CheckReturnof JSON Completeresult structure(APP common ratio Web manyReturnField)
 
 ---
 
-#### B3 — 重置令牌不过期 / 可重用
+#### A6 - SMS Verification CodePredictable
 
-**测试步骤：**
-1. 请求重置链接，记录令牌为 Token1
-2. 使用 Token1 成功重置密码
-3. 再次使用 Token1 → 是否仍可重置？（单次使用检查）
-4. 请求新令牌 Token2，不使用它，等待 1 小时/24 小时后使用 → 是否过期？
-5. 请求 Token2 后再请求 Token3 → Token2 是否失效？（新令牌是否作废旧令牌）
+**WooYun mode:** Predictablecommand card(WooYun Prevalence:High)
 
----
-
-#### B4 — Host 头注入窃取令牌
-
-**WooYun 模式：** Host 头注入 — 在 Host 头中注入攻击者域以获取重置链接（WooYun 普遍性：中等）
-
-**攻击原理：** 应用根据 HTTP Host 头生成重置链接。攻击者篡改 Host 头为自己控制的域名，受害者收到的重置链接指向攻击者服务器，点击后令牌被窃取。
-
-**测试步骤：**
-1. 请求密码重置，拦截请求
-2. 将 Host 头修改为攻击者控制的域名：`Host: evil.com`
-3. 检查目标邮箱收到的重置链接 → 域名是否变为 `evil.com`？
-4. 变体测试：
-   - `Host: evil.com` — 直接替换
-   - `X-Forwarded-Host: evil.com` — 转发头注入
-   - `Host: target.com\r\nHost: evil.com` — 双 Host 头
-   - `Host: target.com@evil.com` — @ 符号混淆
-   - `Host: target.com.evil.com` — 子域混淆
-5. 如果链接被篡改 → 受害者点击后令牌被发送到攻击者服务器
+**Test Steps:**
+1. continuous continueasSamemobile numberRequest 10+ timesCAPTCHA
+2. AnalyzeCAPTCHAmode:
+ - whether is order sequence recursive increase?
+ - whetherbased on timestamp?
+ - whether hasFixedprefix/after?
+ - valueAnalyze:whether existsPredictableofgenerate complete algorithm method?
+3. such asifPredictable -> directly usableComputeoutTargetUserofCAPTCHA
 
 ---
 
-#### B5 — Referer 泄露令牌
+#### A7 - SMS Bombing / CAPTCHASendnoRate Limit
 
-**测试步骤：**
-1. 使用重置链接访问设置新密码页面
-2. 在该页面上点击任何外部链接（社交媒体图标、帮助链接等）
-3. 检查外部请求的 Referer 头 → 是否包含完整的重置令牌 URL
-4. 如果页面加载外部资源（JS/CSS/图片 CDN） → 检查这些请求的 Referer
-5. 如果泄露 → 第三方可通过 Referer 获取重置令牌
+**Attack Principle:** CAPTCHASendInterfacenoRate Limit, Canbe abuseuseadvancelinesSMS Bombing, orasBrute Forcecreate forge large quantityValidCAPTCHA.
 
----
-
-#### B6 — 邮箱参数篡改
-
-**WooYun 模式：** 用户 ID 操纵（WooYun 普遍性：极高）
-
-**测试步骤：**
-1. 请求重置时拦截请求，测试以下参数篡改：
-   - 替换 `email` 为目标邮箱但保持会话不变
-   - 添加第二个邮箱参数：`email=victim@x.com&email=attacker@x.com`
-   - 使用数组：`email[]=victim@x.com&email[]=attacker@x.com`
-   - 使用 JSON：`{"email":"victim@x.com","cc":"attacker@x.com"}`
-   - 逗号分隔：`email=victim@x.com,attacker@x.com`
-   - 使用分号：`email=victim@x.com;attacker@x.com`
-2. 观察重置邮件发送到哪个邮箱 → 是否可以将令牌发送到攻击者邮箱
-3. 在设置新密码步骤中，替换邮箱/user_id 为目标账号
-
-**WooYun 案例参考：**
-- M1905电影网某重要站点任意密码重置（已入官方账号）— 通过参数操纵重置官方账号密码
+**Test Steps:**
+1. forSendCAPTCHAInterfacecontinuous continueRequest 10 times, Observewhether hasRate Limit
+2. testBypassmethod mode:
+ - AddEmptyformat/prefix:`+8613800138000` vs `13800138000` vs ` 13800138000`
+ - Addnational actual number variant:`0086-138...`, `86138...`
+ - Modify `X-Forwarded-For` HeaderBypass IP limit make
+3. assess assesswhetherCanexploituse vulnerabilityasBrute Forcemake forge manyValidCAPTCHAwindow interface
 
 ---
 
-#### B7 — 令牌与用户绑定检查
+### ChannelB:Emaillink connect serious set
 
-**测试步骤：**
-1. 为账号 A 请求重置令牌 TokenA
-2. 为账号 B 请求重置令牌 TokenB
-3. 使用 TokenA 但在请求中指定账号 B 的标识 → 是否可以重置 B 的密码？
-4. 这测试令牌是否与特定用户严格绑定
+#### B1 - serious set command cardinResponseinDisclosure
 
----
+**WooYun mode:** command cardin URL/ResponseinDisclosure(WooYun Prevalence:Critical)
 
-### 通道C：安全问题重置
-
-#### C1 — 安全问题答案暴力破解
-
-**测试步骤：**
-1. 确认安全问题类型（生日、城市、学校、宠物名等）
-2. 评估答案空间：
-   - 「你的生日是？」→ 仅约 36,500 种可能（100年 x 365天）
-   - 「你的城市？」→ 中国主要城市不超过 300 个
-   - 「你的母亲姓氏？」→ 中国常见姓氏约 100 个
-3. 使用 Burp Intruder 对答案字段发起字典攻击
-4. 检查是否存在：
-   - 回答次数限制？
-   - 错误后锁定机制？
-   - 验证码保护？
-   - 响应时间差异（正确答案 vs 错误答案的时序差异）
+**Test Steps:**
+1. RequestEmailserious set, Intercept HTTP Response
+2. CheckResponse BodyinwhetherDirectinclude include serious set link connectorcommand card
+3. CheckResponseHeaderinwhether hasDisclosure(`Location`, `X-Reset-Token` etc.self set defineHeader)
+4. Checkpage source codeinhidden hiddenof `<input type="hidden">` whetherinclude include command card
+5. such asif command cardinResponsein -> no need toaccess askEmailthat isdirectly usableserious setArbitraryUserPassword
 
 ---
 
-#### C2 — 安全问题答案在前端泄露
+#### B2 - serious set command cardPredictable/Low
 
-**测试步骤：**
-1. 进入安全问题验证页面，查看完整的 HTTP 响应
-2. 检查 HTML 源码中隐藏字段：`<input type="hidden" name="answer" value="xxx">`
-3. 检查 JavaScript 变量中是否包含答案
-4. 检查 API 响应 JSON 中是否返回了答案（特别是移动端 API）
-5. 检查浏览器开发者工具 Network 面板中其他 XHR 请求是否泄露答案
+**WooYun mode:** Predictablecommand card(WooYun Prevalence:High)
 
----
+**Attack Principle:** command card based onPredictableofbecause sub generate complete(timestamp/UserID/MD5(email)/order sequence number characteretc.).
 
-#### C3 — 安全问题可枚举
-
-**测试步骤：**
-1. 输入目标用户名，观察返回的安全问题
-2. 遍历不同用户名 → 是否可以枚举平台用户？（用户名存在与否的响应差异）
-3. 检查安全问题是否过于简单或答案空间过小
-4. 社交平台特殊风险：安全问题的答案可能在用户公开资料中（生日、城市、学校等）
-
----
-
-#### C4 — 安全问题验证绕过
-
-**WooYun 模式：** 步骤跳过 — 直接跳到"设置新密码"步骤（WooYun 普遍性：高）
-
-**测试步骤：**
-1. 正常走到安全问题页面，记录此步骤的 URL 和参数
-2. 不回答问题，直接构造「设置新密码」步骤的请求发送
-3. 测试在请求中删除 `answer` 参数 → 是否仍可通过验证？
-4. 测试提交空答案 `answer=` → 是否通过？
-5. 测试提交 `answer=true` 或 `answer=1` → 是否有逻辑判断错误？
+**Test Steps:**
+1. asSameEmailcontinuous continueRequest 5 timesserious set, collect collect 5 command card
+2. asDifferentEmaileachRequest 1 timesserious set, collect collect N command card
+3. Analyzecommand card result structure:
+ - long degreewhetherone cause?character symbol collect is?
+ - whether is Base64 Encoding?decode code afterwhetherCanread?
+ - whetherinclude include timestamp complete part?(for ratioRequesttime betweenandcommand card value)
+ - whether is MD5/SHA1(email + salt)?(Attemptalready notify information array combine)
+ - continuous continue command card betweenoferror valuewhetherFixed?
+4. common seen weak command card mode:
+ - `MD5(email)` -> directly usableCompute
+ - `Base64(user_id + timestamp)` -> Predictable
+ - `sequential_number` -> CanTraversal
+ - `timestamp` -> precision confirmtoCanBrute Force
+5. such asifPredictable -> asTargetEmailgenerate complete forshouldcommand cardDirectserious set
 
 ---
 
-#### C5 — 安全问题答案参数篡改
+#### B3 - serious set command card not expired / Canserioususe
 
-**测试步骤：**
-1. 拦截安全问题验证请求
-2. 修改隐藏参数（如 `question_id`）→ 是否可以切换到更容易猜测的问题？
-3. 添加额外参数 `verified=true`, `skip=1`, `bypass=1` → 是否被后端接受？
-4. 修改响应中的验证结果（如 `{"correct":false}` → `{"correct":true}`）→ 前端是否据此放行？
-
----
-
-### 跨通道攻击向量
-
-#### D1 — 步骤跳过（全通道通用）
-
-**WooYun 模式：** 步骤跳过 — 直接跳到"设置新密码"步骤（WooYun 普遍性：高）
-
-**攻击原理：** 密码重置流程的各步骤之间缺乏服务端状态验证，攻击者可直接访问最后一步。
-
-**测试步骤：**
-1. 正常走完一次完整的密码重置流程，用 Burp 记录每个步骤的请求
-2. 识别最后一步「设置新密码」的请求（URL、参数、方法）
-3. 在新会话中，不执行前面的验证步骤，直接发送最后一步的请求
-4. 变体：
-   - 仅跳过验证步骤（保留第一步的身份输入）
-   - 完全从零开始直接发送设置密码请求
-   - 在请求中手动添加 `step=3` 或 `verified=true` 等参数
-5. 检查服务端是否在每个步骤都验证前置步骤的完成状态
-
-**WooYun 案例参考：**
-- 嘟嘟牛旗下百乐吧密码重置漏洞涉及279个网吧上网用户数据 — 通过跳步重置任意用户密码
+**Test Steps:**
+1. Requestserious set link connect, Recordcommand cardas Token1
+2. useuse Token1 Successserious setPassword
+3. againtimesuseuse Token1 -> whetherstillCanserious set?(singletimesuseuseCheck)
+4. Requestnew command card Token2, not useuse, etc.pending 1 hours/24 hoursafter useuse -> whetherexpired?
+5. Request Token2 after againRequest Token3 -> Token2 whetherInvalidate?(new command cardwhetheroperation old command card)
 
 ---
 
-#### D2 — 响应篡改（全通道通用）
+#### B4 - Host Headerinject inject take command card
 
-**WooYun 模式：** 响应操纵 — 将 `{"success":false}` 改为 `{"success":true}`（WooYun 普遍性：中等）
+**WooYun mode:** Host Headerinject inject - in Host Headerininject inject attack attack person domain asObtainserious set link connect(WooYun Prevalence:Medium)
 
-**攻击原理：** 前端根据服务端返回的状态码/JSON 字段决定是否进入下一步，但下一步不再由服务端校验。
+**Attack Principle:** Applicationroot according HTTP Host Headergenerate complete serious set link connect.attack attack person tamper change Host Headerasself own control makeofDomain Name, affected person collecttoofserious set link connect specified toward attack attack personServer, point attack after command card be take.
 
-**测试步骤：**
-1. 在验证步骤中故意输入错误的验证码/答案
-2. 拦截服务器响应（Burp → Intercept Response）
-3. 修改响应内容：
-   - `{"success":false}` → `{"success":true}`
-   - `{"code":1001}` → `{"code":0}`
-   - `{"status":"error"}` → `{"status":"ok"}`
-   - HTTP 状态码 `403` → `200`
-4. 观察前端是否据此进入设置新密码页面
-5. 在设置新密码页面提交新密码 → 服务端是否接受？
-
----
-
-#### D3 — 通道混用攻击
-
-**攻击原理：** 利用一个通道的验证状态，跨到另一个通道执行密码修改。
-
-**测试步骤：**
-1. 在通道 A（短信验证码）中完成身份验证
-2. 在设置新密码步骤中，替换请求来源标识为通道 B 或 C 的参数格式
-3. 测试：用通道 A 获取的会话状态/token，直接调用通道 B 的设置密码接口
-4. 检查三个通道的设置密码接口是否为同一个 → 如果是，验证状态是否通道隔离？
+**Test Steps:**
+1. RequestPassword Reset, InterceptRequest
+2. will Host HeaderModifyasattack attack person control makeofDomain Name:`Host: evil.com`
+3. CheckTargetEmailcollecttoofserious set link connect -> Domain Namewhetherchangeas `evil.com`?
+4. variant test:
+ - `Host: evil.com` - DirectReplace
+ - `X-Forwarded-Host: evil.com` - transfer initiateHeaderinject inject
+ - `Host: target.com\r\nHost: evil.com` - dual Host Header
+ - `Host: target.com@evil.com` - @ symbol number mix
+ - `Host: target.com.evil.com` - sub domain mix
+5. such asif link connect be tamper change -> affected person point attack after command card beSendtoattack attack personServer
 
 ---
 
-#### D4 — 用户标识符操纵（全通道通用）
+#### B5 - Referer Disclosurecommand card
 
-**WooYun 模式：** 用户 ID 操纵（WooYun 全数据集中普遍性：极高，这是密码重置漏洞最常见的根因）
-
-**测试步骤：**
-1. 完整走一遍自己账号的重置流程，记录所有请求中的身份标识参数
-2. 在流程的每个步骤中尝试替换标识：
-   - 第一步（输入账号）：输入目标账号
-   - 第二步（验证）：用自己的验证码但替换关联的 user_id
-   - 第三步（设置密码）：替换 user_id/phone/email 为目标账号
-3. 特别注意隐藏参数和 Cookie 中的身份标识
-4. 检查每个请求中是否有多个身份标识参数（如同时有 `user_id` 和 `phone`）→ 哪个优先？可否不一致？
+**Test Steps:**
+1. useuseserious set link connect access askSet New Passwordpage
+2. inthis page above point attack any external part link connect(social transaction body image identifier/help link connectetc.)
+3. Checkexternal partRequestof Referer Header -> whetherinclude includeCompleteofserious set command card URL
+4. such asif page add external part resource source(JS/CSS/image image CDN) -> Checkthis someRequestof Referer
+5. such asifDisclosure -> No. three methodCanPass Referer Obtainserious set command card
 
 ---
 
-#### D5 — 竞态条件
+#### B6 - EmailParametertamper change
 
-**攻击原理：** 在验证码验证通过的瞬间同时发送多个设置密码请求，或在令牌失效前的窗口期并发利用。
+**WooYun mode:** User ID operation manipulate(WooYun Prevalence:Critical)
 
-**测试步骤：**
-1. 获取有效验证码/令牌
-2. 准备 10-50 个并发的设置密码请求（使用 Burp Turbo Intruder 或自定义脚本）
-3. 同时发送所有请求 → 观察：
-   - 是否多个请求都成功？
-   - 令牌/验证码是否被多次使用？
-4. 应用场景：绕过「验证码单次使用」限制
+**Test Steps:**
+1. Requestserious set timeInterceptRequest, testthe followingParametertamper change:
+ - Replace `email` asTargetEmailbut protect holdSessionnot change
+ - AddNo. twoEmailParameter:`email=victim@x.com&email=attacker@x.com`
+ - useusenumber array:`email[]=victim@x.com&email[]=attacker@x.com`
+ - useuse JSON:`{"email":"victim@x.com","cc":"attacker@x.com"}`
+ - number part isolate:`email=victim@x.com,attacker@x.com`
+ - useusepart number:`email=victim@x.com;attacker@x.com`
+2. Observeserious set itemSendtowhichEmail -> whetherCanaswillcommand cardSendtoattack attack personEmail
+3. inSet New PasswordStepin, ReplaceEmail/user_id asTargetAccount
 
----
-
-#### D6 — 密码重置链接/验证码的信息泄露渠道
-
-**测试步骤：**
-1. 检查浏览器历史记录 → 重置链接是否保存在历史中？
-2. 检查 Web 服务器访问日志 → 重置令牌是否记录在日志中？
-3. 检查缓存头 → 重置页面是否设置了 `Cache-Control: no-store`？
-4. 检查邮件是否为明文传输（非 TLS）
-5. 检查 Referer 头是否在页面跳转时泄露令牌（见 B5）
+**WooYun Case References:**
+- M1905electronic impact network some serious need pointArbitraryPassword Reset(already inject methodAccount) - PassParameteroperation manipulate serious set methodAccountPassword
 
 ---
 
-#### D7 — 账户枚举
+#### B7 - command cardandUserBindingCheck
 
-**测试步骤：**
-1. 在密码重置第一步中分别输入：
-   - 存在的手机号/邮箱/用户名
-   - 不存在的手机号/邮箱/用户名
-2. 对比响应差异：
-   - 响应文本不同？（"验证码已发送" vs "该手机号未注册"）
-   - 响应时间不同？（查库 vs 直接返回）
-   - HTTP 状态码不同？
-   - 响应长度不同？
-3. 社交平台风险放大：账户枚举 + 公开资料 → 可批量确认真实用户身份
+**Test Steps:**
+1. asAccount A Requestserious set command card TokenA
+2. asAccount B Requestserious set command card TokenB
+3. useuse TokenA butinRequestinspecified setAccount B ofidentifier identify -> whetherCanas serious set B ofPassword?
+4. this test command cardwhetherandspecial setUsersevere formatBinding
 
 ---
 
-#### D8 — 新密码设置缺陷
+### ChannelC:Secureask problem serious set
 
-**测试步骤：**
-1. 在设置新密码步骤中测试：
-   - 是否可以设置与旧密码相同的密码？
-   - 是否可以设置空密码？
-   - 是否可以设置极弱密码（如 `123456`）？
-   - 密码长度限制是否仅在前端？（删除 `maxlength` 属性后提交超长密码）
-2. 重置后检查：
-   - 其他设备上的会话是否被注销？（如果不注销 → 攻击者已登录的会话仍然有效）
-   - 是否通知用户密码已被修改？（通知缺失 → 用户无法察觉被攻击）
+#### C1 - Secureask problemAnswerBrute Force
+
+**Test Steps:**
+1. ConfirmSecureask problem type(generate day/ / / item nameetc.)
+2. assess assessAnswerEmptybetween:
+ - "ofgenerate day is?"-> only constraint 36,500 typeCancan(100 x 365days)
+ - "of?"-> innational primary need not super through 300
+ - "of?"-> innational common seen constraint 100
+3. useuse Burp Intruder forAnswerFieldinitiate initiateDictionaryattack attack
+4. Checkwhether exists:
+ - return timesnumber limit make?
+ - error after lock set machine make?
+ - CAPTCHAprotect protect?
+ - Responsetime between error abnormal(correct confirmAnswer vs errorAnsweroftime sequence error abnormal)
 
 ---
 
-## 三、测试环境准备
+#### C2 - Secureask problemAnswerinFrontendDisclosure
 
-### 3.1 必备工具
+**Test Steps:**
+1. advance injectSecureask problemValidatepage, ViewCompleteof HTTP Response
+2. Check HTML source codeinhidden hiddenField:`<input type="hidden" name="answer" value="xxx">`
+3. Check JavaScript change quantityinwhetherinclude includeAnswer
+4. Check API Response JSON inwhetherReturndoneAnswer(special level isMobile Client API)
+5. CheckBrowseropen initiate personTool Network page templateinother XHR RequestwhetherDisclosureAnswer
 
-| 工具 | 用途 |
+---
+
+#### C3 - Secureask problemCanEnumeration
+
+**Test Steps:**
+1. output injectTargetUsername, ObserveReturnofSecureask problem
+2. TraversalDifferentUsername -> whetherCanasEnumerationPlatformUser?(Username existinandofResponseerror abnormal)
+3. CheckSecureask problemwhetherthrough for simple singleorAnswerEmptybetween through small
+4. social transactionPlatformspecial risk:Secureask problemofAnswerCancaninUsercompany open resource in(generate day/ / etc.)
+
+---
+
+#### C4 - Secureask problemValidateBypass
+
+**WooYun mode:** Stepskip through - Directskipto"Set New Password"Step(WooYun Prevalence:High)
+
+**Test Steps:**
+1. correct common toSecureask problem page, RecordStepof URL andParameter
+2. not return ask problem, Directstructure forge"Set New Password"StepofRequestSend
+3. testinRequestinDelete `answer` Parameter -> whetherstillCanPassValidate?
+4. testSubmitEmptyAnswer `answer=` -> whetherPass?
+5. testSubmit `answer=true` or `answer=1` -> whether haslogic logic determine judge error?
+
+---
+
+#### C5 - Secureask problemAnswerParametertamper change
+
+**Test Steps:**
+1. InterceptSecureask problemValidateRequest
+2. Modifyhidden hiddenParameter(such as `question_id`)-> whetherCanas switch changetoupdate content easy guessingofask problem?
+3. Addamount externalParameter `verified=true`, `skip=1`, `bypass=1` -> whetherbeBackendconnect affected?
+4. ModifyResponseinofValidateResult(such as `{"correct":false}` -> `{"correct":true}`)-> Frontendwhetheraccording releaselines?
+
+---
+
+### crossChannelAttack Vector
+
+#### D1 - Stepskip through(allChannelwilduse)
+
+**WooYun mode:** Stepskip through - Directskipto"Set New Password"Step(WooYun Prevalence:High)
+
+**Attack Principle:** Password Resetflow processofeachStepbetween missing ServerStatusValidate, attack attack persondirectly usableaccess ask most after one step.
+
+**Test Steps:**
+1. correct common complete onetimesCompleteofPassword Resetflow process, use Burp RecordEachStepofRequest
+2. Identifymost after one step"Set New Password"ofRequest(URL/Parameter/Method)
+3. innewSessionin, notExecutefirst pageofValidateStep, DirectSendmost after one stepofRequest
+4. variant:
+ - only skip throughValidateStep(protect retainNo. one stepofidentity copy output inject)
+ - complete allfromzero open initialDirectSendset setPasswordRequest
+ - inRequestinmobile dynamicAdd `step=3` or `verified=true` etc.Parameter
+5. CheckServerwhetherinEachStepallValidatefirst setStepofcompleteStatus
+
+**WooYun Case References:**
+- under percent Password Resetvulnerability involving279network above networkUserData - Passskip step serious setArbitraryUserPassword
+
+---
+
+#### D2 - Responsetamper change(allChannelwilduse)
+
+**WooYun mode:** Responseoperation manipulate - will `{"success":false}` changeas `{"success":true}`(WooYun Prevalence:Medium)
+
+**Attack Principle:** Frontendroot accordingServerReturnofStatuscode/JSON Field setwhetheradvance inject under one step, but under one step not again byServerValidate.
+
+**Test Steps:**
+1. inValidateStepin meaning output inject errorofCAPTCHA/Answer
+2. InterceptServerResponse(Burp -> Intercept Response)
+3. ModifyResponsecontent:
+ - `{"success":false}` -> `{"success":true}`
+ - `{"code":1001}` -> `{"code":0}`
+ - `{"status":"error"}` -> `{"status":"ok"}`
+ - HTTP Statuscode `403` -> `200`
+4. ObserveFrontendwhetheraccording advance injectSet New Passwordpage
+5. inSet New PasswordpageSubmitnewPassword -> Serverwhetherconnect affected?
+
+---
+
+#### D3 - Channelmixuseattack attack
+
+**Attack Principle:** exploituseoneChannelofValidateStatus, crossto oneChannelExecutePasswordModify.
+
+**Test Steps:**
+1. inChannel A(SMS Verification Code)incomplete identity copyValidate
+2. inSet New PasswordStepin, ReplaceRequestcome source identifier identifyasChannel B or C ofParameterformat mode
+3. test:useChannel A ObtainofSessionStatus/token, Direct CallChannel B ofset setPasswordInterface
+4. CheckthreeChannelofset setPasswordInterfacewhether isSame -> such asif is, ValidateStatuswhetherChannelisolation?
+
+---
+
+#### D4 - Useridentifier identify symbol operation manipulate(allChannelwilduse)
+
+**WooYun mode:** User ID operation manipulate(WooYun allDatacollectinPrevalence:Critical, this isPassword Resetvulnerability most common seenofroot because)
+
+**Test Steps:**
+1. Complete one self ownAccountofserious set flow process, RecordAllRequestinofidentity copy identifier identifyParameter
+2. inflow processofEachStepinAttemptReplaceidentifier identify:
+ - No. one step(output injectAccount):output injectTargetAccount
+ - No. two step(Validate):useself ownofCAPTCHAbutReplacekey connectof user_id
+ - No. three step(set setPassword):Replace user_id/phone/email asTargetAccount
+3. special level inject meaning hidden hiddenParameterand Cookie inofidentity copy identifier identify
+4. CheckEachRequestinwhether hasmany identity copy identifier identifyParameter(such assame time has `user_id` and `phone`)-> which priority first?Can not one cause?
+
+---
+
+#### D5 - Race Condition
+
+**Attack Principle:** inCAPTCHAValidatePassofinstant same timeSendmany set setPasswordRequest, orincommand cardInvalidatefirstofwindow interface periodConcurrencyexploituse.
+
+**Test Steps:**
+1. ObtainValidCAPTCHA/command card
+2. accurate prepare 10-50 Concurrencyofset setPasswordRequest(useuse Burp Turbo Intruder orself set defineScript)
+3. same timeSendAllRequest -> Observe:
+ - whethermanyRequestallSuccess?
+ - command card/CAPTCHAwhetherbe manytimesuseuse?
+4. Applicationscenario scene:Bypass"CAPTCHAsingletimesuseuse"limit make
+
+---
+
+#### D6 - Password Resetlink connect/CAPTCHAofInformation Disclosurechannel channel
+
+**Test Steps:**
+1. CheckBrowserhistory historyRecord -> serious set link connectwhetherprotect existinhistory historyin?
+2. Check Web Serveraccess askLog -> serious set command cardwhetherRecordinLogin?
+3. Check existHeader -> serious set pagewhetherset set done `Cache-Control: no-store`?
+4. Check itemwhether isclear text pass output(Non- TLS)
+5. Check Referer Headerwhetherinpage skip transfer timeDisclosurecommand card(seen B5)
+
+---
+
+#### D7 - AccountEnumeration
+
+**Test Steps:**
+1. inPassword ResetNo. one stepinpart level output inject:
+ - existinofmobile number/Email/Username
+ - not existinofmobile number/Email/Username
+2. for ratioResponseerror abnormal:
+ - ResponsetextDifferent?("CAPTCHAalreadySend" vs "thismobile numbernotRegistration")
+ - Responsetime betweenDifferent?(check library vs DirectReturn)
+ - HTTP StatuscodeDifferent?
+ - Responselong degreeDifferent?
+3. social transactionPlatformrisk release large:AccountEnumeration + company open resource -> CanBatchConfirmreal realUseridentity copy
+
+---
+
+#### D8 - newPasswordset set missing flaw
+
+**Test Steps:**
+1. inSet New PasswordStepintest:
+ - whetherCanas set setandoldPasswordrelated sameofPassword?
+ - whetherCanas set setBlank Password?
+ - whetherCanas set set extreme weakPassword(such as `123456`)?
+ - Passwordlong degree limit makewhetheronlyinFrontend?(Delete `maxlength` attributes afterSubmitsuper longPassword)
+2. serious set afterCheck:
+ - other set prepare aboveofSessionwhetherbe inject?(such asif not inject -> attack attack person alreadyLoginofSessionstill Valid)
+ - whetherwild notifyUserPasswordalready beModify?(wild notifyMissing -> Userno method be attack attack)
+
+---
+
+## 3. Test Environmentaccurate prepare
+
+### 3.1 must prepareTool
+
+| Tool | Purpose |
 |------|------|
-| Burp Suite Professional | HTTP 拦截、修改请求/响应、Intruder 爆破、Turbo Intruder 竞态 |
-| 浏览器开发者工具 | 前端代码审计、网络请求分析、Cookie/localStorage 检查 |
-| 手机抓包（Charles/mitmproxy） | 移动端 APP 流量拦截（APP 常返回更多数据） |
-| curl / Python requests | 自动化验证和复现 |
+| Burp Suite Professional | HTTP Intercept/ModifyRequest/Response/Intruder Brute Force/Turbo Intruder Race |
+| Browseropen initiate personTool | FrontendCodeaudit plan/NetworkRequestAnalyze/Cookie/localStorage Check |
+| mobile machine packet capture(Charles/mitmproxy) | Mobile Client APP flow quantityIntercept(APP commonReturnupdate manyData) |
+| curl / Python requests | self dynamic izeValidateandrepeat current |
 
-### 3.2 测试账号准备
+### 3.2 Test Accountaccurate prepare
 
-| 账号 | 用途 |
+| Account | Purpose |
 |------|------|
-| 账号 A（攻击者） | 绑定攻击者手机号和邮箱，用于获取验证码/令牌 |
-| 账号 B（目标） | 绑定不同手机号和邮箱，用于验证跨用户攻击 |
-| 账号 C（观察者） | 用于验证密码是否真的被修改（登录测试） |
+| Account A(attack attack person) | Bindingattack attack personmobile numberandEmail, useforObtainCAPTCHA/command card |
+| Account B(Target) | BindingDifferentmobile numberandEmail, useforValidatecrossUserattack attack |
+| Account C(Observeperson) | useforValidatePasswordwhetherrealofbeModify(Logintest) |
 
 ---
 
-## 四、测试优先级排序
+## 4. Test Priority Ranking
 
-基于 WooYun 数据统计的普遍性和影响度，按优先级排序：
+based on WooYun DataStatisticsofPrevalenceandimpact response degree, byPriorityrank sequence:
 
-| 优先级 | 攻击向量 | WooYun 普遍性 | 影响 |
+| Priority | Attack Vector | WooYun Prevalence | impact response |
 |--------|---------|--------------|------|
-| P0-极高 | D4 用户标识符操纵 | 极高 | 任意用户密码重置 |
-| P0-极高 | A4 手机号参数篡改 | 极高 | 任意用户密码重置 |
-| P0-极高 | B6 邮箱参数篡改 | 极高 | 任意用户密码重置 |
-| P0-极高 | A5/B1 验证码/令牌在响应中泄露 | 极高 | 任意用户密码重置 |
-| P1-高 | D1 步骤跳过 | 高 | 绕过验证直接重置 |
-| P1-高 | B2 令牌可预测 | 高 | 任意用户密码重置 |
-| P1-高 | A1 验证码暴力破解 | 高 | 任意用户密码重置 |
-| P1-高 | B7 令牌与用户未绑定 | 高 | 跨用户令牌利用 |
-| P2-中 | D2 响应篡改 | 中等 | 绕过前端验证 |
-| P2-中 | A3 验证码跨用户共享 | 中等 | 跨用户验证码利用 |
-| P2-中 | B4 Host 头注入 | 中等 | 窃取重置令牌 |
-| P2-中 | C1 安全问题暴力破解 | 中等 | 猜测答案重置密码 |
-| P2-中 | C4 安全问题验证绕过 | 中等 | 跳过问答环节 |
-| P3-低 | A2 验证码不过期 | 低-中 | 扩大攻击窗口 |
-| P3-低 | B3 令牌不过期/可重用 | 低-中 | 持续利用 |
-| P3-低 | B5 Referer 泄露令牌 | 低 | 第三方窃取 |
-| P3-低 | D5 竞态条件 | 低 | 绕过单次使用限制 |
-| P3-低 | D7 账户枚举 | 低 | 信息收集/隐私 |
+| P0-Critical | D4 Useridentifier identify symbol operation manipulate | Critical | Arbitrary User Password Reset |
+| P0-Critical | A4 mobile numberParametertamper change | Critical | Arbitrary User Password Reset |
+| P0-Critical | B6 EmailParametertamper change | Critical | Arbitrary User Password Reset |
+| P0-Critical | A5/B1 CAPTCHA/command cardinResponseinDisclosure | Critical | Arbitrary User Password Reset |
+| P1-High | D1 Stepskip through | High | BypassValidateDirectserious set |
+| P1-High | B2 command cardPredictable | High | Arbitrary User Password Reset |
+| P1-High | A1 CAPTCHABrute Force | High | Arbitrary User Password Reset |
+| P1-High | B7 command cardandUserNot Bound | High | crossUsercommand card exploituse |
+| P2-in | D2 Responsetamper change | Medium | BypassFrontendValidate |
+| P2-in | A3 CAPTCHAcrossUsershared | Medium | crossUserCAPTCHAexploituse |
+| P2-in | B4 Host Headerinject inject | Medium | take serious set command card |
+| P2-in | C1 Secureask problemBrute Force | Medium | guessingAnswerserious setPassword |
+| P2-in | C4 Secureask problemValidateBypass | Medium | skip through ask environment section |
+| P3-Low | A2 CAPTCHAnot expired | Low-in | large attack attack window interface |
+| P3-Low | B3 command card not expired/Canserioususe | Low-in | hold continue exploituse |
+| P3-Low | B5 Referer Disclosurecommand card | Low | No. three method take |
+| P3-Low | D5 Race Condition | Low | Bypasssingletimesuseuselimit make |
+| P3-Low | D7 AccountEnumeration | Low | information collect collect/hidden private |
 
 ---
 
-## 五、WooYun 统计数据总结
+## 5. WooYun StatisticsDatatotal result
 
-| 维度 | 数据 |
+| Dimension | Data |
 |------|------|
-| 密码重置漏洞总案例数 | 777 |
-| 高危占比 | 88.0%（WooYun 全数据集中排名第一） |
-| 身份认证领域总案例 | 8,846（占全部漏洞的 40%） |
-| 验证码绕过案例 | 384（44% 高危） |
-| 最常见根因 | 用户标识符操纵（在重置请求中替换 user_id/phone/email） |
-| 第二常见根因 | 令牌/验证码在 HTTP 响应中泄露 |
-| 第三常见根因 | 流程步骤跳过（缺乏服务端状态校验） |
+| Password Resetvulnerability totalCase Count | 777 |
+| high-risk percentage | 88.0%(WooYun allDatacollectinrank nameNo. one) |
+| identity copyAuthentication DomaintotalCase | 8,846(shareAllvulnerabilityof 40%) |
+| CAPTCHA BypassCase | 384(44% High Risk) |
+| most common seen root because | Useridentifier identify symbol operation manipulate(inserious setRequestinReplace user_id/phone/email) |
+| No. two common seen root because | command card/CAPTCHAin HTTP ResponseinDisclosure |
+| No. three common seen root because | flow processStepskip through(missing ServerStatusValidate) |
 
-**关键结论：** 密码重置是 WooYun 全数据集中高危占比最高的漏洞类别（88.0%）。社交平台因用户基数大、账户价值高，密码重置漏洞的业务影响尤为严重 — 一个可利用的密码重置缺陷意味着平台上所有用户的账户都可能被接管。
-
----
-
-## 六、补救建议（按防御层次）
-
-### 代码层
-- 重置令牌：密码学安全随机数，长度 >= 32 字节，单次使用，15 分钟过期
-- 短信验证码：6 位数字，5 分钟过期，绑定手机号 + 会话，错误 5 次作废
-- 安全问题：废弃此方式（答案空间过小，社交平台上答案易获取），改用 MFA
-- 所有步骤的身份标识必须从服务端会话读取，禁止接受客户端传入的 user_id/phone/email
-
-### 架构层
-- 每个步骤必须由服务端校验前置步骤的完成状态（状态机模式）
-- 速率限制：验证码验证接口按账号 + IP 双维度限制（5 次/15 分钟）
-- 重置完成后强制注销所有其他会话
-- 重置完成后向所有已绑定的通知渠道发送告警
-
-### 监控层
-- 单 IP 大量请求重置接口 → 告警
-- 单账号短时间内多次触发重置 → 告警
-- 验证码验证失败率激增 → 告警
-- 密码修改后立即从新 IP/设备登录 → 告警
+**key result comment:** Password Resetis WooYun allDatacollectinhigh-risk percentagemostHighofVulnerability Category(88.0%).social transactionPlatformbecauseUserbase number large/Accountprice valueHigh, Password ResetvulnerabilityofBusiness ImpactasSevere - oneCanexploituseofPassword Resetmissing flaw meaning PlatformaboveAllUserofAccountallCancan be connect manage.
 
 ---
 
-*本测试计划基于 WooYun 业务逻辑漏洞方法论 v2.0，数据源：WooYun 漏洞数据库（2016年7月），22,132 个真实漏洞案例。*
+## 6. supplement create protocol(by defense defense layertimes)
+
+### Codelayer
+- serious set command card:PasswordSecure machine number, long degree >= 32 character section, singletimesuseuse, 15 minutesexpired
+- SMS Verification Code:6 characters number character, 5 minutesexpired, Bindingmobile number + Session, error 5 timesoperation
+- Secureask problem: method mode(AnswerEmptybetween through small, social transactionPlatformaboveAnswereasyObtain), changeuse MFA
+- AllStepofidentity copy identifier identifymustfromServerSessionRead, disable stop connect affectedClientpass injectof user_id/phone/email
+
+### architecture structure layer
+- EachStepmustbyServerValidatefirst setStepofcompleteStatus(Statusmachine mode)
+- rate rate limit make:CAPTCHAValidateInterfacebyAccount + IP dualDimensionlimit make(5 times/15 minutes)
+- serious set complete after strong make inject AllotherSession
+- serious set complete after towardAllalreadyBindingofwild notify channel channelSendreport alert
+
+### monitor control layer
+- single IP large quantityRequestserious setInterface -> report alert
+- singleAccountshort time between internal manytimestrigger initiate serious set -> report alert
+- CAPTCHAValidateFailurerate increase -> report alert
+- PasswordModifyafter standalone that isfromnew IP/set prepareLogin -> report alert
+
+---
+
+*versionTest Planbased on WooYun Business Logic Vulnerability Methodology v2.0, Datasource:WooYun vulnerabilityDatabase(20167), 22,132 real real vulnerabilityCase.*

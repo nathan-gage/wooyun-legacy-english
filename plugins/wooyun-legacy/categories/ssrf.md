@@ -1,10 +1,9 @@
 
 ---
-### [wooyun-2014-076518] 太原理工校园网PRTG网络监控平台管理弱口令漏洞
+### [wooyun-2014-076518] Taiyuan University of Technology campus network PRTG network monitoring platform admin weak-password vulnerability
 
-**漏洞类型**: 基础设施弱口令
+**Vulnerability type**: infrastructure weak password
 
-> 总案例数: 0
+> Total case count: 0
 
-## 典型案例标题
-
+## Representative Case Titles

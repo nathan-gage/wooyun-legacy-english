@@ -1,60 +1,60 @@
-# INFO-DISCLOSURE 漏洞分析
+# INFO-DISCLOSURE Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 16
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 16
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  id: 1次
-  method: 1次
-```
-
-
-### 攻击模式分布
-```
-  泄露: 12次
-  弱口令: 2次
-  越权: 1次
+  id: 1 occurrence
+  method: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  disclosure: 12 occurrences
+  weak password: 2 occurrences
+  privilege overreach: 1 occurrence
+```
 
-- 某信用卡APP运维不当敏感信息泄露
-  漏洞类型：重要敏感信息泄露
-- 某航空公司大波人员信息泄露(域密码+工作系统密码+新邮箱密码)
-  漏洞类型：敏感信息泄露
-- 某单位存在安全漏洞某系统session泄露任意用户登陆/上亿元资金台账侧漏
-  漏洞类型：敏感信息泄露
-- 某K歌APP某处敏感信息泄露导致服务器已沦陷
-  漏洞类型：网络敏感信息泄漏
-- 7天连锁酒店某地重要敏感信息泄露导致进入众多管理后台(二)
-  漏洞类型：重要敏感信息泄露
-- 某零食电商短信接口账号密码泄露导致可查看所有用户验证码短信及手机号+修改所有注册用户密码+随意发短信
-  漏洞类型：敏感信息泄露
-- TOM某分站SVN源码泄露
-  漏洞类型：敏感信息泄露
-- hitao某系统可导致千万用户数据泄漏
-  漏洞类型：重要敏感信息泄露
-- 某单位存在安全漏洞公、全公司通讯录泄露
-  漏洞类型：敏感信息泄露
-- 众禄基金Android客户端存在账户信息泄露
-  漏洞类型：用户敏感数据泄漏
-- 某单位存在安全漏洞）
-  漏洞类型：用户资料大量泄漏
-- 某单位存在安全漏洞数万准考证信息泄露（照片，准考证，身份证，工作单位）
-  漏洞类型：敏感信息泄露
-- 苏州航天信息网敏感信息泄漏
-  漏洞类型：敏感信息泄露
-- 360shop某分站源码泄露
-  漏洞类型：敏感信息泄露
-- 某安全厂商ADS抗DDOS系统存在openssl漏洞导致信息泄漏
-  漏洞类型：网络敏感信息泄漏
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Improper operations on a certain credit-card APP leak sensitive information
+  Vulnerability type: important sensitive information disclosure
+- A large wave of personnel information disclosure at a certain airline (domain passwords + work-system passwords + new email passwords)
+  Vulnerability type: sensitive information disclosure
+- A certain organization's system session disclosure allows arbitrary user login / leaks capital ledgers worth hundreds of millions of yuan
+  Vulnerability type: sensitive information disclosure
+- Sensitive information disclosure in a certain karaoke APP causes the server to be compromised
+  Vulnerability type: network sensitive information disclosure
+- Important sensitive information disclosure at one 7 Days Inn location leads to access to many management backends (2)
+  Vulnerability type: important sensitive information disclosure
+- SMS API account and password disclosure at a certain snack e-commerce site allows viewing all user verification-code SMS messages and phone numbers + changing all registered users' passwords + sending SMS at will
+  Vulnerability type: sensitive information disclosure
+- SVN source-code disclosure on a TOM subsite
+  Vulnerability type: sensitive information disclosure
+- A hitao system can cause data disclosure for ten million users
+  Vulnerability type: important sensitive information disclosure
+- A certain organization has a public-facing issue: full company address book disclosure
+  Vulnerability type: sensitive information disclosure
+- Zhonglu Fund Android client has account information disclosure
+  Vulnerability type: user sensitive data disclosure
+- A certain organization has a security vulnerability)
+  Vulnerability type: massive user-profile disclosure
+- A certain organization leaks tens of thousands of exam-admission-ticket records (photos, admission tickets, ID cards, employers)
+  Vulnerability type: sensitive information disclosure
+- Sensitive information disclosure on Suzhou Aerospace Information Network
+  Vulnerability type: sensitive information disclosure
+- Source-code disclosure on a 360shop subsite
+  Vulnerability type: sensitive information disclosure
+- OpenSSL vulnerability in a security vendor's ADS anti-DDOS system leads to information disclosure
+  Vulnerability type: network sensitive information disclosure
+
+## High-Frequency Payload Patterns
 ```
 ord=sa"/><commandText value="INSERT INTO Log ([Date]
 ```

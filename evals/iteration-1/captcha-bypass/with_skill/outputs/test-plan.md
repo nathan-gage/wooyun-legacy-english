@@ -1,302 +1,302 @@
-# 验证码机制安全测试方案
+# CAPTCHAmachine makeSecureTest Plan
 
-> 基于 WooYun 22,132 个真实漏洞案例方法论 | 认证领域 8,846 案例 + 逻辑流领域 1,679 案例
+> Based on the methodology from 22,132 real WooYun vulnerability cases | Authentication Domain 8,846 Case + Logic Flow Domain 1,679 Case
 
-## 一、背景与目标
+## 1. background sceneandTarget
 
-**当前防护现状：**
-- 登录页面：图形验证码
-- 注册页面：图形验证码
-- 短信验证码接口：图形验证码前置保护
+**when first defense protect current:**
+- Loginpage:Image CAPTCHA
+- Registrationpage:Image CAPTCHA
+- SMS Verification CodeInterface:Image CAPTCHAfirst set protect protect
 
-**测试目标：** 全面评估验证码机制的安全性，覆盖图形验证码本身、短信验证码、以及验证码与业务流程结合的所有潜在绕过方式。
+**Test Objective:** Comprehensiveassess assessCAPTCHAmachine makeofSecureness, cover coverImage CAPTCHAversion identity/SMS Verification Code/as involvingCAPTCHAandbusiness flow process result combineofAllinBypassmethod mode.
 
-**数据支撑：** WooYun 数据库中验证码/验证绕过共 384 个案例，44% 为高危。验证码绕过往往是攻击链的第一环——一旦突破，后续暴力破解、账户接管、批量注册等攻击随之而来。
+**Datasupport:** WooYun DatabaseinCAPTCHA/ValidateBypasstotal 384 Case, 44% asHigh Risk.CAPTCHA Bypass is attack attack linkofNo. one environment -- one, after continueBrute Force/Accountconnect manage/BatchRegistrationetc.attack attack of while come.
 
 ---
 
-## 二、WooYun 验证码绕过统计概览
+## 2. WooYun CAPTCHA BypassStatisticsapprox
 
-| 绕过类型 | WooYun 普遍性 | 风险等级 | 典型后果 |
+| Bypasstype | WooYun Prevalence | Risk Level | type after if |
 |---------|-------------|---------|---------|
-| 无服务器端验证 | 极高 | 严重 | 验证码形同虚设，直接暴力破解 |
-| 验证码可重用 | 极高 | 高 | 一次识别，无限使用 |
-| 短信验证码无速率限制 | 高 | 高 | 4-6 位数字可暴力枚举 |
-| 短信验证码无过期 | 高 | 高 | 旧验证码永久有效 |
-| 可 OCR/AI 识别 | 高 | 中 | 自动化绕过图形验证码 |
-| 客户端验证 | 中 | 高 | 绕过前端直接请求后端 |
-| 验证码与会话未绑定 | 中 | 高 | 跨会话/跨用户复用 |
-| 可预测验证码 | 中 | 严重 | 算法可逆，无需识别 |
-| 短信验证码跨用户共享 | 中 | 严重 | A 的验证码可用于 B 的账户 |
+| noServerendValidate | Critical | Severe | CAPTCHA same set, DirectBrute Force |
+| CAPTCHACanserioususe | Critical | High | onetimesIdentify, no limit useuse |
+| SMS Verification Codeno rate rate limit make | High | High | 4-6 characters number characterCanexpose powerEnumeration |
+| SMS Verification Codeno expired | High | High | oldCAPTCHA Valid |
+| Can OCR/AI Identify | High | in | self dynamic izeBypassImage CAPTCHA |
+| ClientValidate | in | High | BypassFrontendDirectRequestBackend |
+| CAPTCHAandSessionNot Bound | in | High | crossSession/crossUserrepeatuse |
+| PredictableCAPTCHA | in | Severe | algorithm methodCan, no need toIdentify |
+| SMS Verification CodecrossUsershared | in | Severe | A ofCAPTCHACanusefor B ofAccount |
 
-**WooYun 典型案例引用：**
+**WooYun typeCaseciteuse:**
 
-| 案例 | 漏洞类型 | 影响 |
+| Case | Vulnerability Type | impact response |
 |------|---------|------|
-| 爱卡汽车网某重要系统设计逻辑缺陷成功绕过验证码限制 | 验证码绕过 | 启用暴力破解，可遍历用户 |
-| 驴妈妈旅游网从验证码绕过再到任意酒店数据导出 | 验证码绕过 | 从验证码绕过升级到数据泄露 |
-| 上海航空员工个人信息泄露/密码重置（绕过短信验证） | 短信验证绕过 | 员工个人信息 + 内部文档泄露 |
-| 蜻蜓FM公众平台任意用户密码重置 | 验证码+重置绕过 | 任意用户密码重置 |
-| TCL统一身份认证平台漏洞，所有用户账号密码可重置 | 验证绕过链 | 跨 N+ 业务系统完整账户接管 |
+| card cart network some serious needSystemset plan logic logic missing flawSuccessBypassCAPTCHAlimit make | CAPTCHA Bypass | enableuseBrute Force, CanTraversalUser |
+| networkfromCAPTCHA BypassagaintoArbitrary DataExport | CAPTCHA Bypass | fromCAPTCHA Bypassescalate leveltoDataDisclosure |
+| above Empty toolPersonal InformationDisclosure/Password Reset(Bypassshort informationValidate) | short informationValidateBypass | toolPersonal Information + internal partDocumentDisclosure |
+| FMcompany PlatformArbitrary User Password Reset | CAPTCHA+serious setBypass | Arbitrary User Password Reset |
+| TCLsystem one identity copyAuthenticationPlatformvulnerability, AllUserAccountPasswordCanserious set | ValidateBypasslink | cross N+ businessSystemCompleteAccountconnect manage |
 
 ---
 
-## 三、测试范围与分类
+## 3. Test ScopeandCategory
 
-### 3.1 测试矩阵
+### 3.1 test matrix matrix
 
 ```
-验证码安全测试
-├── A. 图形验证码本体安全（7 项）
-├── B. 图形验证码服务端逻辑（6 项）
-├── C. 短信验证码安全（8 项）
-├── D. 验证码与业务流程结合（6 项）
-├── E. 多渠道一致性（4 项）
-└── F. 对抗自动化能力（4 项）
-     共计 35 项测试用例
+CAPTCHASecuretest
++-- A. Image CAPTCHAversion bodySecure(7 items)
++-- B. Image CAPTCHAServerlogic logic(6 items)
++-- C. SMS Verification CodeSecure(8 items)
++-- D. CAPTCHAandbusiness flow process result combine(6 items)
++-- E. many channel channel one cause ness(4 items)
++-- F. forResistance Toself dynamic ize can power(4 items)
+ total plan 35 itemsTest Case
 ```
 
 ---
 
-## 四、详细测试用例
+## 4. DetailedTest Case
 
-### A. 图形验证码本体安全
+### A. Image CAPTCHAversion bodySecure
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| A-1 | OCR/AI 可识别性 | 使用 Tesseract、ddddocr、商业打码平台（超级鹰等）对验证码批量识别，统计识别率 | 识别率 < 5% | 可 OCR 识别的验证码（字体简单，无干扰，无旋转） |
-| A-2 | 验证码复杂度 | 检查是否包含：扭曲变形、干扰线、噪点、字符粘连、背景混淆 | 至少包含 3 种以上干扰手段 | 同上 |
-| A-3 | 字符集充分性 | 分析验证码字符集范围（纯数字 / 数字+字母 / 含大小写） | 字符集 >= 数字+大小写字母，长度 >= 4 | 可预测验证码 |
-| A-4 | 验证码图片信息泄露 | 检查验证码图片 URL、HTTP 响应头、HTML 注释、隐藏字段中是否包含答案 | 答案不出现在任何客户端可见位置 | 令牌在 URL/响应中 |
-| A-5 | 验证码生成算法可预测性 | 连续请求 100+ 次验证码，分析是否存在规律（固定序列、时间戳种子、弱随机数） | 无可识别模式，使用 CSPRNG | 可预测验证码 |
-| A-6 | 语音验证码绕过 | 若提供语音验证码选项，使用语音转文本（Whisper 等）进行自动识别 | 语音验证码同样具有足够的干扰和噪音 | 语音验证码绕过 |
-| A-7 | 验证码图片缓存 | 检查验证码图片响应头中 Cache-Control、ETag 设置，是否可被 CDN/浏览器缓存复用 | 设置 no-cache, no-store, must-revalidate | — |
+| A-1 | OCR/AI CanIdentifyness | useuse Tesseract/ddddocr/commerce business break codePlatform(super level etc.)forCAPTCHABatchIdentify, StatisticsRecognition Rate | Recognition Rate < 5% | Can OCR IdentifyofCAPTCHA(character body simple single, no, no transfer) |
+| A-2 | CAPTCHArepeat degree | Checkwhetherinclude include: change /Interference Lines/Noise/character symbol continuous/background scene mix | at leastinclude include 3 typeor more mobile | same above |
+| A-3 | character symbol collect topup part ness | AnalyzeCAPTCHAcharacter symbol collectScope(number character / number character+character / include case) | character symbol collect >= number character+case character, long degree >= 4 | PredictableCAPTCHA |
+| A-4 | CAPTCHAimage imageInformation Disclosure | CheckCAPTCHAimage image URL/HTTP ResponseHeader/HTML inject /hidden hiddenFieldinwhetherinclude includeAnswer | Answernot out currentinanyClientCanseen characters set | command cardin URL/Responsein |
+| A-5 | CAPTCHAgenerate complete algorithm methodPredictableness | continuous continueRequest 100+ timesCAPTCHA, Analyzewhether existsscale law(Fixedsequence list/timestamp type sub/weak machine number) | noCanIdentifymode, useuse CSPRNG | PredictableCAPTCHA |
+| A-6 | CAPTCHA Bypass | provide provide CAPTCHAselectitems, useuse transfer text(Whisper etc.)advancelinesself dynamicIdentify | CAPTCHAsame tool has of and | CAPTCHA Bypass |
+| A-7 | CAPTCHAimage image exist | CheckCAPTCHAimage imageResponseHeaderin Cache-Control/ETag set set, whetherCanbe CDN/Browser exist repeatuse | set set no-cache, no-store, must-revalidate | - |
 
-### B. 图形验证码服务端逻辑
+### B. Image CAPTCHAServerlogic logic
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| B-1 | 删除验证码参数 | 使用 Burp 拦截登录/注册请求，完全删除 captcha 相关参数后提交 | 服务端返回错误，拒绝请求 | 无服务器端验证 |
-| B-2 | 提交空值验证码 | 将 captcha 参数设为空字符串 `""` 或 `null` 提交 | 服务端返回错误，不视为验证通过 | 无服务器端验证 |
-| B-3 | 验证码可重用 | 正确输入验证码完成一次请求后，使用相同的验证码值再次提交（不刷新验证码） | 第二次提交应失败，验证码一次性使用 | 可重用验证码 |
-| B-4 | 验证码与会话绑定 | 在会话 A 中获取验证码，在会话 B 中使用该验证码提交 | 跨会话验证码无效 | 验证码与会话未绑定 |
-| B-5 | 验证码大小写敏感性绕过 | 如果验证码含字母，测试大小写不同是否均可通过 | 行为一致（要么全部大小写敏感，要么全部不敏感），不可利用 | — |
-| B-6 | 验证码超时机制 | 获取验证码后等待 5 分钟、10 分钟、30 分钟再提交 | 超时（建议 5 分钟）后验证码失效 | 短信验证码无过期（同理适用于图形验证码） |
+| B-1 | DeleteCAPTCHAParameter | useuse Burp InterceptLogin/RegistrationRequest, complete allDelete captcha related keyParameterafterSubmit | ServerReturnerror, reject rejectRequest | noServerendValidate |
+| B-2 | SubmitEmptyvalueCAPTCHA | will captcha ParametersetasEmptycharacter symbol string `""` or `null` Submit | ServerReturnerror, not asValidatePass | noServerendValidate |
+| B-3 | CAPTCHACanserioususe | correct confirm output injectCAPTCHAcomplete onetimesRequestafter, useuserelated sameofCAPTCHAvalue againtimesSubmit(not New CAPTCHA) | No. twotimesSubmitshouldFailure, CAPTCHAonetimesness useuse | CanserioususeCAPTCHA |
+| B-4 | CAPTCHAandSessionBinding | inSession A inObtainCAPTCHA, inSession B inuseusethisCAPTCHASubmit | crossSessionCAPTCHAno valid | CAPTCHAandSessionNot Bound |
+| B-5 | CAPTCHACase SensitivityBypass | such asifCAPTCHAinclude character, test caseDifferentwhetheraverageCanPass | linesasone cause(need Allcase sensitive sensitive, need Allnot sensitive sensitive), notCanexploituse | - |
+| B-6 | CAPTCHAsuper time machine make | ObtainCAPTCHAafteretc.pending 5 minutes/10 minutes/30 minutesagainSubmit | super time(create protocol 5 minutes)afterCAPTCHAInvalidate | SMS Verification Codeno expired(same manage suitableuseforImage CAPTCHA) |
 
-### C. 短信验证码安全
+### C. SMS Verification CodeSecure
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| C-1 | 短信验证码暴力枚举 | 绕过图形验证码后（若 B-1/B-2/B-3 存在漏洞），对 4/6 位短信验证码进行暴力枚举（4 位 = 10,000 次，6 位 = 1,000,000 次） | 服务端在 5-10 次错误后锁定，或设置验证码尝试次数限制 | 短信验证码无速率限制 |
-| C-2 | 短信验证码有效期 | 发送短信验证码后，分别在 5 分钟、15 分钟、30 分钟、1 小时后尝试使用 | 验证码在 5 分钟内过期 | 短信验证码无过期 |
-| C-3 | 旧验证码有效性 | 请求发送新的短信验证码后，使用旧验证码进行验证 | 新验证码发送后，旧验证码立即失效 | 短信验证码无过期 |
-| C-4 | 短信验证码跨用户/跨手机号使用 | 将发送给手机号 A 的验证码，用于手机号 B 的验证请求 | 验证码与请求的手机号绑定，跨号使用无效 | 短信验证码跨用户共享 |
-| C-5 | 短信发送频率限制 | 连续快速请求发送短信验证码，测试是否有频率限制（每分钟/每小时/每天） | 同一手机号 60 秒内仅允许 1 次，每天上限 10 次 | 短信验证码无速率限制 |
-| C-6 | 短信轰炸 | 测试短信发送接口是否可被用于对任意手机号发送大量短信（短信炸弹） | 同一手机号频率限制 + 同一 IP 频率限制 | — |
-| C-7 | 短信验证码内容泄露 | 检查发送短信验证码的 API 响应中是否返回了验证码明文 | 响应中不包含验证码，仅返回"已发送"状态 | 令牌在 URL/响应中 |
-| C-8 | 短信验证码长度与复杂度 | 确认验证码位数（4 位 vs 6 位）和字符集（纯数字 vs 含字母） | 至少 6 位纯数字，推荐 6 位数字+字母混合 | 短信验证码无速率限制 |
+| C-1 | SMS Verification Codeexpose powerEnumeration | BypassImage CAPTCHAafter(B-1/B-2/B-3 existinvulnerability), for 4/6 charactersSMS Verification Codeadvancelinesexpose powerEnumeration(4 characters = 10,000 times, 6 characters = 1,000,000 times) | Serverin 5-10 timeserror after lock set, orset setCAPTCHAAttempttimesnumber limit make | SMS Verification Codeno rate rate limit make |
+| C-2 | SMS Verification CodeValidity Period | SendSMS Verification Codeafter, part levelin 5 minutes/15 minutes/30 minutes/1 hoursafterAttemptuseuse | CAPTCHAin 5 minutesinternal expired | SMS Verification Codeno expired |
+| C-3 | oldCAPTCHAValidness | RequestSendnewofSMS Verification Codeafter, useuseoldCAPTCHAadvancelinesValidate | New CAPTCHASendafter, oldCAPTCHAImmediately Invalidate | SMS Verification Codeno expired |
+| C-4 | SMS Verification CodecrossUser/crossmobile numberuseuse | willSendtomobile number A ofCAPTCHA, useformobile number B ofValidateRequest | CAPTCHAandRequestofmobile numberBinding, cross number useuseno valid | SMS Verification CodecrossUsershared |
+| C-5 | short informationSendRate Limit | continuous continue fast rateRequestSendSMS Verification Code, testwhether hasRate Limit(eachminutes/eachhours/eachdays) | Samemobile number 60 internal only allow allow 1 times, eachdaysabove limit 10 times | SMS Verification Codeno rate rate limit make |
+| C-6 | SMS Bombing | testSMS Sending InterfacewhetherCanbeusefor forArbitrarymobile numberSendlarge quantity short information(short information) | Samemobile numberRate Limit + Same IP Rate Limit | - |
+| C-7 | SMS Verification CodecontentDisclosure | CheckSendSMS Verification Codeof API ResponseinwhetherReturndoneCAPTCHAclear text | Responseinnot include includeCAPTCHA, onlyReturn"alreadySend"Status | command cardin URL/Responsein |
+| C-8 | SMS Verification Codelong degreeandrepeat degree | ConfirmCAPTCHAcharacters number(4 characters vs 6 characters)andcharacter symbol collect(number character vs include character) | at least 6 characters number character, infer 6 characters number character+character mix combine | SMS Verification Codeno rate rate limit make |
 
-### D. 验证码与业务流程结合（状态机测试）
+### D. CAPTCHAandbusiness flow process result combine(Statusmachine test)
 
-> WooYun 逻辑流领域 1,391 个状态机绕过案例表明：多步骤流程中验证码步骤常被跳过。
+> WooYun Logic Flow Domain 1,391 State-Machine BypassCasetable clear:manyStepflow processinCAPTCHAStepcommon be skip through.
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| D-1 | 跳过验证码步骤 | 登录流程中不调用验证码验证接口，直接提交登录请求到后端认证接口 | 后端强制校验验证码已通过，未校验则拒绝 | 状态机绕过（跳过步骤） |
-| D-2 | 密码重置流程中绕过验证 | 密码重置流程：请求重置 → 验证码/短信验证 → 设置新密码。直接请求"设置新密码"步骤的接口 | 服务端校验当前会话已通过验证步骤 | 密码重置步骤跳过（777 案例，88% 高危） |
-| D-3 | 注册流程中绕过验证 | 注册流程中跳过短信验证步骤，直接调用注册完成接口 | 后端强制要求短信验证已完成 | 注册流程状态机绕过 |
-| D-4 | 响应篡改绕过 | 拦截验证码校验的响应，将失败响应修改为成功响应（如 `{"success":false}` → `{"success":true}`，或 `{"code":400}` → `{"code":200}`） | 服务端基于自身会话状态判断，不受客户端响应篡改影响 | 响应操纵（密码重置中等普遍性） |
-| D-5 | 参数污染绕过 | 在请求中同时发送多个 captcha 参数（如 `captcha=wrong&captcha=`），测试服务端取值逻辑 | 服务端对参数污染有明确处理策略 | 设计缺陷 |
-| D-6 | 验证码步骤的竞态条件 | 并发发送多个请求：同时提交验证码验证 + 业务操作，测试是否存在 TOCTOU | 验证码消费操作具有原子性 | 竞态条件（266 案例，74.8% 高危） |
+| D-1 | skip throughCAPTCHAStep | Loginflow processinnotCallCAPTCHAValidateInterface, DirectSubmitLoginRequesttoBackendAuthenticationInterface | Backendstrong makeValidateCAPTCHAalreadyPass, notValidaterule reject reject | State-Machine Bypass(skip throughStep) |
+| D-2 | Password Resetflow processinBypassValidate | Password Resetflow process:Requestserious set -> CAPTCHA/short informationValidate -> Set New Password.DirectRequest"Set New Password"StepofInterface | ServerValidatewhen firstSessionalreadyPassValidateStep | Password ResetStepskip through(777 Case, 88% High Risk) |
+| D-3 | Registrationflow processinBypassValidate | Registrationflow processinskip through short informationValidateStep, Direct CallRegistrationcompleteInterface | Backendstrong make need require short informationValidateCompleted | Registrationflow processState-Machine Bypass |
+| D-4 | Responsetamper changeBypass | InterceptCAPTCHAValidateofResponse, willFailureResponseModifyasSuccessResponse(such as `{"success":false}` -> `{"success":true}`, or `{"code":400}` -> `{"code":200}`) | Serverbased on self identitySessionStatusdetermine judge, not affectedClientResponsetamper change impact response | Responseoperation manipulate(Password ResetMediumPrevalence) |
+| D-5 | Parameter PollutionBypass | inRequestinsame timeSendmany captcha Parameter(such as `captcha=wrong&captcha=`), testServertake value logic logic | ServerforParameter Pollutionhas clear confirm handle manage policy strategy | Design Flaw |
+| D-6 | CAPTCHAStepofRace Condition | ConcurrencySendmanyRequest:same timeSubmitCAPTCHAValidate + business operation, testwhether exists TOCTOU | CAPTCHAmessage fee operation tool hasAtomicity | Race Condition(266 Case, 74.8% High Risk) |
 
-### E. 多渠道一致性
+### E. many channel channel one cause ness
 
-> WooYun 数据表明：Web 端有验证码保护，但移动 API/H5/小程序端可能缺失。
+> WooYun Datatable clear:Web end hasCAPTCHAprotect protect, but move dynamic API/H5/small process sequence endCancanMissing.
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| E-1 | 移动端 API 验证码一致性 | 抓取移动 App 的登录/注册 API，检查是否同样要求验证码 | 所有客户端入口均强制验证码 | 多渠道不一致 |
-| E-2 | H5/小程序端一致性 | 测试 H5 页面和微信小程序的登录/注册是否有验证码保护 | 同上 | 多渠道不一致 |
-| E-3 | 旧版 API 兼容接口 | 探测是否存在 v1/v2 等旧版 API 接口，旧版本是否缺少验证码校验 | 旧版 API 已下线或同样强制验证码 | 设计缺陷（隐式授权） |
-| E-4 | 直接调用内部接口 | 尝试绕过网关/BFF 层，直接调用底层微服务的认证接口 | 内部接口不对外暴露，或同样有安全校验 | 内部 vs 外部信任边界 |
+| E-1 | Mobile Client API CAPTCHAone cause ness | capture take move dynamic App ofLogin/Registration API, Checkwhethersame need requireCAPTCHA | AllClientinject interface average strong makeCAPTCHA | many channel channel not one cause |
+| E-2 | H5/small process sequence end one cause ness | test H5 pageandWeChatsmall process sequenceofLogin/Registrationwhether hasCAPTCHAprotect protect | same above | many channel channel not one cause |
+| E-3 | old version API contentInterface | probe testwhether exists v1/v2 etc.old version API Interface, old version versionwhethermissing lessCAPTCHAValidate | old version API already under lineorsame strong makeCAPTCHA | Design Flaw(hidden modeAuthorization) |
+| E-4 | Direct Callinternal partInterface | AttemptBypassGateway/BFF layer, Direct Call layer micro serviceofAuthenticationInterface | internal partInterfacenot for external expose exposure, orsame hasSecureValidate | internal part vs external partTrust Boundary |
 
-### F. 对抗自动化能力
+### F. forResistance Toself dynamic ize can power
 
-| 编号 | 测试项 | 测试方法 | 预期安全行为 | WooYun 模式 |
+| ID | Test Item | Test Method | expected periodSecurelinesas | WooYun mode |
 |------|-------|---------|------------|------------|
-| F-1 | IP 限流绕过 | 使用 `X-Forwarded-For`、`X-Real-IP`、`X-Originating-IP` 等头伪造来源 IP，测试是否可绕过 IP 维度的限流 | 服务端基于真实客户端 IP 限流，不信任可伪造的请求头 | IP 轮换（X-Forwarded-For 头操纵） |
-| F-2 | User-Agent/Cookie 轮换绕过 | 每次请求更换 User-Agent 和清除 Cookie，测试是否可重置限流计数器 | 限流基于多维度（IP + 账号 + 设备指纹），不可单维度绕过 | 通过分布式请求绕过速率限制 |
-| F-3 | 账号维度限流 | 对同一账号从多个 IP 发起登录尝试，测试是否有账号维度的限制 | 同一账号无论来源 IP，累计失败 N 次后锁定 | 凭证填充攻击 |
-| F-4 | 验证码升级机制 | 连续多次失败后，验证码难度是否提升（如从图形验证码升级到滑动验证/行为验证） | 存在渐进式安全升级策略 | — |
+| F-1 | IP Rate LimitingBypass | useuse `X-Forwarded-For`/`X-Real-IP`/`X-Originating-IP` etc.Headerforgery come source IP, testwhetherCanBypass IP DimensionofRate Limiting | Serverbased on real realClient IP Rate Limiting, not information anyCanforgeryofRequestHeader | IP rotate change(X-Forwarded-For Headeroperation manipulate) |
+| F-2 | User-Agent/Cookie rotate changeBypass | eachtimesRequestupdate change User-Agent andclear remove Cookie, testwhetherCanserious setRate Limitingplan number device | Rate Limitingbased on manyDimension(IP + Account + set prepare specified pattern), notCansingleDimensionBypass | Passpart deploy modeRequestBypassrate rate limit make |
+| F-3 | AccountDimensionRate Limiting | forSameAccountfrommany IP initiate initiateLoginAttempt, testwhether hasAccountDimensionoflimit make | SameAccountno comment come source IP, planFailure N timesafter lock set | Credential topup attack attack |
+| F-4 | CAPTCHAescalate level machine make | continuous continue manytimesFailureafter, CAPTCHA degreewhetherprovide escalate(such asfromImage CAPTCHAescalate levelto dynamicValidate/linesasValidate) | existin advance modeSecureescalate level policy strategy | - |
 
 ---
 
-## 五、测试优先级排序
+## 5. Test Priority Ranking
 
-基于 WooYun 数据中的攻击频率和影响严重性排序：
+based on WooYun Datainofattack attack frequency rateandimpact responseSevereness rank sequence:
 
-### P0 — 必须立即测试（可直接导致账户接管/批量攻击）
+### P0 - muststandalone that is test(directly usableCausingAccountconnect manage/Batchattack attack)
 
-| 优先级 | 测试编号 | 测试项 | 理由 |
+| Priority | Test ID | Test Item | Reason |
 |--------|---------|-------|------|
-| P0-1 | B-1 | 删除验证码参数 | WooYun 中最常见的绕过方式，极高普遍性 |
-| P0-2 | B-3 | 验证码可重用 | 极高普遍性，一次识别无限使用 |
-| P0-3 | D-1 | 跳过验证码步骤 | 状态机绕过，1,391 案例 |
-| P0-4 | D-2 | 密码重置流程绕过 | 88% 高危，最高严重性子域 |
-| P0-5 | C-7 | 短信验证码内容泄露 | 直接泄露 = 零成本绕过 |
-| P0-6 | C-4 | 短信验证码跨用户使用 | 直接导致任意账户接管 |
+| P0-1 | B-1 | DeleteCAPTCHAParameter | WooYun inmost common seenofBypassmethod mode, CriticalPrevalence |
+| P0-2 | B-3 | CAPTCHACanserioususe | CriticalPrevalence, onetimesIdentifyno limit useuse |
+| P0-3 | D-1 | skip throughCAPTCHAStep | State-Machine Bypass, 1,391 Case |
+| P0-4 | D-2 | Password ResetFlow Bypass | 88% High Risk, mostHighSevereness sub domain |
+| P0-5 | C-7 | SMS Verification CodecontentDisclosure | DirectDisclosure = zero complete versionBypass |
+| P0-6 | C-4 | SMS Verification CodecrossUseruseuse | DirectCausingArbitraryAccountconnect manage |
 
-### P1 — 高优先级（可显著降低攻击成本）
+### P1 - HighPriority(Candisplay Lowattack attack complete version)
 
-| 优先级 | 测试编号 | 测试项 | 理由 |
+| Priority | Test ID | Test Item | Reason |
 |--------|---------|-------|------|
-| P1-1 | C-1 | 短信验证码暴力枚举 | 4 位数字仅 10,000 种可能 |
-| P1-2 | C-2/C-3 | 短信验证码有效期 | 无过期 = 扩大攻击时间窗口 |
-| P1-3 | B-2 | 空值验证码 | 变体绕过，常被遗漏 |
-| P1-4 | E-1/E-2 | 多渠道一致性 | 移动端/H5 常缺少验证码 |
-| P1-5 | F-1 | IP 限流绕过 | X-Forwarded-For 伪造极为常见 |
-| P1-6 | D-4 | 响应篡改 | 客户端验证可被绕过 |
+| P1-1 | C-1 | SMS Verification Codeexpose powerEnumeration | 4 characters number character only 10,000 typeCancan |
+| P1-2 | C-2/C-3 | SMS Verification CodeValidity Period | no expired = large attack attackTime Window |
+| P1-3 | B-2 | EmptyvalueCAPTCHA | variantBypass, common be leak |
+| P1-4 | E-1/E-2 | many channel channel one cause ness | Mobile Client/H5 common missing lessCAPTCHA |
+| P1-5 | F-1 | IP Rate LimitingBypass | X-Forwarded-For forgery extremeascommon seen |
+| P1-6 | D-4 | Responsetamper change | ClientValidateCanbeBypass |
 
-### P2 — 中优先级（提升自动化攻击效率）
+### P2 - inPriority(provide escalate self dynamic ize attack attack valid rate)
 
-| 优先级 | 测试编号 | 测试项 | 理由 |
+| Priority | Test ID | Test Item | Reason |
 |--------|---------|-------|------|
-| P2-1 | A-1 | OCR/AI 识别率 | AI 打码成本持续降低 |
-| P2-2 | A-4 | 图片信息泄露 | 低概率但高影响 |
-| P2-3 | A-5 | 算法可预测性 | 弱随机数导致验证码可预测 |
-| P2-4 | C-5/C-6 | 短信发送频率/短信炸弹 | 资源滥用 + 用户骚扰 |
-| P2-5 | D-6 | 竞态条件 | 并发绕过验证码消费 |
+| P2-1 | A-1 | OCR/AI Recognition Rate | AI break code complete version hold continue Low |
+| P2-2 | A-4 | image imageInformation Disclosure | Lowapprox rate butHighimpact response |
+| P2-3 | A-5 | algorithm methodPredictableness | weak machine numberCausingCAPTCHAPredictable |
+| P2-4 | C-5/C-6 | short informationSendfrequency rate/short information | resource source abuseuse + User |
+| P2-5 | D-6 | Race Condition | ConcurrencyBypassCAPTCHAmessage fee |
 
-### P3 — 低优先级（加固项）
+### P3 - LowPriority(Hardeningitems)
 
-| 优先级 | 测试编号 | 测试项 |
+| Priority | Test ID | Test Item |
 |--------|---------|-------|
-| P3-1 | A-2/A-3 | 验证码复杂度/字符集 |
-| P3-2 | A-7 | 缓存问题 |
-| P3-3 | B-5 | 大小写敏感性 |
-| P3-4 | B-6 | 图形验证码超时 |
-| P3-5 | F-4 | 验证码升级机制 |
+| P3-1 | A-2/A-3 | CAPTCHArepeat degree/character symbol collect |
+| P3-2 | A-7 | exist ask problem |
+| P3-3 | B-5 | Case Sensitivity |
+| P3-4 | B-6 | Image CAPTCHAsuper time |
+| P3-5 | F-4 | CAPTCHAescalate level machine make |
 
 ---
 
-## 六、测试工具清单
+## 6. testToolclear single
 
-| 工具 | 用途 | 测试编号 |
+| Tool | Purpose | Test ID |
 |------|------|---------|
-| Burp Suite Professional | 请求拦截、参数篡改、Intruder 暴力破解 | 全部 |
-| Burp Turbo Intruder | 高并发竞态条件测试 | D-6 |
-| ddddocr / Tesseract / PaddleOCR | 图形验证码 OCR 识别率测试 | A-1 |
-| 超级鹰/打码平台 API | 商业打码成功率基准测试 | A-1 |
-| Python + requests/aiohttp | 自动化测试脚本编写 | B-1 ~ B-6, C-1 ~ C-8 |
-| mitmproxy | 移动端/H5 流量抓取 | E-1, E-2 |
-| Frida / objection | 移动 App 动态分析，绕过 SSL Pinning | E-1 |
-| Postman / curl | 接口级验证码逻辑测试 | D-1 ~ D-5, E-3, E-4 |
+| Burp Suite Professional | Request Interception/Parametertamper change/Intruder Brute Force | All |
+| Burp Turbo Intruder | HighConcurrencyRace Conditiontest | D-6 |
+| ddddocr / Tesseract / PaddleOCR | Image CAPTCHA OCR Recognition Ratetest | A-1 |
+| super level /break codePlatform API | commerce business break codeSuccessrate base accurate test | A-1 |
+| Python + requests/aiohttp | self dynamic ize testScriptcompile write | B-1 ~ B-6, C-1 ~ C-8 |
+| mitmproxy | Mobile Client/H5 flow quantity capture take | E-1, E-2 |
+| Frida / objection | move dynamic App dynamic stateAnalyze, Bypass SSL Pinning | E-1 |
+| Postman / curl | InterfacelevelCAPTCHAlogic logic test | D-1 ~ D-5, E-3, E-4 |
 
 ---
 
-## 七、测试执行流程
+## 7. testExecuteflow process
 
 ```
-第 1 天：侦察与映射
-├── 1. 抓取所有包含验证码的接口（登录、注册、密码重置、短信发送）
-├── 2. 记录每个接口的请求/响应格式、参数名称
-├── 3. 识别验证码类型（图形/滑动/行为/短信）和实现方式
-└── 4. 映射完整业务流程状态机
+No. 1 days: andmap map
++-- 1. capture takeAllinclude includeCAPTCHAofInterface(Login/Registration/Password Reset/short informationSend)
++-- 2. RecordEachInterfaceofRequest/Responseformat mode/Parametername name
++-- 3. IdentifyCAPTCHAtype(image / dynamic/linesas/short information)andreal current method mode
++-- 4. map mapCompletebusiness flow processStatusmachine
 
-第 2 天：P0 测试（服务端逻辑 + 状态机）
-├── 5. 执行 B-1, B-2, B-3（删除/空值/重用）— 图形验证码逻辑
-├── 6. 执行 C-7, C-4（短信验证码泄露/跨用户使用）
-├── 7. 执行 D-1, D-2, D-3（流程跳过测试）
-└── 8. 发现 P0 漏洞立即记录并通报
+No. 2 days:P0 test(Serverlogic logic + Statusmachine)
++-- 5. Execute B-1, B-2, B-3(Delete/Emptyvalue/serioususe) - Image CAPTCHAlogic logic
++-- 6. Execute C-7, C-4(SMS Verification CodeDisclosure/crossUseruseuse)
++-- 7. Execute D-1, D-2, D-3(flow process skip through test)
++-- 8. Discover P0 vulnerability standalone that isRecordand wild report
 
-第 3 天：P1 测试（速率限制 + 多渠道）
-├── 9. 执行 C-1, C-2, C-3（暴力枚举/有效期）
-├── 10. 执行 E-1, E-2, E-3（多渠道一致性）
-├── 11. 执行 F-1, F-2, F-3（限流绕过）
-└── 12. 执行 D-4, D-5（响应篡改/参数污染）
+No. 3 days:P1 test(rate rate limit make + many channel channel)
++-- 9. Execute C-1, C-2, C-3(expose powerEnumeration/Validity Period)
++-- 10. Execute E-1, E-2, E-3(many channel channel one cause ness)
++-- 11. Execute F-1, F-2, F-3(Rate LimitingBypass)
++-- 12. Execute D-4, D-5(Responsetamper change/Parameter Pollution)
 
-第 4 天：P2 + P3 测试（对抗能力 + 加固）
-├── 13. 执行 A-1 ~ A-7（图形验证码本体安全）
-├── 14. 执行 C-5, C-6, C-8（短信频率/炸弹/长度）
-├── 15. 执行 D-6（竞态条件）
-└── 16. 执行 F-4 + 所有 P3 项目
+No. 4 days:P2 + P3 test(forResistance Tocan power + Hardening)
++-- 13. Execute A-1 ~ A-7(Image CAPTCHAversion bodySecure)
++-- 14. Execute C-5, C-6, C-8(short information frequency rate/ /long degree)
++-- 15. Execute D-6(Race Condition)
++-- 16. Execute F-4 + All P3 itemsdirectory
 
-第 5 天：报告输出
-├── 17. 汇总所有发现，按严重性排序
-├── 18. 编写重现步骤（含请求/响应截图）
-├── 19. 提出修复建议
-└── 20. 交付测试报告
-```
-
----
-
-## 八、发现报告模板
-
-每个发现应按以下结构记录：
-
-```
-## 发现：[标题]
-- 严重级别：严重 / 高 / 中 / 低
-- 测试编号：[对应编号]
-- WooYun 模式：[匹配的历史模式]
-- 业务影响：[账户接管 / 暴力破解 / 批量注册 / 短信炸弹 / ...]
-- 影响范围：[受影响的接口和用户量]
-- 重现步骤：
-  1. [使用 Burp 拦截 POST /api/login 请求]
-  2. [删除 captcha_code 参数]
-  3. [提交请求，观察响应为 200 OK，登录成功]
-- 请求/响应证据：[截图或原文]
-- 修复建议：[具体的服务端修复方案]
+No. 5 days:report output out
++-- 17. remit totalAllDiscover, bySevereness rank sequence
++-- 18. compile writeReproduction Steps(includeRequest/Responseintercept image)
++-- 19. provide outRemediation Recommendation
++-- 20. transaction pay test report
 ```
 
 ---
 
-## 九、修复建议框架（基于 WooYun 修复数据）
+## 8. Discoverreport model template
 
-### 图形验证码
+EachDiscovershouldbythe followingresult structureRecord:
 
-| 问题 | 修复方案 |
+```
+## Discover:[identifier problem]
+- Severity:Severe / High / in / Low
+- Test ID:[forshouldID]
+- WooYun mode:[match configofhistory history mode]
+- Business Impact:[Accountconnect manage / Brute Force / BatchRegistration / short information /...]
+- Impact Scope:[affected impact responseofInterfaceandUserquantity]
+- Reproduction Steps:
+ 1. [useuse Burp Intercept POST /api/login Request]
+ 2. [Delete captcha_code Parameter]
+ 3. [SubmitRequest, ObserveResponseas 200 OK, LoginSuccess]
+- Request/ResponseEvidence:[intercept imageorprinciple text]
+- Remediation Recommendation:[ConcreteofServerfix repeat method plan]
+```
+
+---
+
+## 9. Remediation Recommendationframework architecture(based on WooYun fix repeatData)
+
+### Image CAPTCHA
+
+| ask problem | fix repeat method plan |
 |------|---------|
-| OCR 可识别 | 升级为行为验证码（滑动拼图、点选文字），或使用 reCAPTCHA / hCaptcha / 极验 |
-| 无服务端校验 | 后端必须强制校验验证码，不可依赖前端 |
-| 可重用 | 验证码使用后立即作废，无论验证成功或失败 |
-| 与会话未绑定 | 验证码答案与 Session ID 绑定存储在 Redis，跨会话无效 |
-| 无超时 | 设置 5 分钟有效期，过期自动失效 |
+| OCR CanIdentify | escalate levelaslinesasCAPTCHA(dynamic image/point select text character), oruseuse reCAPTCHA / hCaptcha / extreme validate |
+| noServerValidate | Backendmuststrong makeValidateCAPTCHA, notCandepend relyFrontend |
+| Canserioususe | CAPTCHAuseuseafter standalone that is operation, no commentValidateSuccessorFailure |
+| andSessionNot Bound | CAPTCHAAnswerand Session ID BindingStoragein Redis, crossSessionno valid |
+| no super time | set set 5 minutesValidity Period, expired self dynamicInvalidate |
 
-### 短信验证码
+### SMS Verification Code
 
-| 问题 | 修复方案 |
+| ask problem | fix repeat method plan |
 |------|---------|
-| 可暴力枚举 | 同一手机号验证码校验失败 5 次后锁定 30 分钟；验证码长度 >= 6 位 |
-| 无过期 | 有效期 5 分钟；新码发送后旧码立即失效 |
-| 跨用户使用 | 验证码与手机号 + 业务场景（登录/注册/重置）绑定 |
-| 发送频率无限制 | 同一手机号 60 秒间隔限制 + 每天上限 10 条；同一 IP 每小时上限 20 条 |
-| 明文返回 | API 响应中仅返回发送状态，绝不返回验证码内容 |
+| Canexpose powerEnumeration | Samemobile numberCAPTCHAValidateFailure 5 timesafter lock set 30 minutes;CAPTCHAlong degree >= 6 characters |
+| no expired | Validity Period 5 minutes;new codeSendafterOld CodeImmediately Invalidate |
+| crossUseruseuse | CAPTCHAandmobile number + business scenario scene(Login/Registration/serious set)Binding |
+| Sendfrequency rate no limit make | Samemobile number 60 between isolate limit make + eachdaysabove limit 10 condition;Same IP eachhoursabove limit 20 condition |
+| clear textReturn | API ResponseinonlyReturnSendStatus, reject notReturnCAPTCHAcontent |
 
-### 架构层
+### architecture structure layer
 
-| 问题 | 修复方案 |
+| ask problem | fix repeat method plan |
 |------|---------|
-| 状态机绕过 | 服务端维护显式状态机，每步操作校验前置状态是否已完成 |
-| 多渠道不一致 | 所有客户端（Web/App/H5/小程序）统一走同一验证码校验网关 |
-| IP 限流可绕过 | 基于真实客户端 IP（从反向代理获取），不信任 X-Forwarded-For |
-| 无监控告警 | 监控验证码失败率激增、同 IP 大量请求、短信发送异常等指标 |
+| State-Machine Bypass | Servermaintain protect display modeStatusmachine, each step operationValidatefirst setStatuswhetherCompleted |
+| many channel channel not one cause | AllClient(Web/App/H5/small process sequence)system one SameCAPTCHAValidateGateway |
+| IP Rate LimitingCanBypass | based on real realClient IP(fromreverse toward code manageObtain), not information any X-Forwarded-For |
+| no monitor control report alert | monitor controlCAPTCHAFailurerate increase/same IP large quantityRequest/short informationSendabnormal commonetc.specified identifier |
 
 ---
 
-## 十、附录：WooYun 数据统计
+## 10. Appendix:WooYun DataStatistics
 
-**验证码相关漏洞在 WooYun 数据库中的分布：**
+**CAPTCHArelated key vulnerabilityin WooYun Databaseinofpart deploy:**
 
-- **身份认证领域总案例：** 8,846（占全库 40%）
-- **验证码/验证绕过专项：** 384 案例，44% 高危
-- **密码重置（含验证绕过）：** 777 案例，88% 高危 — 全库最高危子域
-- **弱凭证（验证码绕过后可利用）：** 7,513 案例，58.2% 高危
-- **状态机绕过（含验证步骤跳过）：** 1,391 案例，65.3% 高危
-- **竞态条件：** 266 案例，74.8% 高危
+- **identity copyAuthentication DomaintotalCase:** 8,846(share all library 40%)
+- **CAPTCHA/ValidateBypassspecialitems:** 384 Case, 44% High Risk
+- **Password Reset(includeValidateBypass):** 777 Case, 88% High Risk - all library mostHigh Risksub domain
+- **weakCredential(CAPTCHA BypassafterCanexploituse):** 7,513 Case, 58.2% High Risk
+- **State-Machine Bypass(includeValidateStepskip through):** 1,391 Case, 65.3% High Risk
+- **Race Condition:** 266 Case, 74.8% High Risk
 
-**核心结论：** 验证码不是一个独立的安全组件，而是认证链中的一环。WooYun 数据反复证明：验证码绕过很少是最终目标，它几乎总是通向更严重漏洞（账户接管、批量注册、暴力破解、数据泄露）的跳板。因此，测试验证码安全性必须将其放在完整业务流程中评估，而非孤立地只看"图形验证码能不能识别"。
+**audit core result comment:** CAPTCHAnot is one independent standaloneofSecurearray item, while isAuthenticationlinkinofone environment.WooYun Datareverse repeat cert clear:CAPTCHA Bypass less is most finalTarget, total is wild toward updateSeverevulnerability(Accountconnect manage/BatchRegistration/Brute Force/DataDisclosure)ofskip template.because, testCAPTCHASecurenessmustwillother releaseinCompletebusiness flow processinassess assess, whileNon- standalone only "Image CAPTCHAcancannotIdentify".
 
 ---
 
-*本方案基于 WooYun 业务逻辑漏洞方法论（22,132 案例）生成，测试用例覆盖认证领域 9 种验证码绕过模式 + 逻辑流领域状态机绕过 + 竞态条件，共计 35 项测试。*
+*version method plan based on WooYun Business Logic Vulnerability Methodology(22,132 Case)generate complete, Test Casecover coverAuthentication Domain 9 typeCAPTCHA Bypassmode + Logic Flow DomainState-Machine Bypass + Race Condition, total plan 35 itemstest.*

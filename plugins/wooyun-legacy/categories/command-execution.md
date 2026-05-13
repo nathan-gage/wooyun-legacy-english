@@ -1,60 +1,60 @@
-# COMMAND-EXECUTION 漏洞分析
+# COMMAND-EXECUTION Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 16
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 16
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  from: 1次
-  param: 1次
-```
-
-
-### 攻击模式分布
-```
-  执行: 11次
-  getshell: 3次
-  泄露: 2次
+  from: 1 occurrence
+  param: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  execution: 11 occurrences
+  getshell: 3 occurrences
+  disclosure: 2 occurrences
+```
 
-- 某知名WebGame官网存在命令执行漏洞
-  漏洞类型：命令执行
-- 某单位存在安全漏洞某系统补丁不及时导致命令执行/涉及46个源码
-  漏洞类型：命令执行
-- 某单位存在安全漏洞安全之某股份制银行某重要业务多个站点命令执行漏洞
-  漏洞类型：命令执行
-- 某单位存在安全漏洞沦陷#app替换#数据库泄露
-  漏洞类型：命令执行
-- 某省消防系统命令执行导致getshell
-  漏洞类型：命令执行
-- 宜搜科技某站点存在命令执行漏洞导致Getshell（root权限影响内网/数据库信息泄露）
-  漏洞类型：命令执行
-- 某单位存在安全漏洞SAP系统远程代码执行
-  漏洞类型：命令执行
-- 河南省两市新生儿管理系统（涉及近百万新生儿信息/大量个人出生各种详细信息/多种历史信息）
-  漏洞类型：命令执行
-- 某CDN节点服务器存在命令执行可进服务器
-  漏洞类型：命令执行
-- 某省食品行业监督管理系统命令执行
-  漏洞类型：命令执行
-- 百合网命令执行漏洞
-  漏洞类型：命令执行
-- 某单位存在安全漏洞命令执行
-  漏洞类型：命令执行
-- 浙江省某市公共资源交易中心存在struts2漏洞，getshell
-  漏洞类型：命令执行
-- 某单位存在安全漏洞struts2漏洞(可getshell)
-  漏洞类型：命令执行
-- 某单位存在安全漏洞网站存在Struts2漏洞
-  漏洞类型：命令执行
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Command execution vulnerability on the official site of a well-known WebGame
+  Vulnerability type: command execution
+- A certain organization's system has command execution due to delayed patching / involves 46 source-code packages
+  Vulnerability type: command execution
+- Security issue: command execution vulnerabilities across multiple important business sites of a joint-stock bank
+  Vulnerability type: command execution
+- A certain organization compromised #app replacement #database disclosure
+  Vulnerability type: command execution
+- Command execution in a provincial fire-control system leads to getshell
+  Vulnerability type: command execution
+- Command execution vulnerability on a Yisou Technology site leads to getshell (root privileges affect intranet / database information disclosure)
+  Vulnerability type: command execution
+- Remote code execution in a certain organization's SAP system
+  Vulnerability type: command execution
+- Newborn management systems in two Henan cities (involving nearly one million newborn records / large amounts of detailed personal birth information / multiple types of historical information)
+  Vulnerability type: command execution
+- Command execution on a CDN node server allows server access
+  Vulnerability type: command execution
+- Command execution in a provincial food-industry supervision and management system
+  Vulnerability type: command execution
+- Command execution vulnerability on Baihe.com
+  Vulnerability type: command execution
+- Command execution at a certain organization
+  Vulnerability type: command execution
+- Struts2 vulnerability in a public resources trading center in a Zhejiang city, getshell
+  Vulnerability type: command execution
+- A certain organization has a Struts2 vulnerability (getshell possible)
+  Vulnerability type: command execution
+- A certain organization's website has a Struts2 vulnerability
+  Vulnerability type: command execution
+
+## High-Frequency Payload Patterns
 ```
 ork.MethodAccessor.denyMethodExecution"]%3d+new+java
 ```

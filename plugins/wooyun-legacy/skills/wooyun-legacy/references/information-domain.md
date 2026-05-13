@@ -1,125 +1,125 @@
-# 信息泄露领域
+# Information Disclosure Domain
 
-## 概述
+## Overview
 
-信息泄露是催化剂。6,446 个 WooYun 案例证明：暴露的信息能够启动所有其他攻击类型——泄露的凭据导致账户接管，泄露的架构导致精准利用。
+Information disclosure is an accelerant. 6,446 WooYun cases prove that exposed information can start every other attack type: leaked credentials lead to account takeover, and leaked architecture enables precise exploitation.
 
-**核心原则：** 应用程序暴露的任何超出用户需求的信息都是漏洞。调试信息、堆栈跟踪、内部 IP、API 密钥、源代码——每一项都是攻击面倍增器。
+**Core principle:** Any information an application exposes beyond what the user needs is a vulnerability. Debug information, stack traces, internal IPs, API keys, source code: each one multiplies attack surface.
 
-## 攻击模式矩阵
+## Attack-Pattern Matrix
 
-### 源代码/配置泄露（4,858 个案例，64.7% 高危）
+### Source Code / Configuration Leakage (4,858 cases, 64.7% high severity)
 
-**系统性发现检查清单：**
+**Systematic discovery checklist:**
 
 ```
-1. 版本控制泄露
-   - [ ] /.git/config → 通过 GitHack/git-dumper 克隆
-   - [ ] /.svn/entries → SVN 仓库暴露
-   - [ ] /.hg/ → Mercurial 仓库
-   - [ ] /.bzr/ → Bazaar 仓库
-   - [ ] /CVS/Root → CVS 仓库
+1. Version-control leakage
+   - [ ] /.git/config -> clone through GitHack/git-dumper
+   - [ ] /.svn/entries -> SVN repository exposed
+   - [ ] /.hg/ -> Mercurial repository
+   - [ ] /.bzr/ -> Bazaar repository
+   - [ ] /CVS/Root -> CVS repository
 
-2. 备份文件
+2. Backup files
    - [ ] /backup.zip, /backup.tar.gz, /backup.sql
    - [ ] /db.sql, /database.sql, /dump.sql
    - [ ] /web.rar, /www.zip, /site.tar.gz
-   - [ ] /[域名].zip, /[域名].sql
+   - [ ] /[domain].zip, /[domain].sql
    - [ ] /*.bak, /*.old, /*.orig, /*.swp
    - [ ] /WEB-INF/web.xml (Java)
    - [ ] /config.php.bak, /settings.py.bak
 
-3. 调试/测试端点
+3. Debug/test endpoints
    - [ ] ?debug=true, ?debug=1, ?test=1
    - [ ] /debug, /test, /phpinfo.php
    - [ ] /actuator (Spring Boot), /metrics, /health, /env
    - [ ] /trace, /dump, /heapdump
-   - [ ] /__debug__/ (Django 调试工具栏)
-   - [ ] /console (Rails 控制台, H2 控制台)
+   - [ ] /__debug__/ (Django Debug Toolbar)
+   - [ ] /console (Rails console, H2 console)
    - [ ] /swagger-ui.html, /api-docs, /openapi.json
 
-4. 错误信息
-   - [ ] 触发 500 错误 → 包含文件路径的堆栈跟踪
-   - [ ] 无效输入 → 包含查询结构的数据库错误
-   - [ ] 缺少参数 → 包含类名的框架错误
-   - [ ] 404 响应头中暴露服务器版本
+4. Error information
+   - [ ] Trigger 500 error -> stack trace containing file paths
+   - [ ] Invalid input -> database error containing query structure
+   - [ ] Missing parameter -> framework error containing class names
+   - [ ] Server version exposed in 404 response headers
 ```
 
-### 敏感数据泄露（1,588 个案例，62.8% 高危）
+### Sensitive Data Leakage (1,588 cases, 62.8% high severity)
 
-**个人信息泄露模式：**
+**Personal information leakage patterns:**
 
-| 泄露向量 | 泄露内容 | 测试方法 |
-|---------|---------|---------|
-| API 过度获取 | 完整用户对象（密码哈希、邮箱、电话、ID） | 对比 API 响应与 UI 显示 |
-| 日志文件可访问 | 用户活动、查询、凭据 | /logs/, /log/, /access.log |
-| 错误信息 | 数据库结构、文件路径、内部 IP | 通过畸形输入触发错误 |
-| 客户端存储 | localStorage/sessionStorage 中的令牌、个人信息 | 浏览器开发者工具检查 |
-| URL 参数 | Referer 头中的会话令牌、用户 ID | 检查 GET 参数中是否有敏感数据 |
-| 缓存响应 | CDN/代理缓存中的其他用户数据 | Cache-Control 头测试 |
-| 导出功能 | 未授权的批量数据导出 | 测试 /export、/download、/report 端点 |
+| Leakage vector | Leaked contents | Test method |
+|----------------|-----------------|-------------|
+| API overfetching | Full user object (password hash, email, phone, ID) | Compare API response with UI display |
+| Accessible log files | User activity, queries, credentials | /logs/, /log/, /access.log |
+| Error information | Database structure, file paths, internal IPs | Trigger errors with malformed input |
+| Client-side storage | Tokens and personal information in localStorage/sessionStorage | Inspect browser developer tools |
+| URL parameters | Session tokens and user IDs in Referer header | Check GET parameters for sensitive data |
+| Cached responses | Other users' data in CDN/proxy cache | Test Cache-Control headers |
+| Export features | Unauthorized bulk data export | Test /export, /download, /report endpoints |
 
-**关键发现指标：**
-- API 响应字段数 > UI 可见字段数
-- 生产环境中的详细错误消息
-- 暴露版本的服务器头（X-Powered-By、Server）
-- HTML/JS 中暴露内部信息的注释
-- 客户端 JavaScript 中的凭据
+**Key finding indicators:**
+- API response field count > UI-visible field count
+- Detailed error messages in production
+- Server headers exposing versions (`X-Powered-By`, `Server`)
+- HTML/JS comments exposing internal information
+- Credentials in client-side JavaScript
 
-### 目录/文件枚举
+### Directory/File Enumeration
 
-**高收益路径（来自 WooYun 统计）：**
+**High-yield paths (from WooYun statistics):**
 
 ```
-# 管理
+# Management
 /admin/            /manage/           /backend/
 /administrator/    /system/           /console/
 
-# 配置
+# Configuration
 /config/           /conf/             /settings/
 /.env              /wp-config.php     /application.yml
 
-# 数据
+# Data
 /upload/           /uploads/          /files/
 /data/             /export/           /tmp/
 
-# 监控
+# Monitoring
 /status/           /server-status     /server-info
 /monitoring/       /metrics/          /grafana/
 
-# 文档
+# Documentation
 /api/docs          /swagger/          /redoc/
 /readme.md         /README.txt        /CHANGELOG
 ```
 
-## 真实案例
+## Real Cases
 
-| 案例 | 子域 | 影响 |
-|------|------|------|
-| 丁丁租房邮箱泄露导致600+人信息泄露 | 个人信息泄露 | 通过邮箱暴露 600+ 用户记录 |
-| 映客多个数据库服务器沦陷 | 源代码/配置 | 多个数据库服务器被攻破 |
-| 新网命令执行导致45万用户信息泄露 | 源代码/配置 | 通过远程代码执行泄露 45 万用户记录 |
-| 阳光保险敏感信息泄露导致成功进入内网系统（直登多台运维主机） | 个人信息泄露 | 通过泄露的凭据进行内网枢纽 |
-| 传化集团邮件系统内部敏感信息泄露 | 个人信息泄露 | 内部邮件系统暴露 |
-| TCL某系统配置不当导致600万顾客姓名/手机/家庭住址泄露 | 个人信息泄露 | 600 万客户个人信息 |
-| 百姓大药房漏洞危及2000W个人详细信息（姓名/身份证/手机号/住址） | 个人信息泄露 | 2000 万个人信息记录 |
+| Case | Subdomain | Impact |
+|------|-----------|--------|
+| Dingding rental email leakage exposed information for 600+ people | Personal information leakage | 600+ user records exposed through email |
+| Multiple Inke database servers were compromised | Source code/configuration | Multiple database servers compromised |
+| Xinnet command execution caused leakage of 450,000 user records | Source code/configuration | 450,000 user records leaked through remote code execution |
+| Sunshine Insurance sensitive information leakage led to successful internal-system access, including direct login to multiple operations hosts | Personal information leakage | Internal-network pivot through leaked credentials |
+| Transfar Group mail system exposed internal sensitive information | Personal information leakage | Internal mail system exposure |
+| TCL system misconfiguration leaked 6 million customer names, mobile numbers, and home addresses | Personal information leakage | 6 million customer personal records |
+| Baixing Pharmacy vulnerability endangered 20M personal-detail records, including names, IDs, phone numbers, and addresses | Personal information leakage | 20 million personal information records |
 
-## 防御模式
+## Defense Patterns
 
-### 代码层面
-- **最小化响应：** 仅返回客户端需要的字段，不返回完整数据库对象
-- **错误处理：** 生产环境仅显示通用错误消息，详细信息仅在开发环境
-- **凭据管理：** 使用环境变量或密钥库，绝不在代码/配置文件中
-- **日志脱敏：** 在日志中掩盖个人信息（邮箱示例：`a***@example.com`）
+### Code Level
+- **Minimize responses:** return only fields the client needs; do not return complete database objects
+- **Error handling:** show generic errors only in production; keep details in development only
+- **Credential management:** use environment variables or secret stores; never put credentials in code/configuration files
+- **Log redaction:** mask personal information in logs, such as email `a***@example.com`
 
-### 架构层面
-- **强制执行 .gitignore：** 配置文件、.env、凭据绝不在仓库中
-- **WAF 规则：** 阻止访问 /.git、/.svn、/.env、/backup*
-- **响应头加固：** 删除 Server、X-Powered-By、X-AspNet-Version
-- **CDN 配置：** 不缓存已认证的响应
+### Architecture Level
+- **Enforce .gitignore:** configuration files, .env, and credentials never belong in repositories
+- **WAF rules:** block access to /.git, /.svn, /.env, /backup*
+- **Response-header hardening:** remove Server, X-Powered-By, X-AspNet-Version
+- **CDN configuration:** do not cache authenticated responses
 
-### 监控
-- **敏感路径访问：** 外部 IP 访问 /.git、/.env、/admin 时告警
-- **批量数据访问：** 大型 API 响应或高频数据请求时告警
-- **错误率监控：** 500 错误激增 = 可能的侦察
-- **凭据泄露扫描：** 监控 GitHub/GitLab/Pastebin 上泄露的凭据
+### Monitoring
+- **Sensitive path access:** alert when external IPs access /.git, /.env, /admin
+- **Bulk data access:** alert on large API responses or high-frequency data requests
+- **Error-rate monitoring:** spike in 500 errors indicates possible reconnaissance
+- **Credential-leak scanning:** monitor exposed credentials on GitHub/GitLab/Pastebin

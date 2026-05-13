@@ -1,153 +1,153 @@
-# 身份认证领域
+# Authentication Domain
 
-## 概述
+## Overview
 
-身份认证漏洞是突破口。8,846 起 WooYun 案例（占所有发现的 40%）证明：大多数应用在第一道防线就已失守。
+Authentication vulnerabilities are entry points. 8,846 WooYun cases, 40% of all findings, prove that most applications fail at the first defensive line.
 
-**核心原则：** 身份认证是一条链。每一环都必须守住——凭证、会话、重置流程、验证机制。一个薄弱环节 = 完全绕过。
+**Core principle:** Authentication is a chain. Every link must hold: credentials, sessions, reset flows, and verification mechanisms. One weak link equals a full bypass.
 
-## 按子域划分的攻击模式
+## Attack Patterns by Subdomain
 
-### 弱凭证（7,513 个案例，58.2% 高危）
+### Weak Credentials (7,513 cases, 58.2% high severity)
 
-**铁律：在任何其他身份认证测试之前，先测试默认凭证。WooYun 所有案例中 34% 属于弱密码/默认密码。**
+**Iron rule: test default credentials before any other authentication testing. Weak or default passwords account for 34% of all WooYun cases.**
 
-**系统化测试清单：**
+**Systematic testing checklist:**
 
 ```
-阶段 1：默认凭证
+Phase 1: Default credentials
 - [ ] admin/admin, admin/123456, admin/admin123
 - [ ] root/root, root/toor, root/password
 - [ ] test/test, guest/guest, demo/demo
-- [ ] [厂商名]/[厂商名]（如 tomcat/tomcat）
-- [ ] [产品名]/[产品名]
-- [ ] 查阅厂商文档中的默认凭证
+- [ ] [vendor name]/[vendor name], such as tomcat/tomcat
+- [ ] [product name]/[product name]
+- [ ] Review vendor documentation for default credentials
 
-阶段 2：社会工程学密码
-- [ ] 公司名（小写、首字母大写、加年份）
-- [ ] 域名（不含顶级域名、加数字）
-- [ ] 产品名 + 常见后缀（123, @123, !@#）
-- [ ] 城市名 + 年份（beijing2024）
-- [ ] 手机号码模式（中国系统常见）
+Phase 2: Social-engineering passwords
+- [ ] Company name (lowercase, initial capital, plus year)
+- [ ] Domain name (without TLD, plus numbers)
+- [ ] Product name + common suffixes (123, @123, !@#)
+- [ ] City name + year (beijing2024)
+- [ ] Mobile-number patterns (common in Chinese systems)
 
-阶段 3：凭证填充攻击
-- [ ] 中国 Top 100 密码（123456, a123456, 123456789）
-- [ ] 全球 Top 100 密码
-- [ ] 行业特定默认密码（医疗、金融、教育）
+Phase 3: Credential stuffing
+- [ ] China Top 100 passwords (123456, a123456, 123456789)
+- [ ] Global Top 100 passwords
+- [ ] Industry-specific default passwords (healthcare, finance, education)
 
-阶段 4：绕过反暴力破解
-- [ ] 验证码重用（同一会话，不刷新）
-- [ ] 验证码移除（从请求中删除参数）
-- [ ] IP 轮换（X-Forwarded-For 头操纵）
-- [ ] 通过响应差异进行账户枚举
-- [ ] 通过分布式请求绕过速率限制
+Phase 4: Anti-brute-force bypass
+- [ ] CAPTCHA reuse (same session, no refresh)
+- [ ] CAPTCHA removal (delete parameter from request)
+- [ ] IP rotation (X-Forwarded-For header manipulation)
+- [ ] Account enumeration through response differences
+- [ ] Rate-limit bypass through distributed requests
 ```
 
-**关键参数：** `username`, `password`, `account`, `passwd`, `pwd`, `pass`
+**Key parameters:** `username`, `password`, `account`, `passwd`, `pwd`, `pass`
 
-### 密码重置（777 个案例，88.0% 高危）
+### Password Reset (777 cases, 88.0% high severity)
 
-**在整个 WooYun 数据集中严重性级别最高。每个密码重置流程都存在漏洞。**
+**This is the highest-severity class in the entire WooYun dataset. Treat every password reset flow as vulnerable until proven otherwise.**
 
-**攻击模式矩阵：**
+**Attack-pattern matrix:**
 
-| 模式 | 测试方法 | WooYun 普遍性 |
-|------|---------|-------------|
-| 令牌在 URL/响应中 | 拦截重置响应，检查令牌 | 极高 |
-| 可预测令牌 | 请求多次重置，分析令牌熵 | 高 |
-| 步骤跳过 | 直接跳到"设置新密码"步骤 | 高 |
-| 用户 ID 操纵 | 在重置请求中更改 user_id/email | 极高 |
-| 响应操纵 | 在客户端将 `{"success":false}` 改为 `{"success":true}` | 中等 |
-| 验证码重用 | 在不同用户间使用相同的短信/邮件验证码 | 中等 |
-| Host 头注入 | 在 Host 头中注入攻击者域以获取重置链接 | 中等 |
-| 时序攻击 | 通过响应时间差异判断有效账户 | 低 |
+| Pattern | Test method | WooYun prevalence |
+|---------|-------------|-------------------|
+| Token in URL/response | Intercept reset response and inspect token | Very high |
+| Predictable token | Request multiple resets and analyze token entropy | High |
+| Step skipping | Jump directly to the "set new password" step | High |
+| User ID manipulation | Change `user_id`/email in reset request | Very high |
+| Response manipulation | Change `{"success":false}` to `{"success":true}` client-side | Medium |
+| Verification-code reuse | Use the same SMS/email code across different users | Medium |
+| Host header injection | Inject attacker domain into the Host header to capture reset link | Medium |
+| Timing attack | Infer valid accounts from response-time differences | Low |
 
-**测试流程：**
+**Testing flow:**
 
 ```dot
 digraph password_reset_test {
-    "为账号A请求密码重置" [shape=box];
-    "拦截所有流量" [shape=box];
-    "令牌在响应中？" [shape=diamond];
-    "分析令牌熵" [shape=box];
-    "可预测？" [shape=diamond];
-    "尝试跳过步骤" [shape=box];
-    "用B的标识直接设置密码" [shape=box];
-    "将user_id改为账号B" [shape=box];
-    "操纵响应" [shape=box];
+    "Request password reset for account A" [shape=box];
+    "Intercept all traffic" [shape=box];
+    "Token in response?" [shape=diamond];
+    "Analyze token entropy" [shape=box];
+    "Predictable?" [shape=diamond];
+    "Try step skipping" [shape=box];
+    "Directly set password using B's identifier" [shape=box];
+    "Change user_id to account B" [shape=box];
+    "Manipulate response" [shape=box];
 
-    "为账号A请求密码重置" -> "拦截所有流量";
-    "拦截所有流量" -> "令牌在响应中？";
-    "令牌在响应中？" -> "分析令牌熵" [label="是 → 高危"];
-    "令牌在响应中？" -> "尝试跳过步骤" [label="否"];
-    "分析令牌熵" -> "可预测？";
-    "可预测？" -> "将user_id改为账号B" [label="是 → 严重"];
-    "尝试跳过步骤" -> "用B的标识直接设置密码";
-    "用B的标识直接设置密码" -> "操纵响应";
+    "Request password reset for account A" -> "Intercept all traffic";
+    "Intercept all traffic" -> "Token in response?";
+    "Token in response?" -> "Analyze token entropy" [label="Yes -> high severity"];
+    "Token in response?" -> "Try step skipping" [label="No"];
+    "Analyze token entropy" -> "Predictable?";
+    "Predictable?" -> "Change user_id to account B" [label="Yes -> critical"];
+    "Try step skipping" -> "Directly set password using B's identifier";
+    "Directly set password using B's identifier" -> "Manipulate response";
 }
 ```
 
-### 登录绕过（57 个案例，57.9% 高危）
+### Login Bypass (57 cases, 57.9% high severity)
 
-**模式：**
-- 登录表单 SQL 注入：`' OR 1=1--`
-- 默认后门账户（留在生产环境的调试/测试账户）
-- 身份认证逻辑反转（检查 `if NOT authenticated` 而不是 `if authenticated`）
-- Cookie/令牌伪造（签名弱，无验证）
-- OAuth 错误配置（redirect_uri 操纵、state 参数缺失）
+**Patterns:**
+- Login-form SQL injection: `' OR 1=1--`
+- Default backdoor accounts (debug/test accounts left in production)
+- Authentication logic inversion (checking `if NOT authenticated` instead of `if authenticated`)
+- Cookie/token forgery (weak signing or no verification)
+- OAuth misconfiguration (`redirect_uri` manipulation, missing `state` parameter)
 
-### 验证码/验证绕过（384 个案例，44% 高危）
+### CAPTCHA/Verification Bypass (384 cases, 44% high severity)
 
-**系统化验证码绕过：**
+**Systematic CAPTCHA bypasses:**
 
-| 绕过技术 | 测试方法 |
-|---------|---------|
-| 无服务器端验证 | 从请求中完全移除验证码参数 |
-| 可重用验证码 | 多次提交相同的验证码值 |
-| 可预测验证码 | 分析验证码生成算法 |
-| 可 OCR 识别的验证码 | 字体简单，无干扰，无旋转 |
-| 语音验证码绕过 | 对语音选项进行语音转文本识别 |
-| 短信验证码无过期 | 申请新验证码后仍可使用旧验证码 |
-| 短信验证码无速率限制 | 暴力破解 4-6 位数字短信验证码 |
-| 短信验证码跨用户共享 | 将发给手机 A 的验证码用于账户 B |
-| 客户端验证码检查 | 仅在 JavaScript 中验证验证码 |
+| Bypass technique | Test method |
+|------------------|-------------|
+| No server-side validation | Remove CAPTCHA parameter from the request entirely |
+| Reusable CAPTCHA | Submit the same CAPTCHA value multiple times |
+| Predictable CAPTCHA | Analyze CAPTCHA generation algorithm |
+| OCR-readable CAPTCHA | Simple font, no noise, no rotation |
+| Voice CAPTCHA bypass | Apply speech-to-text recognition to the audio option |
+| SMS code without expiry | Request a new code, then continue using the old code |
+| SMS code without rate limiting | Brute force 4-6 digit SMS codes |
+| SMS code shared across users | Use the code sent to phone A for account B |
+| Client-side CAPTCHA check | Verify whether CAPTCHA is checked only in JavaScript |
 
-## 真实案例
+## Real Cases
 
-| 案例 | 子域 | 影响 |
-|------|------|------|
-| TCL统一身份认证平台漏洞，所有用户账号密码可重置 | 密码重置 | 跨 N+ 个业务系统的完整账户接管 |
-| 蜻蜓FM公众平台任意用户密码重置 | 密码重置 | 任意用户密码重置 |
-| M1905电影网某重要站点任意密码重置（已入官方账号） | 密码重置 | 官方账号被攻破 |
-| 嘟嘟牛旗下百乐吧密码重置漏洞涉及279个网吧上网用户数据 | 密码重置 | 279 个网吧用户账户泄露 |
-| 飞特物流某系统后台登录绕过/SQL注入（千万用户/运单/银行卡/身份证照片） | 登录绕过 | 1000 万+ 用户、银行卡、身份证照片 |
-| 搜狐APP某站登录绕过+SQL注入root权限 | 登录绕过 | 数据库根级访问权限 |
-| 格兰仕厂商协同平台认证绕过执行/root权限/已Shell | 认证绕过 | 远程代码执行 |
-| 华安保险某站认证绕过命令执行可Shell | 认证绕过 | 保险系统远程代码执行 |
-| 爱卡汽车网某重要系统设计逻辑缺陷成功绕过验证码限制 | 验证码绕过 | 启用暴力破解 |
-| 驴妈妈旅游网从验证码绕过再到任意酒店数据导出 | 验证码绕过 | 酒店数据渗漏 |
-| 上海航空员工个人信息泄露/密码重置（绕过短信验证）/内部资料泄露 | 短信绕过 | 员工个人信息 + 内部文档 |
+| Case | Subdomain | Impact |
+|------|-----------|--------|
+| TCL unified authentication platform vulnerability allowed resetting all user account passwords | Password reset | Full account takeover across N+ business systems |
+| Qingting FM public platform arbitrary user password reset | Password reset | Arbitrary user password reset |
+| M1905 movie site critical arbitrary password reset, including official account access | Password reset | Official account compromise |
+| Duduniu Bailebar password reset flaw exposed data for users from 279 internet cafes | Password reset | 279 internet-cafe user accounts exposed |
+| Feite Logistics backend login bypass/SQL injection exposed tens of millions of users, waybills, bank cards, and ID-card photos | Login bypass | 10M+ users, bank cards, ID-card photos |
+| Sohu app site login bypass plus SQL injection with root privileges | Login bypass | Database root-level access |
+| Galanz vendor collaboration platform authentication bypass led to /root execution and shell access | Authentication bypass | Remote code execution |
+| Huaan Insurance site authentication bypass allowed command execution and shell access | Authentication bypass | Remote code execution in insurance system |
+| Aika automotive site design logic flaw bypassed CAPTCHA restrictions | CAPTCHA bypass | Enabled brute force |
+| Lvmama travel site progressed from CAPTCHA bypass to arbitrary hotel-data export | CAPTCHA bypass | Hotel data leakage |
+| Shanghai Airlines employee personal information leakage/password reset via SMS verification bypass/internal document exposure | SMS bypass | Employee personal information + internal documents |
 
-## 防御模式（来自 WooYun 修复数据）
+## Defense Patterns (from WooYun remediation data)
 
-### 代码层面
-- 密码：bcrypt(cost≥12)，绝不使用 MD5/SHA1
-- 密码复杂度：最少 8 个字符 + 大小写 + 数字 + 特殊字符
-- 密码历史：拒绝重用最近 3 个密码
-- 首次登录强制修改密码
-- 会话：密码学随机，HttpOnly，Secure，SameSite
-- 重置令牌：≥32 字节随机，单次使用，时间限制（15 分钟）
-- 验证码：服务器端验证，单次使用，绑定到会话
+### Code Level
+- Passwords: bcrypt (cost >= 12), never MD5/SHA1
+- Password complexity: minimum 8 characters + uppercase/lowercase + numbers + special characters
+- Password history: reject reuse of the last 3 passwords
+- Force password change on first login
+- Sessions: cryptographically random, HttpOnly, Secure, SameSite
+- Reset tokens: at least 32 random bytes, single use, time-limited to 15 minutes
+- Verification codes: server-side validation, single use, bound to session
 
-### 架构层面
-- 集中式身份认证（SSO/OAuth2/SAML）
-- 对所有特权操作启用 MFA
-- 账户锁定：5 次连续失败后锁定，逐步延迟（1秒、2秒、4秒、8秒...）
-- 速率限制：按账户和按 IP 分别限制
-- 地理异常告警：从新位置登录时通知
+### Architecture Level
+- Centralized authentication (SSO/OAuth2/SAML)
+- MFA for all privileged operations
+- Account lockout: lock after 5 consecutive failures with progressive delay (1s, 2s, 4s, 8s...)
+- Rate limiting: separate limits per account and per IP
+- Geo-anomaly alerts: notify on login from a new location
 
-### 监控
-- 登录失败激增检测（每个账户超过 5 次/分钟）
-- 凭证填充攻击检测（多个账户，每个尝试次数少）
-- 密码重置异常（来自单个 IP 的批量重置）
-- 地理异常（来自新国家的登录）
+### Monitoring
+- Login failure spike detection (more than 5 per account per minute)
+- Credential-stuffing detection (many accounts, few attempts per account)
+- Password reset anomalies (bulk resets from one IP)
+- Geo-anomalies (login from a new country)

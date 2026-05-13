@@ -1,9 +1,9 @@
-# 临时文件
+# Temporary files
 *.tmp
 *.bak
 .DS_Store
 
-# 处理状态（可重新生成）
+# Processing state (regenerable)
 processing_state.json
 current_batch.json
 batch-results/

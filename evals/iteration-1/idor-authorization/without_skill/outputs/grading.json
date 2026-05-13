@@ -1,34 +1,32 @@
 {
-  "expectations": [
-    {
-      "text": "wooyun-cases: 包含至少2个具体的WooYun真实案例引用（公司名+漏洞描述）",
-      "passed": false,
-      "evidence": "文档中没有引用任何WooYun具体案例。没有出现任何具体公司名称（如北京现代、花礼网、EMS等），也没有任何WooYun漏洞报告的描述。整份文档是通用的越权测试方案。"
-    },
-    {
-      "text": "statistics: 包含量化统计数据（案例数或高危占比百分数）",
-      "passed": false,
-      "evidence": "文档中没有任何WooYun相关的统计数据。没有案例数量（如'1,705案例'）或高危占比百分数（如'62.3%'）。所有风险评估基于CVSS评分而非历史数据统计。"
-    },
-    {
-      "text": "idor-depth: IDOR测试覆盖至少4种ID操纵技术",
-      "passed": true,
-      "evidence": "覆盖了多种ID操纵技术：(1) 直接ID替换（TC-IDOR-001路径参数） (2) 查询参数IDOR（TC-IDOR-002） (3) 请求体参数IDOR（TC-IDOR-003） (4) 文件/对象引用IDOR（TC-IDOR-004） (5) 批量操作IDOR（TC-IDOR-005） (6) ID可预测性/枚举（TC-IDOR-006） (7) 跨租户IDOR（TC-IDOR-007） (8) 关联资源间接IDOR（TC-IDOR-008）"
-    },
-    {
-      "text": "three-dimensions: 明确区分水平越权、垂直越权、未授权访问三个维度",
-      "passed": true,
-      "evidence": "文档结构明确分为三个维度：'2. 水平越权 (IDOR) 测试'、'3. 垂直越权（权限提升）测试'、'4. 未授权访问测试'，每个维度都有独立的测试原理、测试用例和自动化脚本模板。第9章Checklist也按这三个维度组织。"
-    },
-    {
-      "text": "arbitrary-ops: 包含任意操作/任意X类别的测试",
-      "passed": false,
-      "evidence": "文档不包含WooYun特有的'任意X'攻击类别分类。没有出现任意账号访问、任意修改、任意查看、任意删除、任意操作、任意用户注册等分类。虽然TC-VERT-003涉及自我提权，但没有系统化的任意X测试框架。"
-    },
-    {
-      "text": "api-specific: 包含针对REST API的具体测试用例",
-      "passed": true,
-      "evidence": "整份文档以REST API测试为核心，包含大量具体用例：(1) 完整的CRUD端点测试列表（GET/PUT/DELETE /api/v1/users/{userId}等） (2) TC-VERT-005 HTTP方法覆盖绕过（X-HTTP-Method-Override） (3) TC-VERT-007 JWT/Token篡改 (4) TC-UNAUTH-004 API端点发现（swagger.json/actuator等） (5) TC-UNAUTH-006 认证绕过技巧（路径遍历/编码） (6) 包含完整的Python自动化测试脚本 (7) Burp Suite Autorize插件使用方法"
-    }
-  ]
+ "expectations": [{
+ "text": "wooyun-cases: Includes at least 2 concrete real WooYun case references (company name + vulnerability description)",
+ "passed": false,
+ "evidence": "Documentinno has citeuseanyWooYunConcreteCase.no has out current anyConcretecompany company name name(such as current code/flower network/EMSetc.), no has anyWooYunvulnerability reportof description.integer copyDocumentis wilduseofbypass permissionTest Plan."
+ },
+ {
+ "text": "statistics: Includes quantitative statistics (case count or high-risk percentage)",
+ "passed": false,
+ "evidence": "Documentinno has anyWooYunrelated keyofStatisticsData.no hasCase Countquantity(such as'1,705Case')orhigh-risk percentage(such as'62.3%').Allrisk assess assess based onCVSSassess part whileNon-history historyDataStatistics."
+ },
+ {
+ "text": "idor-depth: IDOR testing covers at least 4 ID-manipulation techniques",
+ "passed": true,
+ "evidence": "cover cover done many typeIDmanipulation techniques:(1) DirectIDReplace(TC-IDOR-001PathParameter) (2) check queryParameterIDOR(TC-IDOR-002) (3) Request BodyParameterIDOR(TC-IDOR-003) (4) File/for citeuseIDOR(TC-IDOR-004) (5) BatchoperationIDOR(TC-IDOR-005) (6) IDPredictableness/Enumeration(TC-IDOR-006) (7) Cross-TenantIDOR(TC-IDOR-007) (8) key connect resource source between connectIDOR(TC-IDOR-008)"
+ },
+ {
+ "text": "three-dimensions: Clearly distinguishes the three dimensions: horizontal authorization bypass, vertical authorization bypass, and unauthorized access",
+ "passed": true,
+ "evidence": "Documentresult structure clear confirm partasthreeDimension:'2. Horizontal Authorization Bypass (IDOR) test'/'3. Vertical Authorization Bypass(Privilege Escalation)test'/'4. Unauthorized Accesstest', EachDimensionall has independent standaloneoftest principle manage/Test Caseandself dynamic izeScriptmodel template.Chapter 9Checklist by this threeDimensionarray."
+ },
+ {
+ "text": "arbitrary-ops: Includes arbitrary-operation/arbitrary-X category tests",
+ "passed": false,
+ "evidence": "Documentnot include includeWooYunspecial hasof'ArbitraryX'attack attackCategoryCategory.no has out currentArbitrary Accountaccess ask/Arbitrary Modification/Arbitrary Viewing/Arbitrary Deletion/Arbitrary Operation/ArbitraryUserRegistrationetc.Category. TC-VERT-003involving self I provide permission, but no hasSystematicofArbitraryXtest framework architecture."
+ },
+ {
+ "text": "api-specific: Includes concrete REST API test cases",
+ "passed": true,
+ "evidence": "integer copyDocumentasREST APItestasaudit core, include include large quantityConcreteusecases:(1) CompleteofCRUDEndpointtest list(GET/PUT/DELETE /api/v1/users/{userId}etc.) (2) TC-VERT-005 HTTPMethodcover coverBypass(X-HTTP-Method-Override) (3) TC-VERT-007 JWT/Tokentamper change (4) TC-UNAUTH-004 APIEndpointDiscover(swagger.json/actuatoretc.) (5) TC-UNAUTH-006 AuthenticationBypasstechnical (PathTraversal/Encoding) (6) include includeCompleteofPythonself dynamic ize testScript (7) Burp Suite Autorize item useuseMethod"
+ }]
 }

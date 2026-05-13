@@ -1,86 +1,86 @@
 # WooYun Legacy
 
-[![Website](https://img.shields.io/badge/Website-wooyun.tanweagent.com-000?style=flat-square)](https://wooyun.tanweagent.com) [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
+[![Website](https://img.shields.io/badge/Website-wooyun.tanweagent.com-000?style=flat-square)](https://wooyun.tanweagent.com/en.html) [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
 
-**中文** | [English](README.en.md)
+[Main README](README.md) | **English**
 
-> 给 AI 安全报告加上真实案例背书和数据支撑
+> Back your AI security reports with real-world case studies and hard data
 
-**WooYun Legacy** 是一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 插件，基于 WooYun（2010-2016）收录的 22,132 个业务逻辑漏洞案例，为 Claude 的安全测试输出注入**真实公司案例引用**、**量化统计数据**和**数据驱动的测试优先级排序**。
+**WooYun Legacy** is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin built on 22,132 business logic vulnerability cases collected by WooYun (2010-2016). It injects **real company case references**, **quantitative statistics**, and **data-driven test prioritization** into Claude's security testing output.
 
-### 它做什么 / 不做什么
+### What It Does / Doesn't Do
 
-**它做的：** 让 Claude 输出的安全报告从"你应该测支付篡改"变成"WooYun 支付绕过 1,056 案例中 68.7% 为高危，M1905 电影网 2588 元套餐曾被 5 毛买走"。案例背书、统计数据、优先级排序——这些让报告在甲方面前更有说服力。
+**What it does:** Transforms Claude's security reports from "you should test for payment tampering" into "WooYun payment bypass: 1,056 cases, 68.7% rated high-severity - M1905 movie site's ¥2,588 subscription was purchased for ¥0.50." Case citations, statistics, and prioritization make reports more convincing to stakeholders.
 
-**它不做的：** Claude 本身已经掌握业务逻辑安全测试的方法论——`amount=0.01`、IDOR 遍历、状态机跳步这些测试手法不需要插件也能输出。插件不教新的渗透技术，而是给已有能力加上数据弹药。
+**What it doesn't do:** Claude already knows business logic security testing methodology - `amount=0.01`, IDOR enumeration, state machine step-skipping - these test techniques work without the plugin. The plugin doesn't teach new penetration techniques; it adds **data ammunition** to existing capabilities.
 
-> **数据时效：** 知识蒸馏自 WooYun 公开数据（2010-2016）。现代技术栈（云原生、GraphQL、Serverless）覆盖有限。但业务逻辑漏洞的攻击模式比技术栈更稳定——"修改金额参数看服务端是否校验"这个测试，2012 年和 2026 年一样管用。
+> **Data Vintage:** Knowledge distilled from WooYun public data (2010-2016). Coverage of modern stacks (cloud-native, GraphQL, Serverless) is limited. But business logic attack patterns are more stable than tech stacks - "modify the amount parameter to see if the server validates it" works the same in 2012 and 2026.
 
-## 负责任使用
+## Responsible Use
 
-WooYun Legacy 面向白帽研究者、安全团队和企业内部工程团队，用于授权测试、风险识别、代码审计、安全复盘和自我安全检查。项目把历史公开漏洞案例整理为结构化知识，帮助防守方理解业务逻辑系统中常见的失败模式。
+WooYun Legacy is intended for white-hat researchers, security teams, and internal engineering teams conducting authorized testing, risk identification, code review, security retrospectives, and self-assessment. It organizes historical public vulnerability cases into structured knowledge so defenders can better understand common failure modes in business logic systems.
 
-本项目不支持、也不鼓励任何未授权访问、攻击或滥用行为。请只在你拥有授权的系统、代码库和测试环境中使用。
+This project does not support or encourage unauthorized access, attacks, or abuse. Use it only on systems, codebases, and test environments where you have explicit authorization.
 
-## 安装
+## Installation
 
-提供两种安装方式：**轻量安装**（Marketplace，推荐）和**全量安装**（克隆完整仓库）。
+Two installation modes: **Lite Install** (Marketplace, recommended) and **Full Install** (clone the entire repo).
 
-### 两种模式的区别
+### Difference Between the Two Modes
 
-| | 轻量安装（Marketplace） | 全量安装（git clone） |
+| | Lite Install (Marketplace) | Full Install (git clone) |
 |---|---|---|
-| **安装体积** | ~432KB | ~71MB |
-| **第一层：领域参考** (references/) | 6 个方法论文件 | 6 个方法论文件 |
-| **第二层：深度分析** (knowledge/) | 8 个技术手册（完整） | 8 个技术手册（完整） |
-| **第三层：漏洞案例库** (categories/) | 15 个浓缩索引（60KB） | 15 个完整案例库（71MB 原始数据） |
-| **浓缩 vs 完整** | 每个分类保留前 15 条案例标题 + 高频参数 + 攻击模式分布 + 10 条 Payload 片段 | 全部 22,132 条案例的完整标题、分类、严重性、公司信息 |
-| **行业渗透示例** (examples/) | 不含 | 运营平台、金融业务等实战方法论 |
-| **评估基准** (evals/) | 不含 | 12 组对照评测原始数据 |
-| **适合谁** | 日常安全测试、报告撰写、SRC 赏金 | 需要完整案例检索、深度数据分析、二次开发 |
+| **Size** | ~432KB | ~71MB |
+| **Layer 1: Domain References** (references/) | 6 methodology files | 6 methodology files |
+| **Layer 2: Deep Analysis** (knowledge/) | 8 technical manuals (complete) | 8 technical manuals (complete) |
+| **Layer 3: Case Database** (categories/) | 15 condensed indexes (60KB) | 15 complete case databases (71MB raw data) |
+| **Condensed vs Complete** | Each category retains top 15 case titles + frequent parameters + attack pattern distribution + 10 payload fragments | All 22,132 cases with full titles, classifications, severity, company info |
+| **Industry Pentest Examples** (examples/) | Not included | Telecom & banking penetration methodologies |
+| **Evaluation Benchmarks** (evals/) | Not included | 12 controlled A/B test datasets |
+| **Best for** | Day-to-day security testing, report writing, bug bounty | Full case retrieval, deep data analysis, custom development |
 
-> **结论：** 对大多数用户来说，轻量安装已经覆盖了插件的全部核心能力（方法论 + 统计数据 + 案例引用 + 优先级排序）。全量安装适合需要检索完整案例库或基于原始数据做自定义分析的场景。
+> **Bottom line:** For most users, the Lite Install covers all core plugin capabilities (methodology + statistics + case references + prioritization). Full Install is for those who need to search the complete case database or do custom analysis on the raw data.
 
-### 方式一：轻量安装（Marketplace，推荐）
+### Option 1: Lite Install (Marketplace, Recommended)
 
 ```bash
-# 1. 添加 Marketplace
+# 1. Add the Marketplace
 claude plugin marketplace add tanweai/wooyun-legacy
 
-# 2. 安装插件
+# 2. Install the plugin
 claude plugin install wooyun-legacy@tanweai-security
 ```
 
-或者在 Claude Code 交互界面中：
+Or inside the Claude Code interactive interface:
 
 ```
 /plugin marketplace add tanweai/wooyun-legacy
 /plugin install wooyun-legacy@tanweai-security
 ```
 
-安装完成后，Claude Code 会在检测到安全相关任务时自动加载此插件。
+Once installed, Claude Code will automatically load the plugin when it detects security-related tasks.
 
-### 方式二：全量安装（完整案例库）
+### Option 2: Full Install (Complete Case Database)
 
-克隆完整仓库，获取 71MB 原始案例数据 + 行业渗透示例 + 评测数据：
+Clone the full repository to get the 71MB raw case data + industry pentest examples + evaluation data:
 
 ```bash
-# 克隆完整仓库
+# Clone the complete repository
 git clone https://github.com/tanweai/wooyun-legacy.git
 
-# 方法 A：单次会话加载
+# Method A: Single-session load
 claude --plugin-dir ./wooyun-legacy/plugins/wooyun-legacy
 
-# 方法 B：持久安装到 Claude Code
-# 将 plugins/wooyun-legacy 目录复制到插件缓存
+# Method B: Persistent install to Claude Code
+# Copy the plugin directory to the plugin cache
 cp -r ./wooyun-legacy/plugins/wooyun-legacy ~/.claude-personal/plugins/cache/wooyun-legacy
 ```
 
-全量安装后，仓库根目录的 `categories/`、`knowledge/`、`examples/`、`evals/` 可以作为额外参考资料直接阅读或在 Claude Code 中加载使用。
+After a full install, the root-level `categories/`, `knowledge/`, `examples/`, and `evals/` directories are available as supplementary reference materials.
 
-### 方式三：团队统一配置
+### Option 3: Team Configuration
 
-在项目的 `.claude/settings.json` 中添加，团队成员打开项目时自动提示安装：
+Add to your project's `.claude/settings.json` so team members are automatically prompted to install:
 
 ```json
 {
@@ -98,240 +98,238 @@ cp -r ./wooyun-legacy/plugins/wooyun-legacy ~/.claude-personal/plugins/cache/woo
 }
 ```
 
-### 验证安装
+### Verify Installation
 
-在 Claude Code 中输入：
+In Claude Code, type:
 
 ```
 /skills
 ```
 
-你应该能看到 `wooyun-legacy` 出现在技能列表中。或者直接提一个安全测试问题，观察 Claude 是否引用了 WooYun 真实案例。
+You should see `wooyun-legacy` in the skill list. Or simply ask a security testing question and observe whether Claude references real WooYun cases.
 
-### 更新与卸载
+### Update & Uninstall
 
 ```bash
-# 更新 marketplace 和插件（轻量安装）
+# Update marketplace and plugin (Lite Install)
 claude plugin marketplace update tanweai-security
 claude plugin update wooyun-legacy@tanweai-security
 
-# 更新全量安装
+# Update Full Install
 cd wooyun-legacy && git pull
 
-# 卸载插件
+# Uninstall plugin
 claude plugin uninstall wooyun-legacy
 
-# 移除 marketplace
+# Remove marketplace
 claude plugin marketplace remove tanweai-security
 ```
 
-## 快速上手
+## Quick Start
 
-安装后无需任何配置。当你在 Claude Code 中提出安全测试相关问题时，插件会自动激活。
+No configuration needed after installation. The plugin automatically activates when you ask security testing questions.
 
-### 第一次使用
+### First Use
 
-试试这些提问：
-
-```
-帮我测试这个电商平台的支付安全，系统有购物车、第三方支付、订单管理和退款流程。
-```
+Try these prompts:
 
 ```
-我需要对这个 SaaS 平台做越权测试，包括 IDOR、垂直越权、未授权访问。
+Help me test the payment security of this e-commerce platform. It has a shopping cart, third-party payments, order management, and a refund flow.
 ```
 
 ```
-审计这段下单接口代码的业务逻辑安全。
+I need to do authorization testing on this SaaS platform - IDOR, vertical privilege escalation, and unauthorized access.
 ```
 
-Claude 会自动加载 WooYun 方法论，输出包含真实案例引用、量化统计和结构化测试步骤的方案。
+```
+Audit this order API code for business logic vulnerabilities.
+```
 
-### 自动触发
+Claude will automatically load the WooYun methodology and output structured test plans with real case references, quantitative statistics, and step-by-step testing procedures.
 
-插件不仅在明确的安全关键词下激活，也能识别**隐含黑盒测试意图**的日常表述：
+### Auto-Triggering
 
-**显式安全关键词：**
+The plugin activates not only on explicit security keywords but also on **implicit black-box testing intent**:
 
-| 中文 | 英文 |
+**Explicit security keywords:**
+
+| Keyword Group | Examples |
 |------|------|
-| 渗透测试、安全审计、漏洞挖掘 | penetration testing, security audit |
-| 支付安全、金额篡改、订单篡改 | payment security, price tampering |
-| 越权、IDOR、未授权访问 | authorization bypass, IDOR |
-| 密码重置、弱口令、验证码绕过 | password reset, weak credentials |
-| 逻辑漏洞、业务安全、竞态条件 | business logic, race condition |
-| SRC 漏洞、代码审计安全性 | bug bounty, code review security |
+| Penetration and audit | penetration testing, security audit, vulnerability hunting |
+| Payment and order security | payment security, amount tampering, order tampering |
+| Authorization testing | authorization bypass, IDOR, unauthorized access |
+| Authentication testing | password reset, weak credentials, CAPTCHA bypass |
+| Business logic | logic flaws, business security, race conditions |
+| Research and review | bug bounty, code review security |
 
-**隐含黑盒测试场景（不说"安全"也能触发）：**
+**Implicit black-box testing scenarios (triggers without saying "security"):**
 
-| 用户说的 | 插件理解为 |
+| What the user says | Plugin interprets as |
 |---------|-----------|
-| "帮我测测这个接口" | API 黑盒安全测试 |
-| "看看这个功能有没有问题" | 业务逻辑漏洞审查 |
-| "这个参数能不能改" | 参数篡改测试 |
-| "怎么绕过这个限制" | 业务规则绕过 |
-| "订单/支付/退款流程测试" | 金融逻辑安全测试 |
-| "帮我找 bug" / "find bugs" | 漏洞挖掘 |
-| "test this endpoint" | 接口安全评估 |
-| "can I bypass this" | 绕过测试 |
+| "Help me test this endpoint" | API black-box security testing |
+| "Check if this feature has issues" | Business logic vulnerability review |
+| "Can I change this parameter?" | Parameter tampering test |
+| "How to bypass this restriction" | Business rule bypass |
+| "Order/payment/refund flow testing" | Financial logic security test |
+| "Find bugs" | Vulnerability hunting |
 
-**工具和手法关键词：**
+**Tool & technique keywords:**
 
-抓包分析、Burp Suite、拦截请求、修改参数、重放攻击、并发测试、遍历 ID、爆破、薅羊毛、刷单、套利、风控绕过、短信轰炸、接口滥用、intercept、replay、fuzz、enumerate、brute force
+Packet capture, Burp Suite, intercept requests, modify parameters, replay attacks, concurrency testing, ID enumeration, brute force, coupon abuse, arbitrage, rate limiting bypass, SMS bombing, API abuse, fuzz, enumerate
 
-## 插件到底加了什么
+## What the Plugin Actually Adds
 
-先说实话：Claude 本身的安全测试能力已经很强。12 组对照评测中，不加载插件的 Claude 在**领域专业断言上通过了 98%**（47/48）。测试手法、攻击模式、修复建议——这些不需要插件。
+Let's be honest: Claude's security testing capabilities are already strong. In 12 controlled evaluations, Claude without the plugin passed **98% of domain-specific assertions** (47/48). Test techniques, attack patterns, remediation advice - these don't need the plugin.
 
-插件加的是 Claude 训练数据里没有的东西：
+The plugin adds what isn't in Claude's training data:
 
-| 维度 | 无插件 | 有插件 | 为什么重要 |
+| Dimension | Without Plugin | With Plugin | Why It Matters |
 |------|--------|--------|-----------|
-| 案例引用 | "建议测试支付篡改" | "M1905 电影网 2588 元套餐被 5 毛买走" | 甲方看到真实公司名才会重视 |
-| 统计数据 | "风险较高" | "支付绕过 1,056 案例，68.7% 高危" | 量化数据让优先级排序有依据 |
-| 分类体系 | OWASP 通用分类 | WooYun「任意X」分类法（任意账号/查看/修改/删除/操作） | 更贴合业务逻辑安全测试的表达习惯 |
-| 优先级排序 | 凭经验判断 | 按高危占比排序（密码重置 88% > 支付绕过 68.7% > 弱口令 58.2%） | 时间有限时先测什么，有数据说话 |
-| 本地化业务场景 | 通用 Web 场景 | 支付回调、公共服务系统、运营平台、增值业务 | SRC 和企业安全测试的实际目标 |
+| Case References | "Consider testing payment tampering" | "M1905 movie site's ¥2,588 subscription was bought for ¥0.50" | Stakeholders take notice when they see real company names |
+| Statistics | "Risk is relatively high" | "Payment bypass: 1,056 cases, 68.7% high-severity" | Quantitative data gives prioritization a factual basis |
+| Classification | Generic OWASP taxonomy | WooYun's "Arbitrary X" taxonomy (arbitrary account/view/modify/delete/operation) | Aligns with business-logic security testing conventions |
+| Prioritization | Experience-based judgment | Ranked by high-severity ratio (password reset 88% > payment bypass 68.7% > weak passwords 58.2%) | When time is limited, data tells you what to test first |
+| Localized Business Scenarios | Generic web scenarios | Payment callbacks, public-service workflows, operations platforms, value-added services | Real targets for bug bounty and enterprise testing |
 
-**不加的东西：** 攻击手法（`amount=0.01`、IDOR 遍历、状态机跳步）、测试步骤、修复建议——这些 Claude 本来就会。
+**What it doesn't add:** Attack techniques (`amount=0.01`, IDOR enumeration, state machine step-skipping), test procedures, remediation advice - Claude already knows these.
 
-## 使用场景
+## Use Cases
 
-### 场景一：电商支付安全测试
+### Scenario 1: E-commerce Payment Security Testing
 
-> **你说：** 我在做一个电商平台的安全审计，这个平台有购物车、在线支付（第三方支付）、订单管理、退款流程。请帮我制定一个针对支付和订单流程的安全测试方案。
+> **You say:** I'm doing a security audit on an e-commerce platform with a shopping cart, online payments (third-party payment providers), order management, and refund flow. Help me create a security test plan for the payment and order flow.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 会输出一份结构化的测试方案，包含：
+Claude outputs a structured test plan including:
 
-**订单状态机非法转移检测（WooYun 订单篡改 1,227 案例，74.2% 高危）：**
+**Order State Machine Illegal Transition Detection (WooYun order tampering: 1,227 cases, 74.2% high-severity):**
 
-| 非法转移 | 攻击意图 | 风险等级 |
+| Illegal Transition | Attack Intent | Risk Level |
 |---------|---------|---------|
-| 待支付 → 已支付 | 跳过支付环节 | 严重 |
-| 待支付 → 已完成 | 完全绕过支付和物流 | 严重 |
-| 已发货 → 已退款 | 收货后退款 | 高 |
-| 已完成 → 退款中 | 已确认收货后仍触发退款 | 高 |
-| 已退款 → 已退款 | 重复退款 | 严重 |
+| Pending Payment -> Paid | Skip payment step | Critical |
+| Pending Payment -> Completed | Bypass payment and logistics entirely | Critical |
+| Shipped -> Refunded | Refund after receiving goods | High |
+| Completed -> Refunding | Trigger refund after confirming receipt | High |
+| Refunded -> Refunded | Duplicate refund | Critical |
 
-**每个测试点都有具体步骤和真实案例引用：**
+**Each test point includes specific steps and real case references:**
 
-> **WooYun 模式：** "M1905电影网价值2588套餐只要5毛钱" — 客户端提交价格被服务器直接信任。
+> **WooYun Pattern:** "M1905 movie site's ¥2,588 subscription for just ¥0.50" - client-submitted price was trusted by the server directly.
 >
-> **测试步骤：**
-> 1. 正常下单（如总额 ¥299），进入支付页面
-> 2. 拦截"发起支付"的请求
-> 3. 修改请求中的金额参数：`amount=0.01` / `amount=0` / `amount=-1`
-> 4. 观察支付页面显示的金额是否为篡改后的值
+> **Test Steps:**
+> 1. Place a normal order (e.g., total ¥299), proceed to payment page
+> 2. Intercept the "initiate payment" request
+> 3. Modify the amount parameter: `amount=0.01` / `amount=0` / `amount=-1`
+> 4. Observe whether the payment page shows the tampered amount
 
-**附录包含量化统计：** 支付绕过 1,056 案例（68.7% 高危）、订单篡改 1,227 案例（74.2% 高危）、金额篡改 176 案例（83.0% 高危）
+**Appendix includes quantitative statistics:** Payment bypass 1,056 cases (68.7% high-severity), order tampering 1,227 cases (74.2% high-severity), amount tampering 176 cases (83.0% high-severity)
 
 </details>
 
 ---
 
-### 场景二：SaaS 平台越权测试
+### Scenario 2: SaaS Platform Authorization Testing
 
-> **你说：** 我们公司有一个多租户 SaaS 平台，提供 REST API。需要设计一个针对越权访问的完整测试计划，包括水平越权（IDOR）、垂直越权、未授权访问。
+> **You say:** Our company has a multi-tenant SaaS platform with REST APIs. I need a complete test plan for authorization bypass - IDOR, vertical privilege escalation, and unauthorized access.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-**WooYun 独有的「任意X」分类法（529 案例）：**
+**WooYun's unique "Arbitrary X" taxonomy (529 cases):**
 
-| 子类别 | 案例数 | 高危占比 | 测试要点 |
+| Subcategory | Cases | High-Severity % | Test Focus |
 |--------|--------|----------|---------|
-| 任意账号操作 | 220 | 86.4% | 修改他人手机号/邮箱/密码 |
-| 任意查看 | 145 | 62.1% | 遍历他人订单/信息/记录 |
-| 任意修改 | 89 | 74.2% | 篡改他人资料/配置 |
-| 任意删除 | 35 | 71.4% | 删除他人数据/文件 |
-| 任意操作 | 40 | 72.5% | 代替他人执行敏感操作 |
+| Arbitrary Account Operation | 220 | 86.4% | Modify others' phone/email/password |
+| Arbitrary View | 145 | 62.1% | Enumerate others' orders/info/records |
+| Arbitrary Modify | 89 | 74.2% | Tamper with others' profiles/configs |
+| Arbitrary Delete | 35 | 71.4% | Delete others' data/files |
+| Arbitrary Operation | 40 | 72.5% | Execute sensitive operations on behalf of others |
 
-**IDOR 测试不只是"改 ID"：**
+**IDOR testing isn't just "change the ID":**
 
-| 技术 | 说明 |
+| Technique | Description |
 |------|------|
-| 直接 ID 替换 | 最基础，约占 30% |
-| ID 编码绕过 | Base64/Hex 编码的 ID：解码 → 修改 → 重新编码 |
-| 参数污染 | `?id=me&id=1002` |
-| JSON 嵌套篡改 | `{"user": {"id": 1002}}` |
-| 批量操作接口 | `{"ids": [1001, 1002, 1003]}` |
-| GraphQL 越权 | `node(id: "other-user-id")` |
+| Direct ID replacement | Most basic, ~30% of cases |
+| ID encoding bypass | Base64/Hex encoded IDs: decode -> modify -> re-encode |
+| Parameter pollution | `?id=me&id=1002` |
+| JSON nested tampering | `{"user": {"id": 1002}}` |
+| Batch operation endpoints | `{"ids": [1001, 1002, 1003]}` |
+| GraphQL authorization bypass | `node(id: "other-user-id")` |
 
 </details>
 
 ---
 
-### 场景三：代码安全审计
+### Scenario 3: Code Security Audit
 
-> **你说：** 帮我审计这段电商下单接口代码，找出所有业务逻辑漏洞。
+> **You say:** Audit this e-commerce order API code and find all business logic vulnerabilities.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 按四阶段方法论进行审计，输出结构化报告：
+Claude audits using a four-phase methodology, outputting a structured report:
 
 ```
-漏洞 1：金额可篡改为负数 — 优惠券折扣无上限
-├── 严重级别：Critical
-├── 领域：金融 — 金额篡改（176 案例，83.0% 高危）
-├── 代码定位：total_price -= coupon.discount_amount（无下限校验）
-├── 业务影响：攻击者可构造 total_price 为负数
-└── 修复代码：total_price = max(total_price, 0.01)
+Vulnerability 1: Amount can be tampered to negative - no coupon discount cap
++-- Severity: Critical
++-- Domain: Financial - Amount Tampering (176 cases, 83.0% high-severity)
++-- Code Location: total_price -= coupon.discount_amount (no floor check)
++-- Business Impact: Attacker can make total_price negative
++-- Fix: total_price = max(total_price, 0.01)
 
-漏洞 2：优惠券无归属校验 — 任意用户可复用
-├── 严重级别：High
-├── 领域：授权 — 任意操作（40 案例，72.5% 高危）
-└── 修复代码：增加 AND user_id = current_user.id 条件
+Vulnerability 2: Coupon has no ownership check - any user can reuse
++-- Severity: High
++-- Domain: Authorization - Arbitrary Operation (40 cases, 72.5% high-severity)
++-- Fix: Add AND user_id = current_user.id condition
 
-漏洞 3：数量参数无范围校验 — 负数/零/超大值
-├── ...（共发现 9 个漏洞）
+Vulnerability 3: Quantity parameter has no range validation - negative/zero/extreme values
++-- ...(9 vulnerabilities found in total)
 ```
 
 </details>
 
 ---
 
-### 场景四：SRC 漏洞赏金猎人
+### Scenario 4: SRC Bug Bounty Hunter
 
-> **你说：** 我是 SRC 赏金猎人，目标是某大型互联网公司，有两天时间，帮我制定漏洞挖掘计划。
+> **You say:** I'm a bug bounty hunter targeting a large internet company. I have two days. Help me create a vulnerability hunting plan.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 按时间和高危率排列优先级：
+Claude prioritizes by time and high-severity rate:
 
-**Day 1 — 高危速攻：**
+**Day 1 - High-Severity Speed Run:**
 
-| 优先级 | 目标 | WooYun 高危率 | 耗时 |
+| Priority | Target | WooYun High-Severity % | Time |
 |--------|------|--------------|------|
-| P0 | 支付金额篡改 | 83.0% | 2h |
-| P0 | 密码重置逻辑 | 88.0% | 2h |
-| P1 | IDOR 遍历 | 62.3% | 3h |
-| P1 | 未授权管理后台 | 58.2% | 1h |
+| P0 | Payment amount tampering | 83.0% | 2h |
+| P0 | Password reset logic | 88.0% | 2h |
+| P1 | IDOR enumeration | 62.3% | 3h |
+| P1 | Unauthenticated admin panel | 58.2% | 1h |
 
-**Day 2 — 深度挖掘：**
+**Day 2 - Deep Dive:**
 
-| 优先级 | 目标 | WooYun 高危率 | 耗时 |
+| Priority | Target | WooYun High-Severity % | Time |
 |--------|------|--------------|------|
-| P1 | 竞态条件/双花 | 74.8% | 3h |
-| P2 | 验证码绕过 | — | 2h |
-| P2 | 信息泄露扫描 | 64.7% | 2h |
+| P1 | Race condition / double-spend | 74.8% | 3h |
+| P2 | CAPTCHA bypass | - | 2h |
+| P2 | Information disclosure scan | 64.7% | 2h |
 
 </details>
 
 ---
 
-### 场景五：竞态条件专项测试
+### Scenario 5: Race Condition Focused Testing
 
-> **你说：** 测试一个票务系统的竞态条件漏洞，有抢票、支付、退票功能，帮我出方案，要包含测试脚本。
+> **You say:** Test a ticketing system for race condition vulnerabilities. It has ticket purchasing, payment, and refund features. Include test scripts.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 输出包含 Python 并发脚本的测试方案：
+Claude outputs a test plan with Python concurrency scripts:
 
 ```python
 import asyncio, aiohttp
@@ -345,333 +343,331 @@ async def race_buy_ticket(session, url, ticket_id, token):
 async def main():
     url = "https://target.com/api/ticket/buy"
     async with aiohttp.ClientSession() as session:
-        # 50 个并发请求抢同一张票
+        # 50 concurrent requests for the same ticket
         tasks = [race_buy_ticket(session, url, "TICKET-001", token)
                  for _ in range(50)]
         results = await asyncio.gather(*tasks)
         success = [r for r in results if r.get("status") == "success"]
-        print(f"成功购买: {len(success)} 次（预期: 1 次）")
+        print(f"Successful purchases: {len(success)} (expected: 1)")
 ```
 
-还包含状态机非法转换、TOCTOU 竞态等测试，每个都有 WooYun 案例佐证。
+Also includes state machine illegal transitions, TOCTOU race tests - each backed by WooYun cases.
 
 </details>
 
 ---
 
-### 场景六：给甲方写安全报告
+### Scenario 6: Writing Security Reports for Stakeholders
 
-> **你说：** 我刚测完一个电商系统，发现了支付金额可以改、IDOR 能遍历订单、管理后台没鉴权这三个漏洞。帮我写一份给甲方管理层看的安全报告，要有说服力。
+> **You say:** I just finished testing an e-commerce system and found three vulnerabilities: payment amount can be changed, IDOR can enumerate orders, and the admin panel has no authentication. Help me write a convincing report for management.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 输出的报告不是"建议修复"这种空话，而是用 WooYun 真实数据给每个漏洞加上背书：
+Claude's reports use WooYun data to back every vulnerability with evidence instead of vague "please fix" recommendations:
 
 ```
-## 漏洞 1：支付金额服务端未校验
+## Vulnerability 1: Payment Amount Not Validated Server-Side
 
-严重级别：Critical
-业务影响：攻击者可将任意商品价格改为 0.01 元完成支付
+Severity: Critical
+Business Impact: Attacker can change any product price to ¥0.01 and complete payment
 
-行业参考：
-  WooYun 支付绕过类漏洞共 1,056 例，其中 68.7% 被评为高危。
-  典型案例：M1905 电影网价值 2588 元套餐因同类漏洞被 0.5 元购买。
-  本漏洞的技术特征与 WooYun 金额篡改 176 例（83.0% 高危）完全吻合。
+Industry Reference:
+  WooYun has 1,056 payment bypass vulnerabilities, 68.7% rated high-severity.
+  Notable case: M1905 movie site's ¥2,588 subscription was purchased for ¥0.50
+  due to the same class of vulnerability.
+  This vulnerability's technical characteristics match WooYun's 176 amount
+  tampering cases (83.0% high-severity) exactly.
 
-修复建议：
-  所有金额计算必须在服务端完成，客户端提交的价格参数仅作为展示参考。
-  ……
+Remediation:
+  All price calculations must be performed server-side. Client-submitted
+  price parameters should only be used for display purposes.
+  ......
 ```
 
-**为什么这比通用报告有用：** 管理层不懂 `amount=0.01` 是什么意思，但"跟 M1905 电影网被薅 2588 元是同一种漏洞"他们能理解。数字和案例是说服非技术决策者的语言。
+**Why this beats a generic report:** Executives don't understand what `amount=0.01` means, but "same vulnerability that cost M1905 ¥2,588" - that they understand. Numbers and cases are the language for persuading non-technical decision-makers.
 
 </details>
 
 ---
 
-### 场景七：时间紧迫的测试优先级
+### Scenario 7: Test Prioritization Under Time Pressure
 
-> **你说：** 客户给了我两天时间测一个 B2B 平台，功能很多（用户管理、订单、支付、发票、审批流、报表导出），我没时间全测。帮我按风险排优先级。
+> **You say:** Client gave me two days to test a B2B platform with tons of features (user management, orders, payments, invoicing, approval workflows, report exports). I can't test everything. Help me prioritize by risk.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 直接用 WooYun 高危占比做排序，不是"凭感觉"而是"凭数据"：
+Claude ranks by WooYun high-severity percentages - not "gut feeling" but data:
 
 ```
-两天测试计划（按 WooYun 高危率排序）
+Two-Day Test Plan (Ranked by WooYun High-Severity %)
 
-Day 1 — 必测项（高危率 >75%）
-┌──────────────┬─────────┬───────────┬──────┐
-│ 测试项        │ 高危率   │ WooYun 案例│ 耗时  │
-├──────────────┼─────────┼───────────┼──────┤
-│ 支付金额篡改  │ 83.0%   │ 176       │ 2h   │
-│ 余额/提现操纵 │ 77.9%   │ 113       │ 1.5h │
-│ 审批流跳步    │ 74.8%   │ 266(逻辑) │ 2h   │
-│ 订单状态篡改  │ 74.2%   │ 1,227     │ 2h   │
-└──────────────┴─────────┴───────────┴──────┘
+Day 1 - Must Test (High-Severity % >75%)
++----------------------+---------+------------+------+
+| Test Item            | Sev. %  | WooYun Cases| Time |
++----------------------+---------+------------+------+
+| Payment tampering    | 83.0%   | 176        | 2h   |
+| Balance/withdrawal   | 77.9%   | 113        | 1.5h |
+| Approval flow bypass | 74.8%   | 266(logic) | 2h   |
+| Order state tampering| 74.2%   | 1,227      | 2h   |
++----------------------+---------+------------+------+
 
-Day 2 — 应测项（高危率 50-75%）
-┌──────────────┬─────────┬───────────┬──────┐
-│ 测试项        │ 高危率   │ WooYun 案例│ 耗时  │
-├──────────────┼─────────┼───────────┼──────┤
-│ 报表导出越权  │ 64.7%   │ 4,858(信息)│ 2h   │
-│ IDOR 遍历    │ 62.3%   │ 1,705     │ 3h   │
-│ 发票接口滥用  │ 62.3%   │ (越权类)   │ 1.5h │
-└──────────────┴─────────┴───────────┴──────┘
+Day 2 - Should Test (High-Severity % 50-75%)
++----------------------+---------+------------+------+
+| Test Item            | Sev. %  | WooYun Cases| Time |
++----------------------+---------+------------+------+
+| Report export authz  | 64.7%   | 4,858(info)| 2h   |
+| IDOR enumeration     | 62.3%   | 1,705      | 3h   |
+| Invoice API abuse    | 62.3%   | (authz)    | 1.5h |
++----------------------+---------+------------+------+
 
-如果时间不够，砍 Day 2。Day 1 的四项覆盖了最高危的攻击面。
+If time runs out, cut Day 2. Day 1's four items cover the highest-risk attack surfaces.
 ```
 
-**不加载插件时：** Claude 也能列优先级，但排序依据是"一般经验"。有插件时，每一条优先级背后都有几百到几千个案例的统计支撑，跟客户解释"为什么先测这个"时有数据可引。
+**Without the plugin:** Claude can still list priorities, but the ranking is based on "general experience." With the plugin, every priority has hundreds to thousands of cases as statistical backing - useful when explaining "why test this first" to clients.
 
 </details>
 
 ---
 
-### 场景八：本地化业务流程安全测试
+### Scenario 8: Localized Business Workflow Security Testing
 
-> **你说：** 帮我测试一个政务服务平台，有统一身份认证、行政审批、证照查询、在线缴费，对接了第三方支付。
+> **You say:** Help me test a government services platform with unified identity auth, administrative approval, license/certificate lookup, online payment, integrated with third-party payment providers.
 
 <details>
-<summary><b>点击展开 Claude 的回复（节选）</b></summary>
+<summary><b>Click to expand Claude's response (excerpt)</b></summary>
 
-Claude 结合 WooYun 数据给出公共服务系统常见的测试重点：
+Claude provides common public-service workflow test focus areas using WooYun data:
 
-**政务系统弱口令模式（WooYun 弱口令 7,513 案例，58.2% 高危）：**
+**Government System Weak Password Patterns (WooYun weak passwords: 7,513 cases, 58.2% high-severity):**
 
-WooYun 数据中政务系统高频弱口令：
-- 管理后台：`admin/admin123`、`admin/888888`
-- 业务系统：`工号/工号`、`姓名拼音/123456`
-- 数据库：`sa/空密码`、`root/root`
-- 运维接口：`test/test`、`tomcat/tomcat`
+High-frequency weak passwords in WooYun government system data:
+- Admin panels: `admin/admin123`, `admin/888888`
+- Business systems: `employee_id/employee_id`, `pinyin_name/123456`
+- Databases: `sa/empty`, `root/root`
+- Operations interfaces: `test/test`, `tomcat/tomcat`
 
-**第三方支付回调参数测试：**
+**Third-Party Payment Callback Parameter Testing:**
 
-| 测试点 | 攻击方式 | WooYun 关联 |
+| Test Point | Attack Method | WooYun Reference |
 |--------|---------|------------|
-| 回调通知伪造 | 构造 notify_url 的 POST 请求，不验签 | 支付绕过 1,056 例 |
-| trade_status 篡改 | 将 WAIT_BUYER_PAY 改为 TRADE_SUCCESS | 订单篡改 1,227 例 |
-| out_trade_no 遍历 | 修改商户订单号查看他人缴费记录 | 越权 1,705 例 |
-| total_amount 篡改 | 回调金额与实际支付金额不一致 | 金额篡改 176 例 |
-
-**证照查询越权（WooYun 某平台越权遍历大量证件案例）：**
-
-身份证号、驾驶证、营业执照等证照查询接口是政务系统的高危面。
-WooYun 有大量类似案例：通过顺序递增的文件 ID 或证件编号遍历全量数据。
+| Callback notification forgery | Craft POST request to notify_url without signature verification | Payment bypass 1,056 cases |
+| trade_status tampering | Change WAIT_BUYER_PAY to TRADE_SUCCESS | Order tampering 1,227 cases |
+| out_trade_no enumeration | Modify merchant order number to view others' payment records | Authorization bypass 1,705 cases |
+| total_amount tampering | Callback amount doesn't match actual payment amount | Amount tampering 176 cases |
 
 </details>
 
 ---
 
-### 更多适用场景
+### More Use Cases
 
-| 场景 | 示例提问 | 插件提供的额外价值 |
+| Scenario | Example Prompt | Plugin's Added Value |
 |------|---------|------------------|
-| 密码重置安全 | "帮我测试密码重置功能的安全性" | 777 案例 + 88% 高危率佐证 |
-| 弱口令检测 | "对这批政府系统做弱口令检测" | 按行业的高频弱口令模式 |
-| 验证码绕过 | "测试这个金融 App 的验证码安全" | 验证码绕过案例分类（回显/爆破/复用/时效） |
-| 信息泄露排查 | "审计这个 Spring Boot 系统的信息泄露" | 4,858 例信息泄露的分类统计 |
-| 配置安全加固 | "检查 Tomcat + MySQL + Redis + Nginx 的配置安全" | 1,796 例配置不当的高危占比 72.6% |
-| 云环境安全 | "制定云环境安全检查方案" | 云厂商常见配置风险模式 |
-| 银行 App 评估 | "对手机银行做业务逻辑安全评估" | 金融领域 2,919 案例的攻击模式矩阵 |
-| 安全培训材料 | "给开发团队做一次支付安全培训" | 真实案例比抽象理论更有教育效果 |
-| 合规审计支撑 | "等保测评中业务逻辑这块怎么测" | 用 WooYun 数据映射到等保要求 |
+| Password Reset Security | "Test the password reset feature for security" | 777 cases + 88% high-severity rate |
+| Weak Password Detection | "Run weak password checks on these government systems" | Industry-specific high-frequency password patterns |
+| CAPTCHA Bypass | "Test this fintech app's CAPTCHA security" | CAPTCHA bypass case taxonomy (echo/brute/reuse/expiry) |
+| Information Disclosure | "Audit this Spring Boot system for info leaks" | 4,858 info disclosure cases with taxonomy |
+| Configuration Hardening | "Check Tomcat + MySQL + Redis + Nginx configuration security" | 1,796 misconfiguration cases, 72.6% high-severity |
+| Cloud Security | "Create a cloud security checklist" | Common cloud misconfiguration patterns |
+| Banking App Assessment | "Business logic security assessment for a mobile banking app" | Financial domain: 2,919 cases attack pattern matrix |
+| Security Training | "Prepare a payment security training for the dev team" | Real cases are more educational than abstract theory |
+| Compliance Audit | "How to test business logic for compliance audits" | Map WooYun data to compliance requirements |
 
-## 知识覆盖
+## Knowledge Coverage
 
-### 三层渐进式知识体系
+### Three-Layer Progressive Knowledge System
 
-插件采用三层渐进加载架构，避免一次性加载所有文件，按需读取：
+The plugin uses a three-layer progressive loading architecture - loads on demand, not all at once:
 
 ```
-第一层：领域参考（references/）      ← 触发时优先加载
-  6 个领域文件 · 方法论 + 攻击模式矩阵 + 测试清单
+Layer 1: Domain References (references/)       <- Loaded first on trigger
+  6 domain files - Methodology + attack pattern matrix + test checklists
 
-第二层：深度分析（knowledge/）       ← 需要技术细节时加载
-  8 个技术文件 · 根因分析 + Payload 矩阵 + WAF 绕过
+Layer 2: Deep Analysis (knowledge/)             <- Loaded when technical details needed
+  8 technical files - Root cause analysis + payload matrices + WAF bypass
 
-第三层：案例库（categories/）        ← 需要引用案例或 Payload 时加载
-  15 个分类文件 · 真实案例标题 + 高频参数 + 攻击模式分布
+Layer 3: Case Database (categories/)            <- Loaded when citing cases or payloads
+  15 category files - Real case titles + frequent parameters + attack pattern distribution
 ```
 
-### 6 大领域 · 33 类漏洞
+### 6 Domains - 33 Vulnerability Classes
 
-| 领域 | 案例数 | 代表漏洞类别 |
+| Domain | Cases | Representative Vulnerability Types |
 |------|-------|-------------|
-| **认证绕过** | 8,846 | 密码重置(88%高危)、弱口令、验证码绕过、会话固定 |
-| **越权访问** | 6,838 | IDOR、垂直越权、任意账号/操作/查看/修改/删除 |
-| **金融安全** | 2,919 | 支付绕过(68.7%高危)、金额篡改、订单篡改、余额操纵 |
-| **信息泄露** | 6,446 | 个人信息泄露、凭证泄露、调试信息、接口文档暴露 |
-| **逻辑缺陷** | 1,679 | 状态机滥用、竞态条件、流程绕过、设计缺陷 |
-| **配置不当** | 1,796 | 默认凭证、组件暴露、加固缺陷、云配置错误 |
+| **Authentication Bypass** | 8,846 | Password reset (88% high-sev), weak passwords, CAPTCHA bypass, session fixation |
+| **Authorization Bypass** | 6,838 | IDOR, vertical privilege escalation, arbitrary account/operation/view/modify/delete |
+| **Financial Security** | 2,919 | Payment bypass (68.7% high-sev), amount tampering, order tampering, balance manipulation |
+| **Information Disclosure** | 6,446 | PII leaks, credential exposure, debug info, API documentation exposure |
+| **Logic Flaws** | 1,679 | State machine abuse, race conditions, flow bypass, design flaws |
+| **Misconfiguration** | 1,796 | Default credentials, component exposure, hardening gaps, cloud misconfig |
 
-### 漏洞严重性排序（按高危占比）
+### Vulnerability Severity Ranking (by High-Severity %)
 
-| 排名 | 漏洞类别 | 案例数 | 高危占比 |
+| Rank | Vulnerability Type | Cases | High-Severity % |
 |------|---------|-------|---------|
-| 1 | 密码重置 | 777 | 88.0% |
-| 2 | 任意账号 | 220 | 86.4% |
-| 3 | 提现漏洞 | 59 | 83.1% |
-| 4 | 金额篡改 | 176 | 83.0% |
-| 5 | 余额篡改 | 113 | 77.9% |
-| 6 | 逻辑漏洞 | 266 | 74.8% |
-| 7 | 订单篡改 | 1,227 | 74.2% |
-| 8 | 配置不当 | 1,796 | 72.6% |
-| 9 | 支付绕过 | 1,056 | 68.7% |
-| 10 | 信息泄露 | 4,858 | 64.7% |
-| 11 | 越权访问 | 1,705 | 62.3% |
-| 12 | 弱口令 | 7,513 | 58.2% |
+| 1 | Password Reset | 777 | 88.0% |
+| 2 | Arbitrary Account | 220 | 86.4% |
+| 3 | Withdrawal Exploit | 59 | 83.1% |
+| 4 | Amount Tampering | 176 | 83.0% |
+| 5 | Balance Tampering | 113 | 77.9% |
+| 6 | Logic Flaw | 266 | 74.8% |
+| 7 | Order Tampering | 1,227 | 74.2% |
+| 8 | Misconfiguration | 1,796 | 72.6% |
+| 9 | Payment Bypass | 1,056 | 68.7% |
+| 10 | Information Disclosure | 4,858 | 64.7% |
+| 11 | Authorization Bypass | 1,705 | 62.3% |
+| 12 | Weak Passwords | 7,513 | 58.2% |
 
-### 四阶段方法论
+### Four-Phase Methodology
 
 ```
-第一阶段：业务流程映射
-  └─ 理解业务 → 映射用户旅程 → 识别状态转移 → 映射信任边界
+Phase 1: Business Flow Mapping
+  +- Understand the business -> Map user journeys -> Identify state transitions -> Map trust boundaries
 
-第二阶段：假设形成
-  └─ 基于 6 大领域参考文件，形成"[流程X] 可能受到 [攻击Y]"的假设
+Phase 2: Hypothesis Formation
+  +- Based on 6 domain reference files, form "[Flow X] may be vulnerable to [Attack Y]" hypotheses
 
-第三阶段：针对性手动测试
-  └─ 准备多角色账号 → 拦截请求 → 单参数修改 → 观察服务器行为
+Phase 3: Targeted Manual Testing
+  +- Prepare multi-role accounts -> Intercept requests -> Single-parameter modification -> Observe server behavior
 
-第四阶段：影响评估与文档化
-  └─ 证明业务影响 → 匹配 WooYun 模式 → 输出可操作的修复建议
+Phase 4: Impact Assessment & Documentation
+  +- Prove business impact -> Match WooYun patterns -> Output actionable remediation
 ```
 
-## 评估基准
+## Evaluation Benchmarks
 
-12 组全领域对照评测（with_skill vs without_skill），覆盖全部 6 个领域：
+12 full-domain controlled evaluations (with_skill vs without_skill), covering all 6 domains:
 
-| 指标 | With Skill | Without Skill | 差异 |
+| Metric | With Skill | Without Skill | Difference |
 |------|-----------|---------------|------|
-| **断言通过率** | 100% (72/72) | 64.6% (47/72) | **+54.8%** |
-| 平均耗时 | 222s | 164s | +35% |
-| 平均 Token | 41K | 28K | +46% |
+| **Assertion Pass Rate** | 100% (72/72) | 64.6% (47/72) | **+54.8%** |
+| Avg. Latency | 222s | 164s | +35% |
+| Avg. Tokens | 41K | 28K | +46% |
 
-**分项结果：**
+**Breakdown:**
 
-| 断言类别 | With Skill | Without Skill |
+| Assertion Category | With Skill | Without Skill |
 |---------|-----------|---------------|
-| WooYun 案例引用 | 12/12 (100%) | 0/12 (0%) |
-| WooYun 统计数据 | 12/12 (100%) | 0/12 (0%) |
-| 领域专业断言 | 48/48 (100%) | 47/48 (98%) |
+| WooYun Case References | 12/12 (100%) | 0/12 (0%) |
+| WooYun Statistics | 12/12 (100%) | 0/12 (0%) |
+| Domain-Specific Assertions | 48/48 (100%) | 47/48 (98%) |
 
-结论：插件的核心价值在于注入真实的 WooYun 历史数据（公司案例 + 量化统计 + 独特分类法），而非通用安全知识。
+Conclusion: The plugin's core value is injecting real WooYun historical data (company cases + quantitative statistics + unique taxonomy), not general security knowledge.
 
-> 完整评测数据见 [`evals/`](evals/) 目录
+> Full evaluation data available in the [`evals/`](evals/) directory
 
-## 行业渗透实战
+## Industry Penetration Playbooks
 
-`examples/` 目录包含基于 WooYun 数据生成的行业渗透方法论：
+The `examples/` directory contains industry-specific penetration methodologies generated from WooYun data:
 
 <details>
-<summary><b>运营平台测试</b> — 弱口令、越权、增值业务平台、NMS、GetShell 路径</summary>
+<summary><b>Telecom Penetration</b> - Weak passwords, authorization bypass, value-added service platforms, NMS, shell access paths</summary>
 
-- **弱口令**：网络设备 admin/admin、BOSS 系统工号/工号、数据库 sa/空密码
-- **越权**：手机号遍历用户信息、套餐/话费/通话记录
-- **高价值攻击面**：增值业务平台（SP→短信网关→BOSS）、网管系统（华为 U2000）、物联网卡平台
-- **GetShell 路径**：Struts2/WebLogic RCE → VPN 漏洞 → 供应链（外包公司）→ 横向移动至 BOSS/AAA
+- **Weak Passwords:** Network devices admin/admin, BOSS systems employee_id/employee_id, databases sa/empty
+- **Authorization Bypass:** Phone number enumeration for user info, plans/billing/call records
+- **High-Value Attack Surfaces:** Value-added service platforms (SP->SMS Gateway->BOSS), NMS (Huawei U2000), IoT SIM card platforms
+- **Shell Access Paths:** Struts2/WebLogic RCE -> VPN exploits -> Supply chain (outsourced vendors) -> Lateral movement to BOSS/AAA
 
-详见 [`examples/telecom-penetration.md`](examples/telecom-penetration.md)
+See [`examples/telecom-penetration.md`](examples/telecom-penetration.md)
 
 </details>
 
 <details>
-<summary><b>金融业务测试</b> — 支付漏洞、手机银行 App、验证绕过、渗透路径</summary>
+<summary><b>Banking Penetration</b> - Payment vulnerabilities, mobile banking apps, verification bypass, penetration paths</summary>
 
-- **资金类漏洞**：密码重置(88%高危)、提现绕过(83.1%)、金额篡改(83.0%)、支付漏洞(68.7%)
-- **银行特有面**：手机银行(SSL Pinning 绕过)、网银(ActiveX/前端加密)、第三方支付接口
-- **验证绕过**：短信验证码(爆破/并发/复用)、人脸识别(照片/Hook)、交易签名(密钥硬编码)
-- **渗透路径**：外部 Web → 移动端 → 供应链 → 核心银行/信贷/风控
+- **Financial Vulnerabilities:** Password reset (88% high-sev), withdrawal bypass (83.1%), amount tampering (83.0%), payment bypass (68.7%)
+- **Banking-Specific Surfaces:** Mobile banking (SSL Pinning bypass), online banking (ActiveX/front-end encryption), third-party payment APIs
+- **Verification Bypass:** SMS OTP (brute force/concurrency/reuse), facial recognition (photo/hook), transaction signatures (hardcoded keys)
+- **Penetration Paths:** External Web -> Mobile -> Supply chain -> Core banking/credit/risk control
 
-详见 [`examples/bank-penetration.md`](examples/bank-penetration.md)
+See [`examples/bank-penetration.md`](examples/bank-penetration.md)
 
 </details>
 
-## 项目结构
+## Project Structure
 
 ```
-wooyun-legacy/                              # Marketplace 仓库
-├── .claude-plugin/
-│   └── marketplace.json                    # Marketplace 清单（tanweai-security）
-├── plugins/
-│   └── wooyun-legacy/                      # 插件目录（安装时被复制到缓存）
-│       ├── .claude-plugin/
-│       │   └── plugin.json                 # 插件清单
-│       ├── skills/
-│       │   └── wooyun-legacy/
-│       │       ├── SKILL.md                # 主技能 — 方法论入口 + 三层引用索引
-│       │       └── references/             # 第一层：6 大领域参考
-│       │           ├── authentication-domain.md
-│       │           ├── authorization-domain.md
-│       │           ├── financial-domain.md
-│       │           ├── information-domain.md
-│       │           ├── logic-flow-domain.md
-│       │           └── configuration-domain.md
-│       ├── knowledge/                      # 第二层：8 个深度分析手册
-│       │   ├── command-execution.md        #   命令注入完整攻击链
-│       │   ├── sql-injection.md            #   SQL 注入 + WAF 绕过
-│       │   ├── file-upload.md              #   上传绕过 Payload 矩阵
-│       │   ├── xss.md                      #   XSS 输入点和绕过
-│       │   └── ...                         #   (共 8 个技术文件)
-│       └── categories/                     # 第三层：15 个漏洞案例索引
-│           ├── sql-injection.md            #   典型案例 + 高频 Payload
-│           ├── unauthorized-access.md      #   越权案例 + 攻击模式
-│           ├── weak-password.md            #   弱口令案例 + 高频密码
-│           └── ...                         #   (共 15 个分类文件)
-├── categories/                             # 原始漏洞案例库（完整版，71MB）
-├── knowledge/                              # 原始知识方法论（完整版）
-├── evals/                                  # 评估基准数据
-├── examples/                               # 行业渗透实战示例
-├── LICENSE                                 # CC BY-NC-SA 4.0
-└── README.md
+wooyun-legacy/                              # Marketplace repository
++-- .claude-plugin/
+|   +-- marketplace.json                    # Marketplace manifest (tanweai-security)
++-- plugins/
+|   +-- wooyun-legacy/                      # Plugin directory (copied to cache on install)
+|       +-- .claude-plugin/
+|       |   +-- plugin.json                 # Plugin manifest
+|       +-- skills/
+|       |   +-- wooyun-legacy/
+|       |       +-- SKILL.md                # Main skill - methodology entry + 3-layer reference index
+|       |       +-- references/             # Layer 1: 6 domain references
+|       |           +-- authentication-domain.md
+|       |           +-- authorization-domain.md
+|       |           +-- financial-domain.md
+|       |           +-- information-domain.md
+|       |           +-- logic-flow-domain.md
+|       |           +-- configuration-domain.md
+|       +-- knowledge/                      # Layer 2: 8 deep analysis manuals
+|       |   +-- command-execution.md        #   Command injection full attack chain
+|       |   +-- sql-injection.md            #   SQL injection + WAF bypass
+|       |   +-- file-upload.md              #   Upload bypass payload matrix
+|       |   +-- xss.md                      #   XSS input points and bypass
+|       |   +-- ...                         #   (8 technical files total)
+|       +-- categories/                     # Layer 3: 15 vulnerability case indexes
+|           +-- sql-injection.md            #   Example cases + frequent payloads
+|           +-- unauthorized-access.md      #   Authorization cases + attack patterns
+|           +-- weak-password.md            #   Weak password cases + frequent passwords
+|           +-- ...                         #   (15 category files total)
++-- categories/                             # Full vulnerability case database (71MB)
++-- knowledge/                              # Full knowledge methodology
++-- evals/                                  # Evaluation benchmark data
++-- examples/                               # Industry penetration playbooks
++-- LICENSE                                 # CC BY-NC-SA 4.0
++-- README.md
 ```
 
-## 系统要求
+## System Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI（需要 Claude Pro / Max / Team / Enterprise 订阅）
-- 无其他外部依赖
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (requires Claude Pro / Max / Team / Enterprise subscription)
+- No other external dependencies
 
-## 数据来源
+## Data Source
 
-- **WooYun**（乌云）：大型公开漏洞披露平台（2010-2016），累计收录 88,636 个漏洞
-- 本插件聚焦其中 **22,132 个业务逻辑漏洞**，横跨电商、金融、社交、公共服务、运营平台、云服务等行业
-- 所有案例数据、统计比例、高危占比均来自原始漏洞数据库的结构化分析
+- **WooYun**: a large public vulnerability disclosure platform (2010-2016), 88,636 total vulnerabilities collected
+- This plugin focuses on **22,132 business logic vulnerabilities** across e-commerce, finance, social media, government, telecom, cloud services, and more
+- All case data, statistical ratios, and high-severity percentages are derived from structured analysis of the original vulnerability database
 
-## 贡献指南
+## Contributing
 
-欢迎贡献！以下是参与方式：
+Contributions welcome! Here's how to participate:
 
-1. **报告问题**：在 [Issues](https://github.com/tanweai/wooyun-legacy/issues) 中提出 bug 或建议
-2. **提交案例**：补充新的漏洞案例或攻击模式到对应领域的 reference 文件
-3. **改进方法论**：优化 SKILL.md 中的测试步骤或假设形成策略
-4. **添加行业示例**：在 `examples/` 中添加新的行业渗透方法论
+1. **Report Issues:** File bugs or suggestions in [Issues](https://github.com/tanweai/wooyun-legacy/issues)
+2. **Submit Cases:** Add new vulnerability cases or attack patterns to the relevant domain reference files
+3. **Improve Methodology:** Optimize test procedures or hypothesis formation strategies in SKILL.md
+4. **Add Industry Examples:** Create new industry penetration methodologies in `examples/`
 
-提交 PR 前请确保：
-- 不包含未脱敏的真实漏洞细节（URL、IP、凭证）
-- 案例引用保持"公司名 + 漏洞类型"的格式，不暴露具体利用细节
-- 遵循现有的文件结构和命名规范
+Before submitting a PR, please ensure:
+- No unredacted real vulnerability details (URLs, IPs, credentials)
+- Case references maintain the "company name + vulnerability type" format without exposing specific exploitation details
+- Follow the existing file structure and naming conventions
 
-## 许可证
+## License
 
-[CC BY-NC-SA 4.0](LICENSE) — 署名-非商业性使用-相同方式共享
+[CC BY-NC-SA 4.0](LICENSE) - Attribution-NonCommercial-ShareAlike
 
-- 可自由使用于安全研究、教育培训、授权测试
-- 禁止用于商业产品（需另行授权）
-- 衍生作品须以相同许可证发布
+- Free to use for security research, education, and authorized testing
+- Commercial use prohibited (separate licensing required)
+- Derivative works must be released under the same license
 
-## 免责声明
+## Disclaimer
 
-**本插件仅供安全研究、教育培训、授权渗透测试使用。**
+**This plugin is intended solely for security research, education, and authorized penetration testing.**
 
-严禁用于未经授权的渗透测试或任何违法活动。使用者需自行承担因不当使用而产生的法律责任。WooYun 案例引用仅包含公司名和漏洞类型描述，不包含可直接利用的漏洞细节。
+It is strictly prohibited to use this plugin for unauthorized penetration testing or any illegal activities. Users assume full legal responsibility for any misuse. WooYun case references include only company names and vulnerability type descriptions - no directly exploitable vulnerability details are included.
 
-## 致敬
+## Tribute
 
-致敬 WooYun 和那个时代的白帽子们。
+In honor of WooYun and the white-hat hackers of that era.
 
 ---
 
-*Tanwe Security Lab*
+*A product of Tanwe Security Lab*

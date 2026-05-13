@@ -1,9 +1,9 @@
 {
   "name": "wooyun-legacy",
   "version": "2.0.0",
-  "description": "WooYun business logic vulnerability methodology — security testing skill based on 22,132 real vulnerability cases covering 6 domains and 33 vulnerability classes",
+  "description": "WooYun business logic vulnerability methodology - security testing skill based on 22,132 real vulnerability cases covering 6 domains and 33 vulnerability classes",
   "author": {
-    "name": "探微安全实验室",
+    "name": "Tanwe Security Lab",
     "url": "https://github.com/tanweai"
   },
   "homepage": "https://github.com/tanweai/wooyun-legacy",

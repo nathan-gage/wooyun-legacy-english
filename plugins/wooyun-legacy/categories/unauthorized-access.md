@@ -1,62 +1,62 @@
-# UNAUTHORIZED-ACCESS 漏洞分析
+# UNAUTHORIZED-ACCESS Vulnerability Analysis
 
-> 自动提取于 2026-01-23 18:57
-> 样本数量: 15
+> Automatically extracted on 2026-01-23 18:57
+> Sample count: 15
 
 
-> 总案例数: 15
+> Total case count: 15
 
-## 高频参数
+## High-Frequency Parameters
 ```
-  lstate: 1次
-  cmd: 1次
-  trueName: 1次
-```
-
-
-### 攻击模式分布
-```
-  越权: 4次
-  绕过: 3次
-  泄露: 2次
-  上传: 1次
+  lstate: 1 occurrence
+  cmd: 1 occurrence
+  trueName: 1 occurrence
 ```
 
 
-## 典型案例标题
+### Attack Pattern Distribution
+```
+  privilege overreach: 4 occurrences
+  bypass: 3 occurrences
+  disclosure: 2 occurrences
+  upload: 1 occurrence
+```
 
-- 暴风某站redis未授权可任意上传文件
-  漏洞类型：网络未授权访问
-- 找对象App平行越权可任意更改他人爱情宣言，查看约会
-  漏洞类型：未授权访问/权限绕过
-- 某单位存在安全漏洞公众号运营平台泄漏敏感信息
-  漏洞类型：未授权访问/权限绕过
-- 龙珠网直播平台一处越权修改他人信息
-  漏洞类型：未授权访问/权限绕过
-- 某单位存在安全漏洞某系统存在多处越权打包泄漏大量内部员工手机号/姓名/邮箱等
-  漏洞类型：未授权访问/权限绕过
-- 赣企建站系统后台登录绕过
-  漏洞类型：非授权访问/权限绕过
-- 某单位存在安全漏洞公司)
-  漏洞类型：未授权访问/权限绕过
-- 驼峰摘要某服务未授权访问，敏感信息泄露，可写webshell
-  漏洞类型：未授权访问/权限绕过
-- 某单位存在安全漏洞(涉及三大运营商)
-  漏洞类型：未授权访问/权限绕过
-- 某市锅炉节能安全环保监控系统登录绕过
-  漏洞类型：未授权访问/权限绕过
-- 中国信鸽网后台未授权访问
-  漏洞类型：网络未授权访问
-- 花椒直播任意用户登录（以王祖蓝为例）
-  漏洞类型：未授权访问/权限绕过
-- 某游戏平台mongodb未授权访问泄露大量数据（千万条用户名、gps定位、地理位置）
-  漏洞类型：未授权访问/权限绕过
-- 奥体某终端机沙箱绕过
-  漏洞类型：未授权访问/权限绕过
-- 我是如何让某手机厂商手环最新版狂震不止
-  漏洞类型：未授权访问/权限绕过
 
-## 高频 Payload 模式
+## Representative Case Titles
+
+- Unauthorized Redis access on a Baofeng site allows arbitrary file uploads
+  Vulnerability type: network unauthorized access
+- Zhaoduixiang App horizontal privilege overreach allows arbitrary changes to other users' love declarations and viewing dates
+  Vulnerability type: unauthorized access / permission bypass
+- A certain organization's public-account operations platform leaks sensitive information
+  Vulnerability type: unauthorized access / permission bypass
+- One privilege-overreach issue on Longzhu Live allows modification of other users' information
+  Vulnerability type: unauthorized access / permission bypass
+- A certain organization's system has multiple privilege-overreach issues that package and leak large amounts of internal employee phone numbers, names, emails, etc.
+  Vulnerability type: unauthorized access / permission bypass
+- Ganqi site-building system backend login bypass
+  Vulnerability type: unauthorized access / permission bypass
+- A certain organization has a security vulnerability company)
+  Vulnerability type: unauthorized access / permission bypass
+- Unauthorized access to a Tuofeng Digest service; sensitive information disclosure; writable webshell
+  Vulnerability type: unauthorized access / permission bypass
+- A certain organization has a security vulnerability (involving the three major telecom operators)
+  Vulnerability type: unauthorized access / permission bypass
+- Login bypass in a city's boiler energy-saving, safety, and environmental monitoring system
+  Vulnerability type: unauthorized access / permission bypass
+- Unauthorized backend access on China Racing Pigeon Network
+  Vulnerability type: network unauthorized access
+- Huajiao Live arbitrary user login (using Wong Cho-lam as the example)
+  Vulnerability type: unauthorized access / permission bypass
+- Unauthorized MongoDB access on a gaming platform leaks a large amount of data (tens of millions of usernames, GPS coordinates, and locations)
+  Vulnerability type: unauthorized access / permission bypass
+- Sandbox bypass on an Aoti terminal
+  Vulnerability type: unauthorized access / permission bypass
+- How I made the latest band from a phone manufacturer vibrate nonstop
+  Vulnerability type: unauthorized access / permission bypass
+
+## High-Frequency Payload Patterns
 ```
 andaloneos:Linux 2.6.18-274.el5 x86_64arch_bits:64mul
 ```

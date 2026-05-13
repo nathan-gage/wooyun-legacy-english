@@ -12,7 +12,7 @@
     {
       "name": "wooyun-legacy",
       "source": "./plugins/wooyun-legacy",
-      "description": "WooYun business logic vulnerability methodology — a security testing knowledge plugin distilled from 22,132 public cases, adding evidence-based references, quantitative statistics, and data-driven prioritization.",
+      "description": "WooYun business logic vulnerability methodology - a security testing knowledge plugin distilled from 22,132 public cases, adding evidence-based references, quantitative statistics, and data-driven prioritization.",
       "version": "2.0.0",
       "author": {
         "name": "Tanwe Security Lab"

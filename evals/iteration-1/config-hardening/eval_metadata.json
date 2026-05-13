@@ -1,31 +1,29 @@
 {
-  "eval_id": 6,
-  "eval_name": "config-hardening",
-  "prompt": "我接手了一个遗留项目的安全加固任务。技术栈是 Tomcat + MySQL + Redis + Nginx，很多配置都是默认的。帮我出一个配置安全检查和加固方案，要能直接对照执行。",
-  "assertions": [
-    {
-      "id": "wooyun-cases",
-      "text": "wooyun-cases: 包含至少2个具体WooYun案例（需有公司名）"
-    },
-    {
-      "id": "statistics",
-      "text": "statistics: 包含WooYun量化统计（案例数或占比）"
-    },
-    {
-      "id": "all-components",
-      "text": "all-components: 覆盖Tomcat/MySQL/Redis/Nginx"
-    },
-    {
-      "id": "default-creds",
-      "text": "default-creds: 含默认凭证检查"
-    },
-    {
-      "id": "specific-commands",
-      "text": "specific-commands: 含可执行命令"
-    },
-    {
-      "id": "priority-ranking",
-      "text": "priority-ranking: 有优先级排序"
-    }
-  ]
+ "eval_id": 6,
+ "eval_name": "config-hardening",
+ "prompt": "I connect mobile done one retainitemsdirectoryofSecureHardeningany service.technique stack is Tomcat + MySQL + Redis + Nginx, manyConfigurationall is default authof.help I out oneConfigurationSecureCheckandHardeningmethod plan, need canDirectfor photoExecute.",
+ "assertions": [{
+ "id": "wooyun-cases",
+ "text": "wooyun-cases: include includeat least2ConcreteWooYunCase(company name required)"
+ },
+ {
+ "id": "statistics",
+ "text": "statistics: include includeWooYunQuantitative Statistics(case count or percentage)"
+ },
+ {
+ "id": "all-components",
+ "text": "all-components: cover coverTomcat/MySQL/Redis/Nginx"
+ },
+ {
+ "id": "default-creds",
+ "text": "default-creds: includeDefault CredentialsCheck"
+ },
+ {
+ "id": "specific-commands",
+ "text": "specific-commands: includeCanExecuteCommand"
+ },
+ {
+ "id": "priority-ranking",
+ "text": "priority-ranking: hasPriorityrank sequence"
+ }]
 }

@@ -1,506 +1,506 @@
-# H5 电商商城 SRC 漏洞挖掘计划
+# H5 electronic commerce commerce SRC vulnerability plan
 
-> 目标：微信内嵌 H5 商城 | 时间窗口：2 天 | 已有资产：普通用户账号 + 4 个关键 API
-> 方法论：WooYun 业务逻辑漏洞方法论（22,132 案例）
+> Target:WeChatinternal H5 commerce | Time Window:2 days | already has resource asset:Regular UserAccount + 4 key API
+> Methodcomment:WooYun Business Logic Vulnerability Methodology(22,132 Case)
 
 ---
 
-## 资产清单
+## resource asset clear single
 
-| 资产 | 说明 |
+| resource asset | Description |
 |------|------|
-| `/api/user/info` | 用户信息接口（读取/可能含修改） |
-| `/api/order/list` | 订单列表接口（读取） |
-| `/api/payment/create` | 支付创建接口（写入，金融核心） |
-| `/api/address/update` | 地址更新接口（写入） |
-| 普通用户账号 | 已认证会话 |
-| 微信 H5 环境 | 微信 OAuth + JS-SDK + 内嵌 WebView |
+| `/api/user/info` | UserinformationInterface(Read/Cancan includeModify) |
+| `/api/order/list` | OrderlistInterface(Read) |
+| `/api/payment/create` | PaymentCreateInterface(write inject, Financialaudit core) |
+| `/api/address/update` | AddressUpdateInterface(write inject) |
+| Regular UserAccount | alreadyAuthenticationSession |
+| WeChat H5 environment environment | WeChat OAuth + JS-SDK + internal WebView |
 
 ---
 
-## 优先级总览（按 WooYun 高危占比排序）
+## Prioritytotal (by WooYun high-risk percentagerank sequence)
 
-| 优先级 | 测试方向 | WooYun 高危占比 | 预计耗时 | 目标 API |
+| Priority | test method toward | WooYun high-risk percentage | expected plan time | Target API |
 |--------|---------|----------------|---------|---------|
-| P0 | 支付金额篡改 | 83.0% | 3h | `/api/payment/create` |
-| P0 | 订单越权 (IDOR) | 74.2% + 62.3% | 3h | `/api/order/list` |
-| P1 | 用户信息越权 | 62.3% | 2h | `/api/user/info` |
-| P1 | 地址越权修改 | 62.3% | 1.5h | `/api/address/update` |
-| P1 | 支付状态机绕过 | 68.7% | 2h | `/api/payment/create` |
-| P2 | 竞态条件 (双花) | 74.8% | 2h | `/api/payment/create` |
-| P2 | 信息泄露 | 64.7% | 1.5h | 全部 API |
-| P3 | 微信 OAuth 认证缺陷 | 88.0% | 1h | 登录/授权流程 |
-| P3 | 隐藏端点发现 | 72.6% | 1h | JS 源码分析 |
+| P0 | Payment Amount Tampering | 83.0% | 3h | `/api/payment/create` |
+| P0 | Orderbypass permission (IDOR) | 74.2% + 62.3% | 3h | `/api/order/list` |
+| P1 | Userinformation bypass permission | 62.3% | 2h | `/api/user/info` |
+| P1 | Addressbypass permissionModify | 62.3% | 1.5h | `/api/address/update` |
+| P1 | PaymentState-Machine Bypass | 68.7% | 2h | `/api/payment/create` |
+| P2 | Race Condition (dual flower) | 74.8% | 2h | `/api/payment/create` |
+| P2 | Information Disclosure | 64.7% | 1.5h | All API |
+| P3 | WeChat OAuth Authenticationmissing flaw | 88.0% | 1h | Login/Authorizationflow process |
+| P3 | hidden hiddenEndpointDiscover | 72.6% | 1h | JS source codeAnalyze |
 
 ---
 
-## 第一天：高价值目标（金融 + 越权）
+## No. onedays:Highprice valueTarget(Financial + bypass permission)
 
-### 阶段零：侦察与准备（1 小时）
+### Phasezero: andaccurate prepare(1 hours)
 
-#### 0.1 注册第二个测试账号
+#### 0.1 RegistrationNo. twoTest Account
 
-至少需要 2 个同级账号（账号 A、账号 B），用于水平越权测试。
+at leastrequires 2 same levelAccount(Account A/Account B), useforHorizontal Authorization Bypasstest.
 
-> **WooYun 依据：** 1,705 个 IDOR 案例中，绝大多数需要双账号对比才能发现。
+> **WooYun depend according:** 1,705 IDOR Casein, reject large many numberrequiresdualAccountfor ratio canDiscover.
 
-#### 0.2 抓取前端 JS 源码
-
-```
-目标：
-- 微信 H5 页面加载的所有 JS 文件（webpack bundle）
-- 搜索关键词：/api/、apiUrl、baseURL、admin、hidden、secret、token、key
-- 提取所有 API 端点列表（远超已知的 4 个）
-- 查找硬编码的密钥/token
-```
-
-> **WooYun 案例：** 4,858 个信息泄露案例中大量来自前端 JS 暴露的内部 API。
-
-#### 0.3 配置抓包环境
+#### 0.2 capture takeFrontend JS source code
 
 ```
-工具：Charles / Burp Suite（微信 H5 需信任证书）
-记录：
-- 所有请求的完整 Header（特别注意 Authorization、Cookie、X-Token 等）
-- 请求/响应中的 ID 字段格式（顺序整数 vs UUID）
-- 响应中返回的字段数量（是否过度返回）
+Target:
+- WeChat H5 page add ofAll JS File(webpack bundle)
+- search keywords:/api//apiUrl/baseURL/admin/hidden/secret/token/key
+- provide takeAll API Endpointlist(remote super already notifyof 4)
+- check hardEncodingofKey/token
 ```
 
----
+> **WooYun Case:** 4,858 Information DisclosureCaseinlarge quantity come selfFrontend JS expose exposureofinternal part API.
 
-### P0-1：支付金额篡改（3 小时）
-
-**WooYun 统计：** 金额篡改 176 案例/83.0% 高危 + 支付绕过 1,056 案例/68.7% 高危
-
-**WooYun 案例参考：**
-- "M1905 电影网价值 2588 套餐只要 5 毛钱" — 客户端金额可篡改，5000 倍价格差异
-- "百度智能微校可篡改捐款金额" — 金额参数未做服务端校验
-- "鱼泡泡 APP 任意用户登录可影响用户账户余额（sign 绕过）" — 签名校验可绕过
-
-#### 测试清单
+#### 0.3 Configurationpacket capture environment environment
 
 ```
-对 /api/payment/create 请求：
-
-1. 价格篡改
-   - [ ] 拦截支付请求，修改 amount/price/total 字段为 0.01
-   - [ ] 修改金额为 0（零元购）
-   - [ ] 修改金额为负数（如 -100，观察是否触发退款逻辑）
-   - [ ] 修改金额为极大负数（整数溢出测试）
-   - [ ] 分别修改 unit_price 和 total_price（如果两者都存在）
-   - [ ] 修改货币单位字段（如果存在 currency 参数）
-
-2. 数量篡改
-   - [ ] 数量改为 0（免费获取商品）
-   - [ ] 数量改为 -1（负数购买 = 可能触发退款）
-   - [ ] 数量改为小数（0.001）
-   - [ ] 数量改为极大值（2147483647，测试整数溢出）
-   - [ ] 数量与价格不一致（数量=1 但总价=0.01）
-
-3. 优惠/折扣篡改
-   - [ ] 添加 discount=100 或 discount=99.99 参数
-   - [ ] 重复使用同一优惠券码
-   - [ ] 过期优惠券重放
-   - [ ] 跨品类使用优惠券
-   - [ ] 堆叠多种优惠类型（满减 + 优惠券 + 积分）
-
-4. 签名/校验绕过
-   - [ ] 是否存在 sign/signature 参数？分析其算法
-   - [ ] 移除 sign 参数，观察服务端是否仍接受
-   - [ ] 修改金额后不更新 sign，观察是否校验
-   - [ ] 分析 sign 算法（常见：MD5(key+params)），尝试重新计算
-```
-
-#### 关键观察点
-
-```
-支付创建后，检查：
-- 服务端返回的订单金额 vs 客户端提交的金额 → 是否以客户端为准？
-- 支付回调（如微信支付 notify_url）中的金额 vs 订单金额 → 是否一致性校验？
-- 支付成功后订单状态 → 低价支付是否也能完成订单？
+Tool:Charles / Burp Suite(WeChat H5 need information any cert certificate)
+Record:
+- AllRequestofComplete Header(special level inject meaning Authorization/Cookie/X-Token etc.)
+- Request/Responseinof ID Fieldformat mode(order sequence integer number vs UUID)
+- ResponseinReturnofFieldnumber quantity(whetherthrough degreeReturn)
 ```
 
 ---
 
-### P0-2：订单越权 IDOR（3 小时）
+### P0-1:Payment Amount Tampering(3 hours)
 
-**WooYun 统计：** 越权 1,705 案例/62.3% 高危 + 订单篡改 1,227 案例/74.2% 高危
+**WooYun Statistics:** Amount Tampering 176 Case/83.0% High Risk + Payment Bypass 1,056 Case/68.7% High Risk
 
-**WooYun 案例参考：**
-- "北京现代某平台越权遍历几百万身份证件/行驶证件" — 顺序文件 ID 无所有权校验
-- "花礼网某处平行权限漏洞（影响所有使用用户）" — 水平越权泄露全部用户数据
-- "美国东航网站严重订单信息泄漏及权限绕过" — 订单数据 + 权限提升
+**WooYun Case References:**
+- "M1905 Movie site value 2588 Packageonly costs 5 jiao" - ClientAmountCantamper change, 5000 price format error abnormal
+- "Baidu can micro Cantamper change paymentAmount" - AmountParameternot doServerValidate
+- " APP ArbitraryUserLoginCanimpact responseUserAccountBalance(sign Bypass)" - SignatureValidateCanBypass
 
-#### 测试清单
-
-```
-对 /api/order/list 和相关端点：
-
-1. 水平越权（用户 A 看用户 B 的订单）
-   - [ ] 替换 order_id 为其他值（+1、-1、随机值）
-   - [ ] 替换 user_id 为账号 B 的 ID
-   - [ ] 参数污染：order_id=自己的&order_id=别人的
-   - [ ] 数组注入：order_id[]=自己的&order_id[]=别人的
-   - [ ] JSON 嵌套：{"order_id": "别人的", "user": {"id": "别人的"}}
-   - [ ] 枚举 order_id 范围，检查返回数据所有权
-
-2. 订单详情越权
-   - [ ] 通过 /api/order/detail?id=XXX 直接访问他人订单
-   - [ ] 订单号是否为顺序整数？（极易枚举）
-   - [ ] 通过修改分页参数越权：page=1&size=99999（批量泄露）
-
-3. 订单操作越权
-   - [ ] 用 A 的 token 取消 B 的订单
-   - [ ] 用 A 的 token 修改 B 的订单状态
-   - [ ] 用 A 的 token 申请 B 的退款
-   - [ ] 用 A 的 token 确认收货 B 的订单
-
-4. ID 格式分析
-   - [ ] 记录自己的 3+ 个订单 ID，分析规律
-   - [ ] 如果是顺序 ID → 直接枚举（严重）
-   - [ ] 如果是时间戳 + 序号 → 预测范围缩小
-   - [ ] 如果是 UUID → 尝试其他入口获取他人 UUID
-```
-
----
-
-### P1-1：用户信息越权（2 小时）
-
-**WooYun 统计：** 越权 1,705 案例/62.3% 高危 + 信息泄露 4,858 案例/64.7% 高危
-
-**WooYun 案例参考：**
-- "TCL 某系统配置不当导致 600 万顾客姓名/手机/家庭住址泄露" — API 过度返回
-- "百姓大药房漏洞危及 2000W 个人详细信息" — 批量用户信息泄露
-- "超级课程表某主营业务逻辑缺陷导致全体用户真实姓名手机和 QQ 泄露" — 设计缺陷
-
-#### 测试清单
+#### Test Checklist
 
 ```
-对 /api/user/info：
+for /api/payment/create Request:
 
-1. 信息过度返回
-   - [ ] 对比 API 响应字段数 vs H5 页面显示字段数
-   - [ ] 是否返回了：密码哈希、手机全号、身份证号、银行卡号？
-   - [ ] 是否返回了内部字段：role、is_admin、permission、internal_id？
-   - [ ] 响应中是否包含其他用户的关联信息？
+1. price format tamper change
+ - [] InterceptPaymentRequest, Modify amount/price/total Fieldas 0.01
+ - [] ModifyAmountas 0(zeroyuanbuy)
+ - [] ModifyAmountasNegative Number(such as -100, Observewhethertrigger initiateRefundlogic logic)
+ - [] ModifyAmountasextreme largeNegative Number(integer number out test)
+ - [] part levelModify unit_price and total_price(such asif two person all existin)
+ - [] Modifygoods single charactersField(such asif existin currency Parameter)
 
-2. 水平越权读取
-   - [ ] 添加/修改 user_id 参数为其他用户 ID
-   - [ ] 修改 URL 路径中的 ID（如 /api/user/info/123 → /api/user/info/124）
-   - [ ] 通过 Header 中的 X-User-Id 或自定义字段替换
-   - [ ] 枚举用户 ID 范围（如果为顺序 ID，可批量泄露）
+2. number quantity tamper change
+ - [] number quantity changeas 0(avoid feeObtaincommerce product)
+ - [] number quantity changeas -1(Negative Numberbuy buy = Cancan trigger initiateRefund)
+ - [] number quantity changeassmall number(0.001)
+ - [] number quantity changeasextreme large value(2147483647, test integer number out)
+ - [] number quantityandprice format not one cause(number quantity=1 but total price=0.01)
 
-3. 垂直越权
-   - [ ] 在请求中添加 role=admin 或 is_admin=1
-   - [ ] 访问 /api/admin/user/info 等管理端点
-   - [ ] 修改 HTTP 方法（GET → POST → PUT → DELETE）
+3. priority /discount deduct tamper change
+ - [] Add discount=100 or discount=99.99 Parameter
+ - [] serious repeat useuseSameCouponcode
+ - [] expiredCouponReplay
+ - [] cross product type useuseCoupon
+ - [] stack many type priority type(reduce + Coupon + part)
 
-4. 用户信息修改越权
-   - [ ] 是否存在 /api/user/update 或类似端点？
-   - [ ] 能否修改其他用户的手机号/邮箱/昵称？
-   - [ ] 能否通过修改邮箱/手机号接管其他账户？
+4. Signature/ValidateBypass
+ - [] whether exists sign/signature Parameter?Analyzeother algorithm method
+ - [] move remove sign Parameter, ObserveServerwhetherstill connect affected
+ - [] ModifyAmountafter notUpdate sign, ObservewhetherValidate
+ - [] Analyze sign algorithm method(common seen:MD5(key+params)), Attemptserious newCompute
+```
+
+#### keyObservepoint
+
+```
+PaymentCreateafter, Check:
+- ServerReturnofOrderAmount vs ClientSubmitofAmount -> whetherasClientasaccurate?
+- PaymentCallback(such asWeChatPayment notify_url)inofAmount vs OrderAmount -> whetherone cause nessValidate?
+- PaymentSuccessafterOrderStatus -> LowpricePaymentwhether can completeOrder?
 ```
 
 ---
 
-### P1-2：地址越权修改（1.5 小时）
+### P0-2:Orderbypass permission IDOR(3 hours)
 
-**WooYun 统计：** 任意修改 159 案例/63.5% 高危
+**WooYun Statistics:** bypass permission 1,705 Case/62.3% High Risk + Order Tampering 1,227 Case/74.2% High Risk
 
-#### 测试清单
+**WooYun Case References:**
+- "Beijing Hyundai platform allowed unauthorized traversal of millions of identity documents/vehicle registration documents" - order sequenceFile ID noAllpermissionValidate
+- "Hua.com horizontal authorization vulnerability(impact responseAlluseuseUser)" - Horizontal Authorization BypassDisclosureAllUserData
+- "China Eastern Airlines US site severe order information leak and authorization bypass" - OrderData + Privilege Escalation
 
-```
-对 /api/address/update：
-
-1. 水平越权修改
-   - [ ] 替换 address_id 为他人地址 ID
-   - [ ] 替换 user_id 为他人用户 ID
-   - [ ] 用账号 A 的 token 修改账号 B 的收货地址
-   - [ ] 修改他人默认地址 → 后续订单发货到攻击者地址
-
-2. 批量枚举
-   - [ ] 枚举 address_id 获取他人地址（姓名、电话、详细地址）
-   - [ ] 通过 /api/address/list 是否可指定其他 user_id
-
-3. 地址注入
-   - [ ] 地址字段是否有长度限制/过滤？（XSS 可能性）
-   - [ ] 地址字段是否用于后续流程（如发票、物流标签）→ 存储型 XSS
-
-4. 业务影响
-   - [ ] 修改他人默认地址 → 包裹拦截（实物损失）
-   - [ ] 泄露他人地址 → 隐私数据（姓名+电话+住址）
-```
-
----
-
-## 第二天：深度测试（逻辑 + 竞态 + 信息泄露 + 认证）
-
-### P1-3：支付状态机绕过（2 小时）
-
-**WooYun 统计：** 设计缺陷 1,391 案例/65.3% 高危 + 支付绕过 1,056 案例/68.7% 高危
-
-**WooYun 案例参考：**
-- "114 票务网某站逻辑漏洞利用支付超时导致上万用户敏感信息泄漏" — 状态机缺陷
-- "大特宝官网业务逻辑漏洞可免费甚至低款买保险" — 免费购买绕过
-- "丽子美妆某处严重逻辑漏洞" — 电商逻辑绕过
-
-#### 测试清单
+#### Test Checklist
 
 ```
-支付流程状态机：
-  购物车 → 提交订单 → 创建支付 → 微信支付 → 支付回调 → 订单完成
+for /api/order/list andrelated keyEndpoint:
 
-攻击向量：
+1. Horizontal Authorization Bypass(User A User B ofOrder)
+ - [] Replace order_id asother value(+1/-1/ machine value)
+ - [] Replace user_id asAccount B of ID
+ - [] Parameter Pollution:order_id=self ownof&order_id=level personof
+ - [] number array inject inject:order_id[]=self ownof&order_id[]=level personof
+ - [] JSON Nested:{"order_id": "level personof", "user": {"id": "level personof"}}
+ - [] Enumeration order_id Scope, CheckReturnDataAllpermission
 
-1. 跳过支付步骤
-   - [ ] 提交订单后，直接调用订单确认/完成接口
-   - [ ] 不经过微信支付，直接伪造支付成功回调
-   - [ ] 分析支付回调 URL（notify_url），尝试主动请求
+2. Orderdetailed details bypass permission
+ - [] Pass /api/order/detail?id=XXX Directaccess ask other personOrder
+ - [] Ordernumberwhether isorder sequence integer number?(extreme easyEnumeration)
+ - [] PassModifypart pageParameterbypass permission:page=1&size=99999(BatchDisclosure)
 
-2. 支付回调伪造
-   - [ ] 捕获一次真实支付成功的回调数据
-   - [ ] 用相同结构重放到另一个未支付订单
-   - [ ] 修改回调中的 order_id 指向高价值订单
-   - [ ] 回调验签是否存在？签名算法是否可破解？
+3. Orderoperation bypass permission
+ - [] use A of token Cancel B ofOrder
+ - [] use A of token Modify B ofOrderStatus
+ - [] use A of token please B ofRefund
+ - [] use A of token Confirmcollect goods B ofOrder
 
-3. 订单状态篡改
-   - [ ] 直接修改订单状态参数：status=paid / status=shipped
-   - [ ] 已支付 → 退款 → 重新使用商品（退款不退货）
-   - [ ] 已取消的订单能否恢复？恢复后价格是否保持？
-
-4. 支付后修改
-   - [ ] 支付成功后修改订单中的商品/地址/数量
-   - [ ] 低价商品支付成功 → 修改为高价商品
+4. ID format modeAnalyze
+ - [] Recordself ownof 3+ Order ID, Analyzescale law
+ - [] such asif is order sequence ID -> DirectEnumeration(Severe)
+ - [] such asif is timestamp + sequence number -> predictionScope small
+ - [] such asif is UUID -> Attemptother inject interfaceObtainother person UUID
 ```
 
 ---
 
-### P2-1：竞态条件/双花（2 小时）
+### P1-1:Userinformation bypass permission(2 hours)
 
-**WooYun 统计：** 逻辑漏洞 266 案例/74.8% 高危
+**WooYun Statistics:** bypass permission 1,705 Case/62.3% High Risk + Information Disclosure 4,858 Case/64.7% High Risk
 
-**WooYun 案例参考：**
-- 余额竞态提现：从 100 余额中并发提取 200
-- 优惠券竞态：单次使用优惠券被并发使用多次
+**WooYun Case References:**
+- "TCL a systemMisconfiguration Leading To 600 ten-thousand clientName/mobile machine/ Disclosure" - API through degreeReturn
+- "percent large vulnerability risk involving 2000W personDetailedinformation" - BatchUserInformation Disclosure
+- "super level lesson process table some primary business logic logic missing flawCausingall bodyUserreal realNamemobile machineand QQ Disclosure" - Design Flaw
 
-#### 测试清单
-
-```
-使用 Burp Turbo Intruder 或并发脚本：
-
-1. 优惠券竞态
-   - [ ] 同一优惠券，并发 10-20 个使用请求
-   - [ ] 预期：仅 1 个成功
-   - [ ] 漏洞：多个成功 = 无限优惠
-
-2. 库存竞态
-   - [ ] 限购 1 件商品，并发 10 个下单请求
-   - [ ] 限量商品，并发抢购
-   - [ ] 预期：仅允许购买限购数量
-   - [ ] 漏洞：超出限购 = 库存控制失效
-
-3. 余额/积分竞态
-   - [ ] 余额仅够 1 次消费，并发 5 次支付请求
-   - [ ] 积分兑换并发请求
-   - [ ] 预期：仅 1 次成功
-   - [ ] 漏洞：多次成功 = 双花
-
-4. 签到/领取竞态
-   - [ ] 每日签到奖励并发请求
-   - [ ] 新人礼包并发领取
-   - [ ] 预期：仅 1 次
-   - [ ] 漏洞：多次领取
-```
-
----
-
-### P2-2：信息泄露（1.5 小时）
-
-**WooYun 统计：** 信息泄露 4,858 案例/64.7% 高危（数量最多的类别）
-
-**WooYun 案例参考：**
-- "映客多个数据库服务器沦陷" — 源代码/配置泄露
-- "阳光保险敏感信息泄露导致成功进入内网系统" — 泄露凭据 → 内网横向
-
-#### 测试清单
+#### Test Checklist
 
 ```
-1. API 响应过度返回
-   - [ ] 所有 4 个 API 响应中是否含超出 UI 展示的字段？
-   - [ ] 错误响应是否泄露堆栈信息/SQL 语句/文件路径？
-   - [ ] 404/500 响应是否泄露框架版本（Spring Boot? Laravel?）
+for /api/user/info:
 
-2. 隐藏端点探测
-   - [ ] 从 JS 源码提取的 API 列表逐一测试
-   - [ ] /api/swagger-ui.html, /api/docs, /api-docs
-   - [ ] /actuator, /actuator/env, /actuator/heapdump (Spring Boot)
-   - [ ] /druid (阿里巴巴 Druid 监控)
-   - [ ] /.git/config, /.env, /config.json
+1. information through degreeReturn
+ - [] for ratio API ResponseFieldnumber vs H5 page displayFieldnumber
+ - [] whetherReturndone:Passwordhash hash/mobile machine all number/Identity Cardnumber/banklinescard number?
+ - [] whetherReturndone internal partField:role/is_admin/permission/internal_id?
+ - [] Responseinwhetherinclude include otherUserofkey connect information?
 
-3. 微信特有泄露
-   - [ ] 微信 JS-SDK 签名中的 appId 和 appSecret
-   - [ ] 微信 OAuth redirect_uri 是否校验严格？
-   - [ ] H5 页面 localStorage/sessionStorage 中存储了什么？
-   - [ ] 微信分享链接中是否携带敏感参数？
+2. Horizontal Authorization BypassRead
+ - [] Add/Modify user_id ParameterasotherUser ID
+ - [] Modify URL Pathinof ID(such as /api/user/info/123 -> /api/user/info/124)
+ - [] Pass Header inof X-User-Id orself set defineFieldReplace
+ - [] EnumerationUser ID Scope(such asifasorder sequence ID, CanBatchDisclosure)
 
-4. 响应头分析
-   - [ ] Server / X-Powered-By → 框架识别
-   - [ ] Access-Control-Allow-Origin → CORS 配置是否宽松
-   - [ ] Set-Cookie → HttpOnly / Secure / SameSite 标记
+3. Vertical Authorization Bypass
+ - [] inRequestinAdd role=admin or is_admin=1
+ - [] access ask /api/admin/user/info etc.manage manageEndpoint
+ - [] Modify HTTP Method(GET -> POST -> PUT -> DELETE)
+
+4. UserinformationModifybypass permission
+ - [] whether exists /api/user/update ortype Endpoint?
+ - [] whether canModifyotherUserofmobile number/Email/ name?
+ - [] whether canPassModifyEmail/mobile numberconnect manage otherAccount?
 ```
 
 ---
 
-### P3-1：微信 OAuth / 认证缺陷（1 小时）
+### P1-2:Addressbypass permissionModify(1.5 hours)
 
-**WooYun 统计：** 密码重置 777 案例/88.0% 高危（最高严重性比例）
+**WooYun Statistics:** Arbitrary Modification 159 Case/63.5% High Risk
 
-#### 测试清单
-
-```
-1. 微信 OAuth 缺陷
-   - [ ] redirect_uri 是否可被篡改？（开放重定向 → Token 劫持）
-   - [ ] state 参数是否存在且校验？（CSRF 防护）
-   - [ ] 是否可用 code 重放获取其他用户 token？
-   - [ ] 解绑微信后旧 token 是否失效？
-
-2. Token/Session 安全
-   - [ ] Token 是否有过期时间？
-   - [ ] 退出登录后 Token 是否立即失效？
-   - [ ] Token 是否绑定设备/IP？换设备/IP 是否仍有效？
-   - [ ] Token 格式分析（JWT? 自定义?），是否可伪造？
-
-3. 短信验证码缺陷（如果存在手机号登录）
-   - [ ] 验证码是否有速率限制？
-   - [ ] 验证码长度（4 位 = 10000 种可能 → 可暴力破解）
-   - [ ] 验证码是否在响应中返回？
-   - [ ] 验证码是否可跨用户使用？
-   - [ ] 验证码过期时间是否合理？
-```
-
----
-
-### P3-2：隐藏端点与配置不当（1 小时）
-
-**WooYun 统计：** 配置不当 1,796 案例/72.6% 高危
-
-**WooYun 案例参考：**
-- "同程旅游某系统配置不当任意文件上传 getshell/root 权限" — 配置不当 → RCE
-- "云南农村信用社智慧农信微信管理平台" — 微信管理平台默认凭证
-
-#### 测试清单
+#### Test Checklist
 
 ```
-1. 管理后台探测
-   - [ ] /admin, /manage, /backend, /console
-   - [ ] /api/admin/*, /api/manage/*
-   - [ ] 从 JS 源码中发现的管理端点
+for /api/address/update:
 
-2. 调试端点
-   - [ ] /debug, /test, /api/test
-   - [ ] ?debug=true, ?test=1 参数
-   - [ ] /phpinfo.php, /info.php
+1. Horizontal Authorization BypassModify
+ - [] Replace address_id asother personAddress ID
+ - [] Replace user_id asother personUser ID
+ - [] useAccount A of token ModifyAccount B ofcollect goodsAddress
+ - [] Modifyother person default authAddress -> after continueOrdershippingtoattack attack personAddress
 
-3. 默认凭证（如果发现管理后台）
-   - [ ] admin/admin, admin/123456, admin/admin123
-   - [ ] test/test, demo/demo
-   - [ ] 公司名/公司名123
+2. BatchEnumeration
+ - [] Enumeration address_id Obtainother personAddress(Name/electronic /DetailedAddress)
+ - [] Pass /api/address/list whetherCanspecified set other user_id
 
-4. CORS 配置
-   - [ ] Origin: https://evil.com → 检查 ACAO 响应头
-   - [ ] Origin: null → 是否允许？
-   - [ ] 是否携带 Access-Control-Allow-Credentials: true？
-   - [ ] 宽松 CORS + 携带凭证 = 可跨域窃取数据
+3. Addressinject inject
+ - [] AddressFieldwhether haslong degree limit make/through filter?(XSS Cancan ness)
+ - [] AddressFieldwhetherusefor after continue flow process(such asinvoices/item flow identifier)-> Storagetype XSS
+
+4. Business Impact
+ - [] Modifyother person default authAddress -> include Intercept(real item loss loss)
+ - [] Disclosureother personAddress -> Private Data(Name+electronic +)
 ```
 
 ---
 
-## 时间分配表
+## No. twodays:deep degree test(logic logic + Race + Information Disclosure + Authentication)
 
-### 第一天（约 10 小时有效时间）
+### P1-3:PaymentState-Machine Bypass(2 hours)
 
-| 时间段 | 任务 | 优先级 |
+**WooYun Statistics:** Design Flaw 1,391 Case/65.3% High Risk + Payment Bypass 1,056 Case/68.7% High Risk
+
+**WooYun Case References:**
+- "114 Ticketing site logic flaw used payment timeout to leak sensitive information for tens of thousands of users" - Statusmachine missing flaw
+- "Datebao official site business-logic vulnerability allowed buying insurance for free or at an extremely low price" - avoid fee buy buyBypass
+- " sub a locationSeverelogic logic vulnerability" - electronic commerce logic logicBypass
+
+#### Test Checklist
+
+```
+Paymentflow processStatusmachine:
+ Shopping Cart -> SubmitOrder -> CreatePayment -> WeChatPayment -> PaymentCallback -> Ordercomplete
+
+Attack Vector:
+
+1. skip throughPaymentStep
+ - [] SubmitOrderafter, Direct CallOrderConfirm/completeInterface
+ - [] without going throughWeChatPayment, DirectforgeryPaymentSuccessCallback
+ - [] AnalyzePaymentCallback URL(notify_url), Attemptprimary dynamicRequest
+
+2. Payment Callback Forgery
+ - [] onetimesreal realPaymentSuccessofCallbackData
+ - [] userelated same result structureReplayto one notPaymentOrder
+ - [] ModifyCallbackinof order_id specified towardHighprice valueOrder
+ - [] Callbackvalidate whether exists?Signaturealgorithm methodwhetherCan decode?
+
+3. OrderStatustamper change
+ - [] DirectModifyOrderStatusParameter:status=paid / status=shipped
+ - [] Paid -> Refund -> serious new useusecommerce product(Refundnot refund goods)
+ - [] alreadyCancelofOrderwhether can repeat? repeat after price formatwhetherprotect hold?
+
+4. PaymentafterModify
+ - [] PaymentSuccessafterModifyOrderinofcommerce product/Address/number quantity
+ - [] Lowprice commerce productPaymentSuccess -> ModifyasHighprice commerce product
+```
+
+---
+
+### P2-1:Race Condition/dual flower(2 hours)
+
+**WooYun Statistics:** logic logic vulnerability 266 Case/74.8% High Risk
+
+**WooYun Case References:**
+- BalanceRaceWithdrawal:from 100 BalanceinConcurrencyprovide take 200
+- CouponRace:singletimesuseuseCouponbeConcurrencyuseusemanytimes
+
+#### Test Checklist
+
+```
+useuse Burp Turbo Intruder orConcurrencyScript:
+
+1. CouponRace
+ - [] SameCoupon, Concurrency 10-20 useuseRequest
+ - [] expected period:only 1 Success
+ - [] vulnerability:manySuccess = no limit priority
+
+2. InventoryRace
+ - [] limit buy 1 item commerce product, Concurrency 10 under singleRequest
+ - [] limit quantity commerce product, Concurrency buy
+ - [] expected period:only allow allow buy buy limit buy number quantity
+ - [] vulnerability:super out limit buy = Inventorycontrol makeInvalidate
+
+3. Balance/ partRace
+ - [] Balanceonly 1 timesmessage fee, Concurrency 5 timesPaymentRequest
+ - [] part changeConcurrencyRequest
+ - [] expected period:only 1 timesSuccess
+ - [] vulnerability:manytimesSuccess = dual flower
+
+4. to/domain takeRace
+ - [] each day to ConcurrencyRequest
+ - [] new person includeConcurrencydomain take
+ - [] expected period:only 1 times
+ - [] vulnerability:manytimesdomain take
+```
+
+---
+
+### P2-2:Information Disclosure(1.5 hours)
+
+**WooYun Statistics:** Information Disclosure 4,858 Case/64.7% High Risk(number quantity most manyofCategory)
+
+**WooYun Case References:**
+- "map client manyDatabaseServer flaw" - Source Code/Configuration Disclosure
+- "Sunshine InsuranceSensitive InformationDisclosureCausingSuccessadvance injectInternal NetworkSystem" - Disclosurecredential according -> Internal Network toward
+
+#### Test Checklist
+
+```
+1. API Responsethrough degreeReturn
+ - [] All 4 API Responseinwhetherinclude super out UI showofField?
+ - [] errorResponsewhetherDisclosurestack stack information/SQL /FilePath?
+ - [] 404/500 ResponsewhetherDisclosureframework architecture version version(Spring Boot? Laravel?)
+
+2. hidden hiddenEndpointprobe test
+ - [] from JS source code provide takeof API list one by one test
+ - [] /api/swagger-ui.html, /api/docs, /api-docs
+ - [] /actuator, /actuator/env, /actuator/heapdump (Spring Boot)
+ - [] /druid (Druid monitor control)
+ - [] /.git/config, /.env, /config.json
+
+3. WeChatspecial hasDisclosure
+ - [] WeChat JS-SDK Signatureinof appId and appSecret
+ - [] WeChat OAuth redirect_uri whetherValidatesevere format?
+ - [] H5 page localStorage/sessionStorage inStoragedone?
+ - [] WeChatpart link connectinwhether with sensitive sensitiveParameter?
+
+4. ResponseHeaderAnalyze
+ - [] Server / X-Powered-By -> framework architectureIdentify
+ - [] Access-Control-Allow-Origin -> CORS Configurationwhether
+ - [] Set-Cookie -> HttpOnly / Secure / SameSite identifier record
+```
+
+---
+
+### P3-1:WeChat OAuth / Authenticationmissing flaw(1 hours)
+
+**WooYun Statistics:** Password Reset 777 Case/88.0% High Risk(mostHighSevereness ratiocases)
+
+#### Test Checklist
+
+```
+1. WeChat OAuth missing flaw
+ - [] redirect_uri whetherCanbe tamper change?(open release serious set toward -> Token hold)
+ - [] state Parameterwhether existsandValidate?(CSRF defense protect)
+ - [] whetherCanuse code ReplayObtainotherUser token?
+ - [] decode WeChatafter old token whetherInvalidate?
+
+2. Token/Session Secure
+ - [] Token whether hasexpired time between?
+ - [] refund outLoginafter Token whetherImmediately Invalidate?
+ - [] Token whetherBindingset prepare/IP?change set prepare/IP whetherstillValid?
+ - [] Token format modeAnalyze(JWT? self set define?), whetherCanforgery?
+
+3. SMS Verification Codemissing flaw(such asif existinmobile numberLogin)
+ - [] CAPTCHAwhether hasrate rate limit make?
+ - [] CAPTCHAlong degree(4 characters = 10000 typeCancan -> CanBrute Force)
+ - [] CAPTCHAwhetherinResponseinReturn?
+ - [] CAPTCHAwhetherCancrossUseruseuse?
+ - [] CAPTCHAexpired time betweenwhethercombine manage?
+```
+
+---
+
+### P3-2:hidden hiddenEndpointandMisconfiguration(1 hours)
+
+**WooYun Statistics:** Misconfiguration 1,796 Case/72.6% High Risk
+
+**WooYun Case References:**
+- "Tongcheng Travel system misconfiguration allowed arbitrary file upload getshell/root Permission" - Misconfiguration -> RCE
+- "cloud informationusesocial informationWeChatmanage managePlatform" - WeChatmanage managePlatformDefault Credentials
+
+#### Test Checklist
+
+```
+1. manage manage backend console probe test
+ - [] /admin, /manage, /backend, /console
+ - [] /api/admin/*, /api/manage/*
+ - [] from JS source codeinDiscoverofmanage manageEndpoint
+
+2. debuggingEndpoint
+ - [] /debug, /test, /api/test
+ - []?debug=true,?test=1 Parameter
+ - [] /phpinfo.php, /info.php
+
+3. Default Credentials(such asifDiscovermanage manage backend console)
+ - [] admin/admin, admin/123456, admin/admin123
+ - [] test/test, demo/demo
+ - [] company company name/company company name123
+
+4. CORS Configuration
+ - [] Origin: https://evil.com -> Check ACAO ResponseHeader
+ - [] Origin: null -> whetherallow allow?
+ - [] whether with Access-Control-Allow-Credentials: true?
+ - [] CORS + withCredential = Cancross domain takeData
+```
+
+---
+
+## time between part config table
+
+### No. onedays(constraint 10 hoursValidtime between)
+
+| time between | any service | Priority |
 |--------|------|--------|
-| 09:00-10:00 | 侦察准备：注册账号B、抓包配置、JS源码分析 | 阶段零 |
-| 10:00-13:00 | 支付金额篡改（全部子测试项） | P0 |
-| 14:00-17:00 | 订单越权 IDOR（全部子测试项） | P0 |
-| 17:00-19:00 | 用户信息越权 | P1 |
-| 19:30-21:00 | 地址越权修改 | P1 |
+| 09:00-10:00 | accurate prepare:RegistrationAccountB/packet captureConfiguration/JSsource codeAnalyze | Phasezero |
+| 10:00-13:00 | Payment Amount Tampering(AllsubTest Item) | P0 |
+| 14:00-17:00 | Orderbypass permission IDOR(AllsubTest Item) | P0 |
+| 17:00-19:00 | Userinformation bypass permission | P1 |
+| 19:30-21:00 | Addressbypass permissionModify | P1 |
 
-### 第二天（约 10 小时有效时间）
+### No. twodays(constraint 10 hoursValidtime between)
 
-| 时间段 | 任务 | 优先级 |
+| time between | any service | Priority |
 |--------|------|--------|
-| 09:00-11:00 | 支付状态机绕过 | P1 |
-| 11:00-13:00 | 竞态条件/双花 | P2 |
-| 14:00-15:30 | 信息泄露（API 响应 + 隐藏端点） | P2 |
-| 15:30-16:30 | 微信 OAuth / 认证缺陷 | P3 |
-| 16:30-17:30 | 隐藏端点与配置不当 | P3 |
-| 17:30-19:00 | 对已发现漏洞深挖影响 + 撰写报告 | 报告 |
-| 19:00-21:00 | 机动时间：补充测试或扩大已发现漏洞 | 机动 |
+| 09:00-11:00 | PaymentState-Machine Bypass | P1 |
+| 11:00-13:00 | Race Condition/dual flower | P2 |
+| 14:00-15:30 | Information Disclosure(API Response + hidden hiddenEndpoint) | P2 |
+| 15:30-16:30 | WeChat OAuth / Authenticationmissing flaw | P3 |
+| 16:30-17:30 | hidden hiddenEndpointandMisconfiguration | P3 |
+| 17:30-19:00 | for alreadyDiscovervulnerability deep impact response + write report | report |
+| 19:00-21:00 | machine dynamic time between:supplement topup testor large alreadyDiscovervulnerability | machine dynamic |
 
 ---
 
-## 漏洞报告模板
+## vulnerability report model template
 
-每个发现按以下格式记录：
+EachDiscoverbythe followingformat modeRecord:
 
 ```
-## 发现：[标题]
-- 严重级别：严重 / 高 / 中 / 低
-- 领域：认证 / 授权 / 金融 / 信息 / 逻辑 / 配置
-- WooYun 模式：[匹配的历史模式名称]
-- 业务影响：[直接损失金额 / 影响用户数 / 数据泄露范围]
-- 重现步骤：
-  1. [精确的请求 URL + 参数]
-  2. [修改的字段和值]
-  3. [观察到的异常响应]
-- 请求/响应证据：[截图或原始数据]
-- 修复建议：[服务端修复方案，不是前端补丁]
+## Discover:[identifier problem]
+- Severity:Severe / High / in / Low
+- Domain:Authentication / Authorization / Financial / information / logic logic / Configuration
+- WooYun mode:[match configofhistory history mode name name]
+- Business Impact:[Directloss lossAmount / impact responseUsernumber / DataDisclosureScope]
+- Reproduction Steps:
+ 1. [precision confirmofRequest URL + Parameter]
+ 2. [ModifyofFieldandvalue]
+ 3. [Observetoofabnormal commonResponse]
+- Request/ResponseEvidence:[intercept imageorprinciple initialData]
+- Remediation Recommendation:[Serverfix repeat method plan, not isFrontendsupplement]
 ```
 
 ---
 
-## 思维检查清单（防止浅层测试）
+## maintainCheckclear single(defense stop layer test)
 
-| 陷阱 | 正确做法 |
+| flaw | correct confirm do method |
 |------|---------|
-| "改了金额为 0.01 没成功就跳过" | 还有 16 种支付篡改模式未测（负数、溢出、数量、折扣...） |
-| "IDOR 改了 ID 没用就跳过" | 尝试参数污染、数组注入、JSON 嵌套、编码绕过（WooYun 数据：简单改 ID 仅占 30%） |
-| "前端有校验就安全" | 68.7% 的支付漏洞是因为校验仅在前端，直接 Burp 绕过 |
-| "只测了 4 个已知 API" | JS 源码中一定还有更多端点，隐藏管理 API 往往是最大突破口 |
-| "扫描器跑过了没发现" | 本计划中所有漏洞类型都是扫描器无法发现的业务逻辑缺陷 |
-| "微信环境限制了攻击面" | 微信只是前端壳，所有 API 请求可以用 Burp/curl 直接构造 |
+| "change doneAmountas 0.01 noSuccess skip through" | has 16 typePayment Tamperingmode not test(Negative Number/ out/number quantity/discount deduct...) |
+| "IDOR change done ID nouse skip through" | AttemptParameter Pollution/number array inject inject/JSON Nested/Encoding Bypass(WooYun Data:simple single change ID only share 30%) |
+| "FrontendhasValidateSecure" | 68.7% ofPaymentvulnerability is becauseasValidateonlyinFrontend, Direct Burp Bypass |
+| "only test done 4 already notify API" | JS source codeinone set has update manyEndpoint, hidden hidden manage manage API is most large interface |
+| "Scandevice through done noDiscover" | version plan inAllVulnerability Typeall isScandevice no methodDiscoverofbusiness logic logic missing flaw |
+| "WeChatenvironment environment limit make done attack attack page" | WeChatonly isFrontend, All API RequestCanasuse Burp/curl Directstructure forge |
 
 ---
 
-## 工具清单
+## Toolclear single
 
-| 工具 | 用途 |
+| Tool | Purpose |
 |------|------|
-| Burp Suite | 请求拦截、修改、重放 |
-| Burp Turbo Intruder | 竞态条件并发测试 |
-| Charles Proxy | 微信 H5 抓包（需安装信任证书） |
-| curl / httpie | 脚本化 API 测试 |
-| Python 脚本 | 自动化 ID 枚举、并发请求 |
-| 浏览器 DevTools | JS 源码分析、localStorage 检查 |
-| GitHack / git-dumper | .git 泄露利用 |
+| Burp Suite | Request Interception/Modify/Replay |
+| Burp Turbo Intruder | Race ConditionConcurrencytest |
+| Charles Proxy | WeChat H5 packet capture(need information any cert certificate) |
+| curl / httpie | Scriptize API test |
+| Python Script | self dynamic ize ID Enumeration/ConcurrencyRequest |
+| Browser DevTools | JS source codeAnalyze/localStorage Check |
+| GitHack / git-dumper |.git Disclosureexploituse |
 
 ---
 
-## WooYun 统计速查
+## WooYun Statisticsrate check
 
-| 漏洞类别 | 案例数 | 高危占比 | 本计划覆盖 |
+| Vulnerability Category | Case Count | high-risk percentage | version plan cover cover |
 |---------|-------|---------|-----------|
-| 密码重置 | 777 | 88.0% | P3（微信 OAuth 场景变体） |
-| 金额篡改 | 176 | 83.0% | P0（支付金额篡改） |
-| 余额篡改 | 113 | 77.9% | P2（竞态条件） |
-| 逻辑漏洞 | 266 | 74.8% | P2（竞态条件） |
-| 订单篡改 | 1,227 | 74.2% | P0（订单越权） |
-| 配置不当 | 1,796 | 72.6% | P3（隐藏端点） |
-| 支付绕过 | 1,056 | 68.7% | P1（状态机绕过） |
-| 设计缺陷 | 1,391 | 65.3% | P1（状态机绕过） |
-| 信息泄露 | 4,858 | 64.7% | P2（信息泄露） |
-| 越权 | 1,705 | 62.3% | P0+P1（全部越权测试） |
+| Password Reset | 777 | 88.0% | P3(WeChat OAuth scenario scene variant) |
+| Amount Tampering | 176 | 83.0% | P0(Payment Amount Tampering) |
+| Balancetamper change | 113 | 77.9% | P2(Race Condition) |
+| logic logic vulnerability | 266 | 74.8% | P2(Race Condition) |
+| Order Tampering | 1,227 | 74.2% | P0(Orderbypass permission) |
+| Misconfiguration | 1,796 | 72.6% | P3(hidden hiddenEndpoint) |
+| Payment Bypass | 1,056 | 68.7% | P1(State-Machine Bypass) |
+| Design Flaw | 1,391 | 65.3% | P1(State-Machine Bypass) |
+| Information Disclosure | 4,858 | 64.7% | P2(Information Disclosure) |
+| bypass permission | 1,705 | 62.3% | P0+P1(Allbypass permission test) |
 
-> 本计划覆盖 WooYun 22,132 案例中 Top 10 高危类别的全部测试维度。
+> version plan cover cover WooYun 22,132 Casein Top 10 High RiskCategoryofAlltestDimension.
