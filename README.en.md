@@ -1,4 +1,4 @@
-> **Translation preamble:** This repository is an English translation of the original WooYun Legacy repository, produced with GPT-5.5 at x-high reasoning effort. The translation aims to preserve technical details, exploit context, payload meaning, and currency semantics faithfully.
+This is an English translation of the original WooYun Legacy repository, prepared with GPT-5.5 at x-high reasoning effort. The translation is intended to preserve the technical details, exploit context, payload meaning, and currency semantics of the source material.
 
 # WooYun Legacy
 
